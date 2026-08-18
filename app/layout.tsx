@@ -14,18 +14,13 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Agenda de Guias | Way To Know Rio",
-  description:
-    "Sistema de gerenciamento e agenda de guias da Way To Know Rio",
+  description: "Sistema de gerenciamento de guias da Way To Know Rio",
   icons: {
-    icon: "/logo-branca.png",
+    icon: "/icon.png",
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="pt-BR"

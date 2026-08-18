@@ -212,11 +212,11 @@ export default function Calendar() {
   );
 
   return (
-    <div className="mt-6 rounded-3xl bg-white p-5 shadow-sm sm:p-6">
+    <div className="mt-4 rounded-2xl bg-white p-3 shadow-sm sm:mt-6 sm:rounded-3xl sm:p-6">
 
       {/* CABEÇALHO DO CALENDÁRIO */}
 
-      <div className="mb-6 flex items-center justify-between rounded-2xl bg-gray-50 p-3">
+      <div className="mb-4 flex items-center justify-between rounded-xl bg-gray-50 p-2 sm:mb-6 sm:rounded-2xl sm:p-3">
 
         <button
           type="button"
@@ -225,13 +225,13 @@ export default function Calendar() {
               subMonths(currentMonth, 1)
             )
           }
-          className="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-gray-300 bg-white text-xl font-extrabold text-gray-900 shadow-sm transition hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c]"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
           aria-label="Mês anterior"
         >
           ←
         </button>
 
-        <h4 className="text-xl font-extrabold capitalize text-gray-900 sm:text-2xl">
+        <h4 className="text-base font-extrabold capitalize text-gray-900 sm:text-xl md:text-2xl">
           {monthName}
         </h4>
 
@@ -242,7 +242,7 @@ export default function Calendar() {
               addMonths(currentMonth, 1)
             )
           }
-          className="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-gray-300 bg-white text-xl font-extrabold text-gray-900 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
           aria-label="Próximo mês"
         >
           →
@@ -252,7 +252,7 @@ export default function Calendar() {
 
       {/* DIAS DA SEMANA */}
 
-      <div className="mb-3 grid grid-cols-7 gap-2 text-center text-xs font-extrabold uppercase tracking-wide text-gray-800 sm:text-sm">
+      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-gray-700 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
         <div>Seg</div>
         <div>Ter</div>
         <div>Qua</div>
@@ -265,16 +265,16 @@ export default function Calendar() {
       {/* CALENDÁRIO */}
 
       {loading ? (
-        <div className="py-12 text-center">
-          <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c]" />
+        <div className="py-10 text-center sm:py-12">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c] sm:h-9 sm:w-9" />
 
-          <p className="mt-4 text-sm font-medium text-gray-600">
+          <p className="mt-3 text-sm font-medium text-gray-600 sm:mt-4">
             Carregando calendário...
           </p>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
 
             {days.map((day) => {
               const date = format(
@@ -323,7 +323,7 @@ export default function Calendar() {
                     loading || !sameMonth
                   }
                   className={[
-                    "aspect-square rounded-xl text-sm font-extrabold transition sm:text-base",
+                    "aspect-square rounded-lg text-xs font-extrabold transition sm:rounded-xl sm:text-sm md:text-base",
                     !sameMonth
                       ? "cursor-default bg-gray-100 text-gray-400"
                       : dayClass,
@@ -338,20 +338,20 @@ export default function Calendar() {
 
           {/* LEGENDA */}
 
-          <div className="mt-6 flex flex-wrap items-center gap-5 border-t border-gray-100 pt-5 text-sm font-semibold text-gray-700">
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
 
-            <div className="flex items-center gap-2">
-              <span className="h-4 w-4 rounded-md bg-green-500 ring-1 ring-green-200" />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="h-3 w-3 rounded-md bg-green-500 ring-1 ring-green-200 sm:h-4 sm:w-4" />
               <span>Disponível</span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="h-4 w-4 rounded-md bg-red-500 ring-1 ring-red-200" />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="h-3 w-3 rounded-md bg-red-500 ring-1 ring-red-200 sm:h-4 sm:w-4" />
               <span>Indisponível</span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="h-4 w-4 rounded-md border border-gray-300 bg-gray-100" />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="h-3 w-3 rounded-md border border-gray-300 bg-gray-100 sm:h-4 sm:w-4" />
               <span>Não marcado</span>
             </div>
 

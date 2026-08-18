@@ -165,56 +165,7 @@ return ( <main className="min-h-screen bg-[#f7f7fb]">
 
   <section className="relative z-10 mx-auto max-w-7xl px-5 py-7 sm:px-6 sm:py-9">
 
-    {/* Saudação */}
-
-    <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
-
-      <div className="p-6 sm:p-8">
-
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-
-          <div>
-
-            <p className="text-sm font-medium text-gray-400">
-              Olá,
-            </p>
-
-            <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-gray-900">
-              {profile.name}! 👋
-            </h2>
-
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base">
-              {isAdmin
-                ? "Você está acessando o painel administrativo da Agenda de Guias."
-                : "Marque no calendário os dias em que você está disponível."}
-            </p>
-
-          </div>
-
-          <div
-            className={
-              "w-fit rounded-2xl px-4 py-3 " +
-              (isAdmin
-                ? "bg-blue-50 text-[#1687d9]"
-                : "bg-pink-50 text-[#e91e8c]")
-            }
-          >
-
-            <p className="text-xs font-semibold uppercase tracking-wider">
-              Acesso
-            </p>
-
-            <p className="mt-1 font-bold">
-              {isAdmin ? "Administrador" : "Guia"}
-            </p>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
+   
 
     {/* ADMIN */}
 
