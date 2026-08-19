@@ -77,6 +77,7 @@ if (profile.role !== "admin") {
 
     const name = String(body.name || "").trim();
 const email = String(body.email || "").trim();
+const phone = String(body.phone || "").trim();
 const password = String(body.password || "");
 
 const languages = Array.isArray(body.languages)

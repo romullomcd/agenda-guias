@@ -59,13 +59,15 @@ export async function PATCH(request: Request) {
     // Dados recebidos
     const body = await request.json();
 
-    const guideId = String(body.guideId || "").trim();
-    const name = String(body.name || "").trim();
-    const email = String(body.email || "").trim();
-    const password = String(body.password || "");
-    const languages = Array.isArray(body.languages)
-      ? body.languages
-      : [];
+const guideId = String(body.guideId || "").trim();
+const name = String(body.name || "").trim();
+const email = String(body.email || "").trim();
+const phone = String(body.phone || "").trim();
+const password = String(body.password || "");
+
+const languages = Array.isArray(body.languages)
+  ? body.languages
+  : [];
 
     if (!guideId) {
       return NextResponse.json(
@@ -160,11 +162,12 @@ export async function PATCH(request: Request) {
         .from("profiles")
         .update({
           name,
+  phone,
           languages,
         })
         .eq("id", guideId)
         .eq("role", "guide")
-        .select("id, name, role, active, languages")
+        .select("id, name, role, active, languages, phone")
         .single();
 
     if (profileError) {
