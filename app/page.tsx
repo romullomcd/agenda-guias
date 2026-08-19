@@ -1,4 +1,3 @@
-
 "use client";
 
 import { FormEvent, useState } from "react";
@@ -105,6 +104,10 @@ export default function Home() {
         return;
       }
 
+      // Guarda o ID do usuário depois de confirmar
+      // que existe uma sessão e um usuário.
+      const userId = session.user.id;
+
       // ==========================================================
       // VERIFICAR PERFIL
       // ==========================================================
@@ -115,7 +118,7 @@ export default function Home() {
       } = await supabase
         .from("profiles")
         .select("active")
-        .eq("id", session.user.id)
+        .eq("id", userId)
         .single();
 
       if (profileError || !profile) {
@@ -334,4 +337,3 @@ export default function Home() {
     </main>
   );
 }
-
