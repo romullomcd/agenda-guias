@@ -34,6 +34,9 @@ export default function Dashboard() {
   const [checkingGoogle, setCheckingGoogle] =
     useState(true);
 
+  const [connectingGoogle, setConnectingGoogle] =
+    useState(false);
+
   // ============================================================
   // MENU
   // ============================================================
@@ -158,7 +161,15 @@ export default function Dashboard() {
       setCheckingGoogle(true);
 
       console.log(
+        "=========================================="
+      );
+
+      console.log(
         "🔎 VERIFICANDO CONEXÃO COM GOOGLE CALENDAR..."
+      );
+
+      console.log(
+        "=========================================="
       );
 
       const {
@@ -187,15 +198,22 @@ export default function Dashboard() {
         return;
       }
 
+      console.log(
+        "✅ SESSÃO ENCONTRADA"
+      );
+
       const response =
         await fetch(
           "/api/google/status",
           {
             method: "GET",
+
             headers: {
               Authorization:
                 `Bearer ${session.access_token}`,
             },
+
+            cache: "no-store",
           }
         );
 
@@ -203,6 +221,11 @@ export default function Dashboard() {
         await response.json().catch(
           () => null
         );
+
+      console.log(
+        "🔎 RESPOSTA STATUS GOOGLE:",
+        data
+      );
 
       if (!response.ok) {
         console.error(
@@ -214,14 +237,28 @@ export default function Dashboard() {
         return;
       }
 
+      const connected =
+        data?.connected === true;
+
       console.log(
-        "🔎 STATUS GOOGLE:",
-        data
+        "🔑 ACCESS TOKEN:",
+        data?.hasAccessToken
+      );
+
+      console.log(
+        "🔄 REFRESH TOKEN:",
+        data?.hasRefreshToken
+      );
+
+      console.log(
+        "📅 GOOGLE CONECTADO:",
+        connected
       );
 
       setGoogleConnected(
-        data?.connected === true
+        connected
       );
+
     } catch (error) {
       console.error(
         "❌ ERRO AO VERIFICAR CONEXÃO GOOGLE:",
@@ -229,6 +266,7 @@ export default function Dashboard() {
       );
 
       setGoogleConnected(false);
+
     } finally {
       setCheckingGoogle(false);
     }
@@ -922,9 +960,23 @@ export default function Dashboard() {
   // ============================================================
 
   async function connectGoogleCalendar() {
+    if (connectingGoogle) {
+      return;
+    }
+
     try {
+      setConnectingGoogle(true);
+
+      console.log(
+        "=========================================="
+      );
+
       console.log(
         "🔵 INICIANDO CONEXÃO COM GOOGLE CALENDAR"
+      );
+
+      console.log(
+        "=========================================="
       );
 
       const {
@@ -968,10 +1020,13 @@ export default function Dashboard() {
           "/api/google/auth",
           {
             method: "GET",
+
             headers: {
               Authorization:
                 `Bearer ${session.access_token}`,
             },
+
+            cache: "no-store",
           }
         );
 
@@ -979,6 +1034,11 @@ export default function Dashboard() {
         await response.json().catch(
           () => null
         );
+
+      console.log(
+        "🔎 RESPOSTA GOOGLE AUTH:",
+        data
+      );
 
       if (!response.ok) {
         console.error(
@@ -1008,11 +1068,13 @@ export default function Dashboard() {
       }
 
       console.log(
-        "🔵 REDIRECIONANDO PARA GOOGLE:"
+        "🔵 REDIRECIONANDO PARA GOOGLE..."
       );
 
-      window.location.href =
-        data.url;
+      window.location.assign(
+        data.url
+      );
+
     } catch (error) {
       console.error(
         "❌ ERRO AO CONECTAR GOOGLE CALENDAR:",
@@ -1022,8 +1084,47 @@ export default function Dashboard() {
       alert(
         "Ocorreu um erro ao conectar ao Google Calendar."
       );
+
+    } finally {
+      setConnectingGoogle(false);
     }
   }
+
+  // ============================================================
+  // DETECTAR RETORNO DO GOOGLE
+  // ============================================================
+
+  useEffect(() => {
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const googleStatus =
+      params.get("google");
+
+    if (
+      googleStatus ===
+      "success"
+    ) {
+      console.log(
+        "🎉 RETORNO DO GOOGLE DETECTADO"
+      );
+
+      // Remove ?google=success da URL
+      window.history.replaceState(
+        {},
+        document.title,
+        "/dashboard"
+      );
+
+      // Dá um pequeno tempo para garantir
+      // que o callback terminou de salvar
+      setTimeout(() => {
+        checkGoogleConnection();
+      }, 300);
+    }
+  }, []);
 
   // ============================================================
   // LOGOUT
@@ -1464,8 +1565,6 @@ export default function Dashboard() {
               {showMenu && (
                 <div className="absolute right-0 top-12 z-[300] w-[290px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
 
-                  {/* CABEÇALHO */}
-
                   <div className="border-b border-gray-100 bg-gray-50 px-5 py-4">
 
                     <p className="text-sm font-extrabold text-gray-900">
@@ -1568,18 +1667,23 @@ export default function Dashboard() {
                       !googleConnected && (
                         <button
                           type="button"
+                          disabled={
+                            connectingGoogle
+                          }
                           onClick={() => {
                             setShowMenu(false);
                             connectGoogleCalendar();
                           }}
-                          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-green-50 hover:text-green-600"
+                          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-green-50 hover:text-green-600 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <span className="text-lg">
                             📅
                           </span>
 
                           <span>
-                            Conectar Google Calendar
+                            {connectingGoogle
+                              ? "Conectando..."
+                              : "Conectar Google Calendar"}
                           </span>
                         </button>
                       )}
@@ -1722,12 +1826,17 @@ export default function Dashboard() {
               !googleConnected && (
                 <button
                   type="button"
+                  disabled={
+                    connectingGoogle
+                  }
                   onClick={
                     connectGoogleCalendar
                   }
-                  className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] sm:w-auto"
+                  className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
-                  📅 Conectar Google
+                  {connectingGoogle
+                    ? "⏳ Conectando..."
+                    : "📅 Conectar Google"}
                 </button>
               )}
 
@@ -1772,8 +1881,6 @@ export default function Dashboard() {
           </div>
 
         ) : (
-
-          /* GUIA */
 
           <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
 

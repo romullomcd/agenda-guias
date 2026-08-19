@@ -4,28 +4,68 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
+    console.log("==========================================");
+    console.log("🔵 GOOGLE OAUTH CALLBACK");
+    console.log("==========================================");
 
-    const code = searchParams.get("code");
-    const state = searchParams.get("state");
+    const { searchParams } =
+      new URL(request.url);
+
+    const code =
+      searchParams.get("code");
+
+    const state =
+      searchParams.get("state");
+
+    console.log(
+      "🔑 CODE RECEBIDO:",
+      code ? "SIM" : "NÃO"
+    );
+
+    console.log(
+      "👤 STATE RECEBIDO:",
+      state || null
+    );
+
+    // ==========================================================
+    // VALIDAR CODE
+    // ==========================================================
 
     if (!code) {
+      console.error(
+        "❌ CÓDIGO DE AUTORIZAÇÃO NÃO RECEBIDO"
+      );
+
       return NextResponse.json(
         {
-          error: "Código de autorização não recebido.",
+          error:
+            "Código de autorização não recebido.",
         },
         { status: 400 }
       );
     }
 
+    // ==========================================================
+    // VALIDAR STATE
+    // ==========================================================
+
     if (!state) {
+      console.error(
+        "❌ STATE NÃO RECEBIDO"
+      );
+
       return NextResponse.json(
         {
-          error: "Usuário não identificado.",
+          error:
+            "Usuário não identificado.",
         },
         { status: 400 }
       );
     }
+
+    // ==========================================================
+    // VARIÁVEIS GOOGLE
+    // ==========================================================
 
     const clientId =
       process.env.GOOGLE_CLIENT_ID;
@@ -41,6 +81,10 @@ export async function GET(request: Request) {
       !clientSecret ||
       !redirectUri
     ) {
+      console.error(
+        "❌ CREDENCIAIS GOOGLE NÃO CONFIGURADAS"
+      );
+
       return NextResponse.json(
         {
           error:
@@ -50,6 +94,19 @@ export async function GET(request: Request) {
       );
     }
 
+    console.log(
+      "✅ CREDENCIAIS GOOGLE ENCONTRADAS"
+    );
+
+    console.log(
+      "🔗 REDIRECT URI:",
+      redirectUri
+    );
+
+    // ==========================================================
+    // CRIAR CLIENT GOOGLE
+    // ==========================================================
+
     const oauth2Client =
       new google.auth.OAuth2(
         clientId,
@@ -57,45 +114,42 @@ export async function GET(request: Request) {
         redirectUri
       );
 
+    // ==========================================================
+    // TROCAR CODE POR TOKENS
+    // ==========================================================
+
+    console.log(
+      "🔄 TROCANDO CODE POR TOKENS..."
+    );
+
     const { tokens } =
       await oauth2Client.getToken(code);
 
     console.log(
-      "GOOGLE TOKENS RECEBIDOS:",
+      "✅ TOKENS RECEBIDOS DO GOOGLE:",
       {
         hasAccessToken:
           !!tokens.access_token,
+
         hasRefreshToken:
           !!tokens.refresh_token,
+
         expiryDate:
           tokens.expiry_date || null,
       }
     );
 
-    if (
-      !tokens.access_token &&
-      !tokens.refresh_token
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "O Google não retornou os tokens necessários.",
-        },
-        { status: 500 }
-      );
-    }
+    // ==========================================================
+    // BUSCAR TOKEN EXISTENTE
+    // ==========================================================
 
-    /*
-     * Se o Google não retornar um novo refresh_token,
-     * mantemos o que já estiver salvo.
-     */
     const {
       data: existingToken,
       error: existingError,
     } = await supabaseAdmin
       .from("google_calendar_tokens")
       .select(
-        "id, refresh_token"
+        "id, access_token, refresh_token, expiry_date"
       )
       .eq(
         "user_id",
@@ -105,7 +159,7 @@ export async function GET(request: Request) {
 
     if (existingError) {
       console.error(
-        "ERRO AO BUSCAR TOKEN EXISTENTE:",
+        "❌ ERRO AO BUSCAR TOKEN EXISTENTE:",
         existingError
       );
 
@@ -118,16 +172,27 @@ export async function GET(request: Request) {
       );
     }
 
+    console.log(
+      "📦 TOKEN EXISTENTE:",
+      existingToken
+        ? "SIM"
+        : "NÃO"
+    );
+
+    // ==========================================================
+    // DEFINIR REFRESH TOKEN
+    // ==========================================================
+
     const refreshToken =
       tokens.refresh_token ||
       existingToken?.refresh_token ||
       null;
 
-    /*
-     * Precisamos ter refresh_token para conseguir
-     * renovar o acesso futuramente.
-     */
     if (!refreshToken) {
+      console.error(
+        "❌ NENHUM REFRESH TOKEN DISPONÍVEL"
+      );
+
       return NextResponse.json(
         {
           error:
@@ -137,21 +202,66 @@ export async function GET(request: Request) {
       );
     }
 
+    // ==========================================================
+    // DEFINIR ACCESS TOKEN
+    // ==========================================================
+
+    const accessToken =
+      tokens.access_token ||
+      existingToken?.access_token ||
+      null;
+
+    if (!accessToken) {
+      console.error(
+        "❌ NENHUM ACCESS TOKEN DISPONÍVEL"
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "O Google não forneceu um access token.",
+        },
+        { status: 500 }
+      );
+    }
+
+    // ==========================================================
+    // DADOS PARA SALVAR
+    // ==========================================================
+
     const tokenData = {
       user_id: state,
+
       access_token:
-        tokens.access_token || "",
+        accessToken,
+
       refresh_token:
         refreshToken,
+
       expiry_date:
-        tokens.expiry_date || null,
+        tokens.expiry_date ||
+        existingToken?.expiry_date ||
+        null,
+
       updated_at:
         new Date().toISOString(),
     };
 
+    console.log(
+      "💾 SALVANDO TOKENS NO SUPABASE..."
+    );
+
+    // ==========================================================
+    // ATUALIZAR OU INSERIR
+    // ==========================================================
+
     let saveError;
 
     if (existingToken) {
+      console.log(
+        "✏️ ATUALIZANDO TOKEN EXISTENTE"
+      );
+
       const result =
         await supabaseAdmin
           .from(
@@ -160,10 +270,13 @@ export async function GET(request: Request) {
           .update({
             access_token:
               tokenData.access_token,
+
             refresh_token:
               tokenData.refresh_token,
+
             expiry_date:
               tokenData.expiry_date,
+
             updated_at:
               tokenData.updated_at,
           })
@@ -172,8 +285,14 @@ export async function GET(request: Request) {
             state
           );
 
-      saveError = result.error;
+      saveError =
+        result.error;
+
     } else {
+      console.log(
+        "➕ CRIANDO NOVO TOKEN"
+      );
+
       const result =
         await supabaseAdmin
           .from(
@@ -183,12 +302,17 @@ export async function GET(request: Request) {
             tokenData
           );
 
-      saveError = result.error;
+      saveError =
+        result.error;
     }
+
+    // ==========================================================
+    // VERIFICAR ERRO
+    // ==========================================================
 
     if (saveError) {
       console.error(
-        "ERRO AO SALVAR TOKEN DO GOOGLE:",
+        "❌ ERRO AO SALVAR TOKEN GOOGLE:",
         saveError
       );
 
@@ -202,24 +326,56 @@ export async function GET(request: Request) {
     }
 
     console.log(
-      "✅ GOOGLE CALENDAR AUTORIZADO E TOKEN SALVO:",
+      "=========================================="
+    );
+
+    console.log(
+      "✅ GOOGLE CALENDAR CONECTADO COM SUCESSO"
+    );
+
+    console.log(
+      "👤 USUÁRIO:",
       state
     );
 
-    /*
-     * Volta para o Dashboard em vez de mostrar
-     * o JSON do callback.
-     */
-    return NextResponse.redirect(
-      new URL(
-        "/dashboard?google=success",
-        request.url
-      )
+    console.log(
+      "=========================================="
     );
+
+    // ==========================================================
+    // VOLTAR PARA DASHBOARD
+    // ==========================================================
+
+    const dashboardUrl =
+      new URL(
+        "/dashboard",
+        request.url
+      );
+
+    dashboardUrl.searchParams.set(
+      "google",
+      "success"
+    );
+
+    return NextResponse.redirect(
+      dashboardUrl
+    );
+
   } catch (error) {
     console.error(
-      "ERRO NO CALLBACK DO GOOGLE:",
+      "=========================================="
+    );
+
+    console.error(
+      "❌ ERRO NO CALLBACK DO GOOGLE"
+    );
+
+    console.error(
       error
+    );
+
+    console.error(
+      "=========================================="
     );
 
     return NextResponse.json(

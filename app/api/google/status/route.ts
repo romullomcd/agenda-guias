@@ -4,6 +4,14 @@ import { createClient } from "@supabase/supabase-js";
 
 export async function GET(request: Request) {
   try {
+    console.log("==========================================");
+    console.log("🔎 VERIFICANDO STATUS GOOGLE CALENDAR");
+    console.log("==========================================");
+
+    // ==========================================================
+    // AUTHORIZATION
+    // ==========================================================
+
     const authorization =
       request.headers.get("authorization");
 
@@ -13,6 +21,10 @@ export async function GET(request: Request) {
     );
 
     if (!authorization?.startsWith("Bearer ")) {
+      console.error(
+        "❌ STATUS GOOGLE - AUTHORIZATION NÃO ENCONTRADO"
+      );
+
       return NextResponse.json(
         {
           connected: false,
@@ -23,7 +35,11 @@ export async function GET(request: Request) {
     }
 
     const accessToken =
-      authorization.replace("Bearer ", "");
+      authorization.substring(7);
+
+    // ==========================================================
+    // VALIDAR USUÁRIO SUPABASE
+    // ==========================================================
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -42,12 +58,14 @@ export async function GET(request: Request) {
       user?.id || null
     );
 
-    if (authError || !user) {
+    if (authError) {
       console.error(
         "❌ STATUS GOOGLE - ERRO AUTH:",
         authError
       );
+    }
 
+    if (authError || !user) {
       return NextResponse.json(
         {
           connected: false,
@@ -58,7 +76,7 @@ export async function GET(request: Request) {
     }
 
     // ==========================================================
-    // BUSCAR CONEXÃO GOOGLE
+    // BUSCAR TOKEN DO GOOGLE
     // ==========================================================
 
     const {
@@ -67,7 +85,7 @@ export async function GET(request: Request) {
     } = await supabaseAdmin
       .from("google_calendar_tokens")
       .select(
-        "user_id, has_access_token, has_refresh_token, expiry_date"
+        "user_id, access_token, refresh_token, expiry_date"
       )
       .eq(
         "user_id",
@@ -77,7 +95,7 @@ export async function GET(request: Request) {
 
     if (tokenError) {
       console.error(
-        "❌ ERRO AO VERIFICAR GOOGLE:",
+        "❌ ERRO AO BUSCAR CONEXÃO GOOGLE:",
         tokenError
       );
 
@@ -91,10 +109,29 @@ export async function GET(request: Request) {
       );
     }
 
+    // ==========================================================
+    // VERIFICAR SE REALMENTE EXISTE TOKEN
+    // ==========================================================
+
+    const hasAccessToken =
+      !!tokenData?.access_token;
+
+    const hasRefreshToken =
+      !!tokenData?.refresh_token;
+
     const connected =
-      !!tokenData &&
-      tokenData.has_access_token === true &&
-      tokenData.has_refresh_token === true;
+      hasAccessToken &&
+      hasRefreshToken;
+
+    console.log(
+      "🔑 TEM ACCESS TOKEN:",
+      hasAccessToken
+    );
+
+    console.log(
+      "🔄 TEM REFRESH TOKEN:",
+      hasRefreshToken
+    );
 
     console.log(
       "📅 GOOGLE CONECTADO:",
@@ -103,7 +140,12 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       connected,
+      hasAccessToken,
+      hasRefreshToken,
+      expiryDate:
+        tokenData?.expiry_date || null,
     });
+
   } catch (error) {
     console.error(
       "❌ ERRO INESPERADO AO VERIFICAR GOOGLE:",
