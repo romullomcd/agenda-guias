@@ -144,133 +144,74 @@ export default function Dashboard() {
     }
   }
 
-  // ============================================================
-  // VERIFICAR GOOGLE CALENDAR
-  // ============================================================
+ {/* ==================================================== */}
+{/* GOOGLE CALENDAR - SOMENTE ADMIN */}
+{/* ==================================================== */}
 
-  useEffect(() => {
-    if (!profile) {
-      return;
-    }
+{isAdmin && (
+  <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
 
-    checkGoogleConnection();
-  }, [profile]);
+    <div className="flex h-1">
 
-  async function checkGoogleConnection() {
-    try {
-      setCheckingGoogle(true);
+      <div className="flex-1 bg-[#4285F4]" />
+      <div className="flex-1 bg-[#34A853]" />
+      <div className="flex-1 bg-[#FBBC05]" />
+      <div className="flex-1 bg-[#EA4335]" />
 
-      console.log(
-        "=========================================="
-      );
+    </div>
 
-      console.log(
-        "🔎 VERIFICANDO CONEXÃO COM GOOGLE CALENDAR..."
-      );
+    <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
 
-      console.log(
-        "=========================================="
-      );
+      <div className="flex items-center gap-4">
 
-      const {
-        data: {
-          session,
-        },
-        error: sessionError,
-      } = await supabase.auth.getSession();
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-2xl">
+          📅
+        </div>
 
-      if (sessionError) {
-        console.error(
-          "❌ ERRO AO PEGAR SESSÃO PARA VERIFICAR GOOGLE:",
-          sessionError
-        );
+        <div>
 
-        setGoogleConnected(false);
-        return;
-      }
+          <h2 className="text-base font-extrabold text-gray-900 sm:text-lg">
+            Google Calendar
+          </h2>
 
-      if (!session?.access_token) {
-        console.error(
-          "❌ TOKEN SUPABASE NÃO ENCONTRADO"
-        );
+          <p className="mt-1 text-xs leading-relaxed text-gray-500 sm:text-sm">
+            {checkingGoogle
+              ? "Verificando conexão..."
+              : googleConnected
+              ? "Sua conta está conectada e pronta para sincronizar sua agenda."
+              : "Conecte sua conta para sincronizar sua agenda."}
+          </p>
 
-        setGoogleConnected(false);
-        return;
-      }
+        </div>
 
-      console.log(
-        "✅ SESSÃO ENCONTRADA"
-      );
+      </div>
 
-      const response =
-        await fetch(
-          "/api/google/status",
-          {
-            method: "GET",
+      {!checkingGoogle &&
+        !googleConnected && (
+          <button
+            type="button"
+            onClick={connectGoogleCalendar}
+            className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] sm:w-auto"
+          >
+            📅 Conectar Google
+          </button>
+        )}
 
-            headers: {
-              Authorization:
-                `Bearer ${session.access_token}`,
-            },
+      {!checkingGoogle &&
+        googleConnected && (
+          <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-extrabold text-green-700 sm:w-auto">
+            <span>✓</span>
 
-            cache: "no-store",
-          }
-        );
+            <span>
+              Google conectado
+            </span>
+          </div>
+        )}
 
-      const data =
-        await response.json().catch(
-          () => null
-        );
+    </div>
 
-      console.log(
-        "🔎 RESPOSTA STATUS GOOGLE:",
-        data
-      );
-
-      if (!response.ok) {
-        console.error(
-          "❌ ERRO AO VERIFICAR GOOGLE:",
-          data
-        );
-
-        setGoogleConnected(false);
-        return;
-      }
-
-      const connected =
-        data?.connected === true;
-
-      console.log(
-        "🔑 ACCESS TOKEN:",
-        data?.hasAccessToken
-      );
-
-      console.log(
-        "🔄 REFRESH TOKEN:",
-        data?.hasRefreshToken
-      );
-
-      console.log(
-        "📅 GOOGLE CONECTADO:",
-        connected
-      );
-
-      setGoogleConnected(
-        connected
-      );
-
-    } catch (error) {
-      console.error(
-        "❌ ERRO AO VERIFICAR CONEXÃO GOOGLE:",
-        error
-      );
-
-      setGoogleConnected(false);
-
-    } finally {
-      setCheckingGoogle(false);
-    }
-  }
+  </div>
+)}
 
   // ============================================================
   // NAVEGAÇÃO
