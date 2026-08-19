@@ -1,21 +1,22 @@
-export async function GET(request: Request) {
-  try {
-    const authorization = request.headers.get("authorization");
-
-    console.log("================================");
-    console.log("GOOGLE AUTH - REQUEST");
-    console.log("AUTHORIZATION EXISTE:", !!authorization);
-    console.log(
-      "AUTHORIZATION COMEÇA COM BEARER:",
-      authorization?.startsWith("Bearer ")
-    );
-    console.log("================================");
-
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export async function GET(request: Request) {
   try {
+    console.log("================================");
+    console.log("GOOGLE AUTH - REQUEST");
+    console.log(
+      "AUTHORIZATION EXISTE:",
+      !!request.headers.get("authorization")
+    );
+    console.log(
+      "AUTHORIZATION COMEÇA COM BEARER:",
+      request.headers
+        .get("authorization")
+        ?.startsWith("Bearer ")
+    );
+    console.log("================================");
+
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
@@ -44,6 +45,10 @@ export async function GET(request: Request) {
     const accessToken =
       authorization.replace("Bearer ", "");
 
+    console.log(
+      "✅ TOKEN RECEBIDO PELA API"
+    );
+
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
@@ -56,9 +61,14 @@ export async function GET(request: Request) {
       accessToken
     );
 
+    console.log(
+      "👤 USUÁRIO VALIDADO:",
+      user?.id || null
+    );
+
     if (error || !user) {
       console.error(
-        "ERRO AO VALIDAR USUÁRIO:",
+        "❌ ERRO AO VALIDAR USUÁRIO:",
         error
       );
 
@@ -84,12 +94,16 @@ export async function GET(request: Request) {
     const googleUrl =
       `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
+    console.log(
+      "✅ REDIRECIONANDO PARA GOOGLE"
+    );
+
     return NextResponse.redirect(
       googleUrl
     );
   } catch (error) {
     console.error(
-      "ERRO AO INICIAR GOOGLE OAUTH:",
+      "❌ ERRO AO INICIAR GOOGLE OAUTH:",
       error
     );
 
