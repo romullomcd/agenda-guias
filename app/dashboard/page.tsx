@@ -21,21 +21,28 @@ type Notification = {
 };
 
 export default function Dashboard() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] =
+    useState<Profile | null>(null);
+
+  const [loading, setLoading] =
+    useState(true);
 
   // ============================================================
   // MENU
   // ============================================================
 
-  const [showMenu, setShowMenu] = useState(false);
+  const [showMenu, setShowMenu] =
+    useState(false);
 
   // ============================================================
   // NOTIFICAÇÕES
   // ============================================================
 
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] =
+    useState<Notification[]>([]);
+
+  const [showNotifications, setShowNotifications] =
+    useState(false);
 
   // ============================================================
   // MODAL DE NOTIFICAÇÃO
@@ -62,7 +69,10 @@ export default function Dashboard() {
         error: userError,
       } = await supabase.auth.getUser();
 
-      console.log("🔐 USUÁRIO AUTENTICADO:", user?.id || null);
+      console.log(
+        "🔐 USUÁRIO AUTENTICADO:",
+        user?.id || null
+      );
 
       if (userError) {
         console.error(
@@ -76,7 +86,10 @@ export default function Dashboard() {
         return;
       }
 
-      const { data, error } = await supabase
+      const {
+        data,
+        error,
+      } = await supabase
         .from("profiles")
         .select("name, role")
         .eq("id", user.id)
@@ -96,13 +109,18 @@ export default function Dashboard() {
       }
 
       if (!data) {
-        console.error("❌ PERFIL NÃO ENCONTRADO");
+        console.error(
+          "❌ PERFIL NÃO ENCONTRADO"
+        );
 
         setLoading(false);
         return;
       }
 
-      console.log("✅ PERFIL:", data);
+      console.log(
+        "✅ PERFIL:",
+        data
+      );
 
       setProfile(data);
       setLoading(false);
@@ -131,7 +149,9 @@ export default function Dashboard() {
   // ABRIR MODAL DE NOTIFICAÇÃO
   // ============================================================
 
-  function openNotificationModal(notification: Notification) {
+  function openNotificationModal(
+    notification: Notification
+  ) {
     setActiveNotification(notification);
     setShowNotificationModal(true);
   }
@@ -146,7 +166,8 @@ export default function Dashboard() {
       return;
     }
 
-    const notification = activeNotification;
+    const notification =
+      activeNotification;
 
     setShowNotificationModal(false);
     setActiveNotification(null);
@@ -155,13 +176,21 @@ export default function Dashboard() {
       return;
     }
 
-    const { error } = await supabase
+    const {
+      error,
+    } = await supabase
       .from("notifications")
       .update({
         read: true,
       })
-      .eq("id", notification.id)
-      .eq("user_id", notification.user_id);
+      .eq(
+        "id",
+        notification.id
+      )
+      .eq(
+        "user_id",
+        notification.user_id
+      );
 
     if (error) {
       console.error(
@@ -175,15 +204,18 @@ export default function Dashboard() {
       return;
     }
 
-    setNotifications((current) =>
-      current.map((item) =>
-        item.id === notification.id
-          ? {
-              ...item,
-              read: true,
-            }
-          : item
-      )
+    setNotifications(
+      (current) =>
+        current.map(
+          (item) =>
+            item.id ===
+            notification.id
+              ? {
+                  ...item,
+                  read: true,
+                }
+              : item
+        )
     );
   }
 
@@ -211,20 +243,38 @@ export default function Dashboard() {
     let cancelled = false;
 
     async function setupNotifications() {
-      console.log("==========================================");
-      console.log("🔔 INICIANDO SISTEMA DE NOTIFICAÇÕES");
-      console.log("==========================================");
+      console.log(
+        "=========================================="
+      );
+
+      console.log(
+        "🔔 INICIANDO SISTEMA DE NOTIFICAÇÕES"
+      );
+
+      console.log(
+        "=========================================="
+      );
 
       const {
         data: { user },
         error: userError,
       } = await supabase.auth.getUser();
 
-      console.log("👤 USER ID:", user?.id || null);
-      console.log("📧 USER EMAIL:", user?.email || null);
+      console.log(
+        "👤 USER ID:",
+        user?.id || null
+      );
+
+      console.log(
+        "📧 USER EMAIL:",
+        user?.email || null
+      );
 
       if (userError) {
-        console.error("❌ USER ERROR:", userError.message);
+        console.error(
+          "❌ USER ERROR:",
+          userError.message
+        );
       }
 
       if (!user) {
@@ -243,17 +293,28 @@ export default function Dashboard() {
       // CARREGAR NOTIFICAÇÕES EXISTENTES
       // ========================================================
 
-      console.log("📥 CARREGANDO NOTIFICAÇÕES...");
+      console.log(
+        "📥 CARREGANDO NOTIFICAÇÕES..."
+      );
 
-      const { data, error } = await supabase
+      const {
+        data,
+        error,
+      } = await supabase
         .from("notifications")
         .select(
           "id, user_id, type, title, message, read, created_at"
         )
-        .eq("user_id", user.id)
-        .order("created_at", {
-          ascending: false,
-        })
+        .eq(
+          "user_id",
+          user.id
+        )
+        .order(
+          "created_at",
+          {
+            ascending: false,
+          }
+        )
         .limit(10);
 
       if (error) {
@@ -261,19 +322,38 @@ export default function Dashboard() {
           "❌ ERRO AO CARREGAR NOTIFICAÇÕES"
         );
 
-        console.error("MESSAGE:", error.message);
-        console.error("DETAILS:", error.details);
-        console.error("HINT:", error.hint);
-        console.error("CODE:", error.code);
+        console.error(
+          "MESSAGE:",
+          error.message
+        );
+
+        console.error(
+          "DETAILS:",
+          error.details
+        );
+
+        console.error(
+          "HINT:",
+          error.hint
+        );
+
+        console.error(
+          "CODE:",
+          error.code
+        );
 
         console.error(
           "ERROR COMPLETO:",
           JSON.stringify(
             {
-              message: error.message,
-              details: error.details,
-              hint: error.hint,
-              code: error.code,
+              message:
+                error.message,
+              details:
+                error.details,
+              hint:
+                error.hint,
+              code:
+                error.code,
             },
             null,
             2
@@ -288,42 +368,62 @@ export default function Dashboard() {
         data?.length || 0
       );
 
-      console.log("📋 NOTIFICAÇÕES:", data);
+      console.log(
+        "📋 NOTIFICAÇÕES:",
+        data
+      );
 
       if (cancelled) {
         return;
       }
 
-      const loadedNotifications = data || [];
+      const loadedNotifications =
+        data || [];
 
-      setNotifications(loadedNotifications);
+      setNotifications(
+        loadedNotifications
+      );
 
       // ========================================================
       // ABRIR MODAL SE EXISTIR NOTIFICAÇÃO NÃO LIDA
       // ========================================================
 
-      const firstUnread = loadedNotifications.find(
-        (notification) => !notification.read
-      );
+      const firstUnread =
+        loadedNotifications.find(
+          (notification) =>
+            !notification.read
+        );
 
-      if (firstUnread && !cancelled) {
+      if (
+        firstUnread &&
+        !cancelled
+      ) {
         console.log(
           "📢 EXISTE NOTIFICAÇÃO NÃO LIDA. ABRINDO MODAL:",
           firstUnread
         );
 
-        setActiveNotification(firstUnread);
-        setShowNotificationModal(true);
+        setActiveNotification(
+          firstUnread
+        );
+
+        setShowNotificationModal(
+          true
+        );
       }
 
       // ========================================================
       // REALTIME
       // ========================================================
 
-      console.log("📡 CONFIGURANDO REALTIME...");
+      console.log(
+        "📡 CONFIGURANDO REALTIME..."
+      );
 
       channel = supabase
-        .channel(`notifications-${user.id}`)
+        .channel(
+          `notifications-${user.id}`
+        )
         .on(
           "postgres_changes",
           {
@@ -341,7 +441,10 @@ export default function Dashboard() {
               "🆕 NOVA NOTIFICAÇÃO RECEBIDA VIA REALTIME"
             );
 
-            console.log("PAYLOAD:", payload);
+            console.log(
+              "PAYLOAD:",
+              payload
+            );
 
             console.log(
               "=========================================="
@@ -350,33 +453,46 @@ export default function Dashboard() {
             const newNotification =
               payload.new as Notification;
 
-            setNotifications((current) => {
-              const alreadyExists = current.some(
-                (notification) =>
-                  notification.id === newNotification.id
-              );
+            setNotifications(
+              (current) => {
+                const alreadyExists =
+                  current.some(
+                    (notification) =>
+                      notification.id ===
+                      newNotification.id
+                  );
 
-              if (alreadyExists) {
-                console.log(
-                  "⚠️ NOTIFICAÇÃO JÁ EXISTE NA LISTA"
-                );
+                if (
+                  alreadyExists
+                ) {
+                  console.log(
+                    "⚠️ NOTIFICAÇÃO JÁ EXISTE NA LISTA"
+                  );
 
-                return current;
+                  return current;
+                }
+
+                return [
+                  newNotification,
+                  ...current,
+                ];
               }
+            );
 
-              return [
-                newNotification,
-                ...current,
-              ];
-            });
-
-            if (!newNotification.read) {
+            if (
+              !newNotification.read
+            ) {
               console.log(
                 "📢 ABRINDO MODAL PARA NOVA NOTIFICAÇÃO"
               );
 
-              setActiveNotification(newNotification);
-              setShowNotificationModal(true);
+              setActiveNotification(
+                newNotification
+              );
+
+              setShowNotificationModal(
+                true
+              );
             }
           }
         )
@@ -397,19 +513,26 @@ export default function Dashboard() {
             const updatedNotification =
               payload.new as Notification;
 
-            setNotifications((current) =>
-              current.map((notification) =>
-                notification.id === updatedNotification.id
-                  ? updatedNotification
-                  : notification
-              )
+            setNotifications(
+              (current) =>
+                current.map(
+                  (
+                    notification
+                  ) =>
+                    notification.id ===
+                    updatedNotification.id
+                      ? updatedNotification
+                      : notification
+                )
             );
 
-            setActiveNotification((current) =>
-              current &&
-              current.id === updatedNotification.id
-                ? updatedNotification
-                : current
+            setActiveNotification(
+              (current) =>
+                current &&
+                current.id ===
+                  updatedNotification.id
+                  ? updatedNotification
+                  : current
             );
           }
         )
@@ -430,18 +553,24 @@ export default function Dashboard() {
             const deletedNotification =
               payload.old as Notification;
 
-            setNotifications((current) =>
-              current.filter(
-                (notification) =>
-                  notification.id !== deletedNotification.id
-              )
+            setNotifications(
+              (current) =>
+                current.filter(
+                  (
+                    notification
+                  ) =>
+                    notification.id !==
+                    deletedNotification.id
+                )
             );
 
-            setActiveNotification((current) =>
-              current &&
-              current.id === deletedNotification.id
-                ? null
-                : current
+            setActiveNotification(
+              (current) =>
+                current &&
+                current.id ===
+                  deletedNotification.id
+                  ? null
+                  : current
             );
           }
         )
@@ -451,25 +580,37 @@ export default function Dashboard() {
             status
           );
 
-          if (status === "SUBSCRIBED") {
+          if (
+            status ===
+            "SUBSCRIBED"
+          ) {
             console.log(
               "✅ REALTIME DE NOTIFICAÇÕES CONECTADO!"
             );
           }
 
-          if (status === "CHANNEL_ERROR") {
+          if (
+            status ===
+            "CHANNEL_ERROR"
+          ) {
             console.error(
               "❌ ERRO NO CANAL REALTIME DE NOTIFICAÇÕES"
             );
           }
 
-          if (status === "TIMED_OUT") {
+          if (
+            status ===
+            "TIMED_OUT"
+          ) {
             console.error(
               "⏱️ REALTIME DE NOTIFICAÇÕES EXPIROU"
             );
           }
 
-          if (status === "CLOSED") {
+          if (
+            status ===
+            "CLOSED"
+          ) {
             console.warn(
               "⚠️ CANAL REALTIME FOI FECHADO"
             );
@@ -491,7 +632,9 @@ export default function Dashboard() {
           "🧹 REMOVENDO CANAL REALTIME DE NOTIFICAÇÕES"
         );
 
-        supabase.removeChannel(channel);
+        supabase.removeChannel(
+          channel
+        );
 
         channel = null;
       }
@@ -502,9 +645,11 @@ export default function Dashboard() {
   // NOTIFICAÇÕES NÃO LIDAS
   // ============================================================
 
-  const unreadCount = notifications.filter(
-    (notification) => !notification.read
-  ).length;
+  const unreadCount =
+    notifications.filter(
+      (notification) =>
+        !notification.read
+    ).length;
 
   // ============================================================
   // MARCAR COMO LIDA
@@ -514,7 +659,10 @@ export default function Dashboard() {
     notification: Notification
   ) {
     if (notification.read) {
-      openNotificationModal(notification);
+      openNotificationModal(
+        notification
+      );
+
       return;
     }
 
@@ -523,13 +671,21 @@ export default function Dashboard() {
       notification.id
     );
 
-    const { error } = await supabase
+    const {
+      error,
+    } = await supabase
       .from("notifications")
       .update({
         read: true,
       })
-      .eq("id", notification.id)
-      .eq("user_id", notification.user_id);
+      .eq(
+        "id",
+        notification.id
+      )
+      .eq(
+        "user_id",
+        notification.user_id
+      );
 
     if (error) {
       console.error(
@@ -543,15 +699,18 @@ export default function Dashboard() {
       return;
     }
 
-    setNotifications((current) =>
-      current.map((item) =>
-        item.id === notification.id
-          ? {
-              ...item,
-              read: true,
-            }
-          : item
-      )
+    setNotifications(
+      (current) =>
+        current.map(
+          (item) =>
+            item.id ===
+            notification.id
+              ? {
+                  ...item,
+                  read: true,
+                }
+              : item
+        )
     );
 
     openNotificationModal({
@@ -567,16 +726,22 @@ export default function Dashboard() {
   async function markAllAsRead() {
     const unreadNotifications =
       notifications.filter(
-        (notification) => !notification.read
+        (notification) =>
+          !notification.read
       );
 
-    if (unreadNotifications.length === 0) {
+    if (
+      unreadNotifications.length ===
+      0
+    ) {
       return;
     }
 
-    const ids = unreadNotifications.map(
-      (notification) => notification.id
-    );
+    const ids =
+      unreadNotifications.map(
+        (notification) =>
+          notification.id
+      );
 
     const {
       data: { user },
@@ -591,13 +756,21 @@ export default function Dashboard() {
       ids
     );
 
-    const { error } = await supabase
+    const {
+      error,
+    } = await supabase
       .from("notifications")
       .update({
         read: true,
       })
-      .in("id", ids)
-      .eq("user_id", user.id);
+      .in(
+        "id",
+        ids
+      )
+      .eq(
+        "user_id",
+        user.id
+      );
 
     if (error) {
       console.error(
@@ -611,11 +784,14 @@ export default function Dashboard() {
       return;
     }
 
-    setNotifications((current) =>
-      current.map((notification) => ({
-        ...notification,
-        read: true,
-      }))
+    setNotifications(
+      (current) =>
+        current.map(
+          (notification) => ({
+            ...notification,
+            read: true,
+          })
+        )
     );
   }
 
@@ -623,16 +799,22 @@ export default function Dashboard() {
   // DATA DA NOTIFICAÇÃO
   // ============================================================
 
-  function formatNotificationDate(value: string) {
-    const date = new Date(value);
+  function formatNotificationDate(
+    value: string
+  ) {
+    const date =
+      new Date(value);
 
-    return date.toLocaleString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return date.toLocaleString(
+      "pt-BR",
+      {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
   }
 
   // ============================================================
@@ -646,7 +828,9 @@ export default function Dashboard() {
       );
 
       const {
-        data: { session },
+        data: {
+          session,
+        },
         error,
       } = await supabase.auth.getSession();
 
@@ -675,18 +859,21 @@ export default function Dashboard() {
         return;
       }
 
-      console.log("✅ SESSÃO ENCONTRADA");
-
-      const response = await fetch(
-        "/api/google/auth",
-        {
-          method: "GET",
-          headers: {
-            Authorization:
-              `Bearer ${session.access_token}`,
-          },
-        }
+      console.log(
+        "✅ SESSÃO ENCONTRADA"
       );
+
+      const response =
+        await fetch(
+          "/api/google/auth",
+          {
+            method: "GET",
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+          }
+        );
 
       if (!response.ok) {
         const data =
@@ -707,20 +894,16 @@ export default function Dashboard() {
         return;
       }
 
-      /*
-       * A API retorna um redirect para o Google.
-       * Como fetch não navega automaticamente para
-       * outra página, pegamos o endereço e navegamos.
-       */
-
-      const googleUrl = response.url;
+      const googleUrl =
+        response.url;
 
       console.log(
         "🔵 REDIRECIONANDO PARA GOOGLE:",
         googleUrl
       );
 
-      window.location.href = googleUrl;
+      window.location.href =
+        googleUrl;
     } catch (error) {
       console.error(
         "❌ ERRO AO CONECTAR GOOGLE CALENDAR:",
@@ -728,7 +911,7 @@ export default function Dashboard() {
       );
 
       alert(
-        "Ocorreu um erro ao conectar o Google Calendar."
+        "Ocorreu um erro ao conectar ao Google Calendar."
       );
     }
   }
@@ -738,7 +921,9 @@ export default function Dashboard() {
   // ============================================================
 
   async function handleLogout() {
-    console.log("🚪 FAZENDO LOGOUT");
+    console.log(
+      "🚪 FAZENDO LOGOUT"
+    );
 
     setShowMenu(false);
 
@@ -755,11 +940,13 @@ export default function Dashboard() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb]">
         <div className="text-center">
+
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c]" />
 
           <p className="mt-4 text-sm text-gray-500">
             Carregando...
           </p>
+
         </div>
       </main>
     );
@@ -772,16 +959,21 @@ export default function Dashboard() {
   if (!profile) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] px-6">
+
         <div className="rounded-3xl bg-white p-8 text-center shadow-xl">
+
           <p className="text-gray-600">
             Não foi possível carregar seu perfil.
           </p>
+
         </div>
+
       </main>
     );
   }
 
-  const isAdmin = profile.role === "admin";
+  const isAdmin =
+    profile.role === "admin";
 
   // ============================================================
   // RENDER
@@ -855,7 +1047,9 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() =>
-                  navigateTo("/dashboard")
+                  navigateTo(
+                    "/dashboard"
+                  )
                 }
                 className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
               >
@@ -869,7 +1063,9 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() =>
-                    navigateTo("/guias")
+                    navigateTo(
+                      "/guias"
+                    )
                   }
                   className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
                 >
@@ -881,7 +1077,9 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() =>
-                    navigateTo("/admin/ranking")
+                    navigateTo(
+                      "/admin/ranking"
+                    )
                   }
                   className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-yellow-50 hover:text-yellow-600"
                 >
@@ -893,7 +1091,9 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() =>
-                    navigateTo("/admin/logins")
+                    navigateTo(
+                      "/admin/logins"
+                    )
                   }
                   className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
                 >
@@ -901,20 +1101,12 @@ export default function Dashboard() {
                 </button>
               )}
 
-              {isAdmin && (
-                <button
-                  type="button"
-                  onClick={connectGoogleCalendar}
-                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-50 hover:text-green-600"
-                >
-                  📅 Conectar Google
-                </button>
-              )}
-
               <button
                 type="button"
                 onClick={() =>
-                  navigateTo("/perfil")
+                  navigateTo(
+                    "/perfil"
+                  )
                 }
                 className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-pink-50 hover:text-[#e91e8c]"
               >
@@ -952,7 +1144,8 @@ export default function Dashboard() {
                   type="button"
                   onClick={() =>
                     setShowNotifications(
-                      (current) => !current
+                      (current) =>
+                        !current
                     )
                   }
                   className="relative flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-xl text-gray-600 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
@@ -963,7 +1156,8 @@ export default function Dashboard() {
 
                   {unreadCount > 0 && (
                     <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#e91e8c] px-1 text-[10px] font-extrabold text-white shadow-sm ring-2 ring-white">
-                      {unreadCount > 99
+                      {unreadCount >
+                      99
                         ? "99+"
                         : unreadCount}
                     </span>
@@ -987,9 +1181,11 @@ export default function Dashboard() {
                         </h3>
 
                         <p className="text-[11px] text-gray-500">
-                          {unreadCount > 0
+                          {unreadCount >
+                          0
                             ? `${unreadCount} não lida${
-                                unreadCount !== 1
+                                unreadCount !==
+                                1
                                   ? "s"
                                   : ""
                               }`
@@ -998,10 +1194,13 @@ export default function Dashboard() {
 
                       </div>
 
-                      {unreadCount > 0 && (
+                      {unreadCount >
+                        0 && (
                         <button
                           type="button"
-                          onClick={markAllAsRead}
+                          onClick={
+                            markAllAsRead
+                          }
                           className="text-[11px] font-bold text-[#1687d9] hover:underline"
                         >
                           Marcar todas como lidas
@@ -1012,7 +1211,8 @@ export default function Dashboard() {
 
                     <div className="max-h-[420px] overflow-y-auto">
 
-                      {notifications.length === 0 ? (
+                      {notifications.length ===
+                      0 ? (
                         <div className="px-5 py-10 text-center">
 
                           <div className="text-3xl">
@@ -1030,9 +1230,13 @@ export default function Dashboard() {
                         </div>
                       ) : (
                         notifications.map(
-                          (notification) => (
+                          (
+                            notification
+                          ) => (
                             <button
-                              key={notification.id}
+                              key={
+                                notification.id
+                              }
                               type="button"
                               onClick={() =>
                                 markNotificationAsRead(
@@ -1044,7 +1248,9 @@ export default function Dashboard() {
                                 notification.read
                                   ? "bg-white hover:bg-gray-50"
                                   : "bg-blue-50/60 hover:bg-blue-50",
-                              ].join(" ")}
+                              ].join(
+                                " "
+                              )}
                             >
 
                               <div
@@ -1057,7 +1263,9 @@ export default function Dashboard() {
                                       "guide_unescalated"
                                     ? "bg-red-100"
                                     : "bg-blue-100",
-                                ].join(" ")}
+                                ].join(
+                                  " "
+                                )}
                               >
                                 {notification.type ===
                                 "guide_escalated"
@@ -1078,9 +1286,13 @@ export default function Dashboard() {
                                       notification.read
                                         ? "font-bold text-gray-800"
                                         : "font-extrabold text-gray-900",
-                                    ].join(" ")}
+                                    ].join(
+                                      " "
+                                    )}
                                   >
-                                    {notification.title}
+                                    {
+                                      notification.title
+                                    }
                                   </p>
 
                                   {!notification.read && (
@@ -1090,7 +1302,9 @@ export default function Dashboard() {
                                 </div>
 
                                 <p className="mt-1 text-xs leading-relaxed text-gray-600">
-                                  {notification.message}
+                                  {
+                                    notification.message
+                                  }
                                 </p>
 
                                 <p className="mt-2 text-[10px] font-medium text-gray-400">
@@ -1141,18 +1355,23 @@ export default function Dashboard() {
                 type="button"
                 onClick={() =>
                   setShowMenu(
-                    (current) => !current
+                    (current) =>
+                      !current
                   )
                 }
                 className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-xl text-gray-700 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
                 aria-label="Abrir menu"
-                aria-expanded={showMenu}
+                aria-expanded={
+                  showMenu
+                }
               >
-                {showMenu ? "✕" : "☰"}
+                {showMenu
+                  ? "✕"
+                  : "☰"}
               </button>
 
               {showMenu && (
-                <div className="absolute right-0 top-12 z-[300] w-[270px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+                <div className="absolute right-0 top-12 z-[300] w-[290px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
 
                   {/* CABEÇALHO DO MENU */}
 
@@ -1174,12 +1393,12 @@ export default function Dashboard() {
 
                   <div className="p-2">
 
-                    {/* AGENDA */}
-
                     <button
                       type="button"
                       onClick={() =>
-                        navigateTo("/dashboard")
+                        navigateTo(
+                          "/dashboard"
+                        )
                       }
                       className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
                     >
@@ -1194,13 +1413,13 @@ export default function Dashboard() {
                       </span>
                     </button>
 
-                    {/* GERENCIAR GUIAS */}
-
                     {isAdmin && (
                       <button
                         type="button"
                         onClick={() =>
-                          navigateTo("/guias")
+                          navigateTo(
+                            "/guias"
+                          )
                         }
                         className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
                       >
@@ -1214,13 +1433,13 @@ export default function Dashboard() {
                       </button>
                     )}
 
-                    {/* RANKING */}
-
                     {isAdmin && (
                       <button
                         type="button"
                         onClick={() =>
-                          navigateTo("/admin/ranking")
+                          navigateTo(
+                            "/admin/ranking"
+                          )
                         }
                         className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-yellow-50 hover:text-yellow-600"
                       >
@@ -1234,13 +1453,13 @@ export default function Dashboard() {
                       </button>
                     )}
 
-                    {/* LOGINS */}
-
                     {isAdmin && (
                       <button
                         type="button"
                         onClick={() =>
-                          navigateTo("/admin/logins")
+                          navigateTo(
+                            "/admin/logins"
+                          )
                         }
                         className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
                       >
@@ -1254,30 +1473,31 @@ export default function Dashboard() {
                       </button>
                     )}
 
-                    {/* GOOGLE CALENDAR */}
+                    {/* GOOGLE CALENDAR NO MENU MOBILE */}
 
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={connectGoogleCalendar}
-                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-green-50 hover:text-green-600"
-                      >
-                        <span className="text-lg">
-                          📅
-                        </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMenu(false);
+                        connectGoogleCalendar();
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-green-50 hover:text-green-600"
+                    >
+                      <span className="text-lg">
+                        📅
+                      </span>
 
-                        <span>
-                          Conectar Google
-                        </span>
-                      </button>
-                    )}
-
-                    {/* PERFIL */}
+                      <span>
+                        Conectar Google Calendar
+                      </span>
+                    </button>
 
                     <button
                       type="button"
                       onClick={() =>
-                        navigateTo("/perfil")
+                        navigateTo(
+                          "/perfil"
+                        )
                       }
                       className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-pink-50 hover:text-[#e91e8c]"
                     >
@@ -1302,7 +1522,9 @@ export default function Dashboard() {
 
                     <button
                       type="button"
-                      onClick={handleLogout}
+                      onClick={
+                        handleLogout
+                      }
                       className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold text-red-600 transition hover:bg-red-50"
                     >
                       <span className="text-lg">
@@ -1326,7 +1548,9 @@ export default function Dashboard() {
             {/* ================================================= */}
 
             <button
-              onClick={handleLogout}
+              onClick={
+                handleLogout
+              }
               className="hidden rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 sm:px-4 lg:block"
             >
               Sair
@@ -1357,6 +1581,57 @@ export default function Dashboard() {
       <section className="relative z-10 mx-auto max-w-7xl px-5 py-7 sm:px-6 sm:py-9">
 
         {/* ==================================================== */}
+        {/* GOOGLE CALENDAR */}
+        {/* ==================================================== */}
+
+        <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
+
+          <div className="flex h-1">
+
+            <div className="flex-1 bg-[#4285F4]" />
+            <div className="flex-1 bg-[#34A853]" />
+            <div className="flex-1 bg-[#FBBC05]" />
+            <div className="flex-1 bg-[#EA4335]" />
+
+          </div>
+
+          <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+
+            <div className="flex items-center gap-4">
+
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-2xl">
+                📅
+              </div>
+
+              <div>
+
+                <h2 className="text-base font-extrabold text-gray-900 sm:text-lg">
+                  Google Calendar
+                </h2>
+
+                <p className="mt-1 text-xs leading-relaxed text-gray-500 sm:text-sm">
+                  Conecte sua conta para sincronizar sua agenda.
+                </p>
+
+              </div>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={
+                connectGoogleCalendar
+              }
+              className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] sm:w-auto"
+            >
+              📅 Conectar Google
+            </button>
+
+          </div>
+
+        </div>
+
+        {/* ==================================================== */}
         {/* ADMIN */}
         {/* ==================================================== */}
 
@@ -1378,6 +1653,7 @@ export default function Dashboard() {
             </div>
 
           </div>
+
         ) : (
 
           /* ================================================== */
@@ -1401,6 +1677,7 @@ export default function Dashboard() {
             </div>
 
           </div>
+
         )}
 
         {/* ==================================================== */}
@@ -1474,7 +1751,9 @@ export default function Dashboard() {
 
                 <button
                   type="button"
-                  onClick={closeNotificationModal}
+                  onClick={
+                    closeNotificationModal
+                  }
                   className="mt-7 w-full rounded-2xl bg-[#1687d9] px-5 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-200 transition hover:bg-[#0f75bd] hover:shadow-xl active:scale-[0.99]"
                 >
                   Fechar

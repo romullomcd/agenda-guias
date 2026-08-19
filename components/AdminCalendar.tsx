@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -33,63 +32,59 @@ type Availability = {
   status: "available" | "unavailable" | "escalated";
 };
 
+/* ============================================================
+   BANDEIRAS
+   ============================================================ */
+
 const LANGUAGE_FLAGS: Record<string, string> = {
-  Português: "🇧🇷",
-  Inglês: "🇺🇸",
-  Espanhol: "🇪🇸",
-  Francês: "🇫🇷",
-  Italiano: "🇮🇹",
-  Alemão: "🇩🇪",
-  Mandarim: "🇨🇳",
-  Japonês: "🇯🇵",
+  Português: "/flags/br.png",
+  Inglês: "/flags/us.png",
+  Espanhol: "/flags/es.png",
+  Francês: "/flags/fr.png",
+  Italiano: "/flags/it.png",
+  Alemão: "/flags/de.png",
+  Mandarim: "/flags/cn.png",
+  Japonês: "/flags/jp.png",
 };
 
 export default function AdminCalendar() {
-  const [currentMonth, setCurrentMonth] = useState(
-    new Date()
-  );
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const [guides, setGuides] = useState<Guide[]>([]);
-  const [availability, setAvailability] = useState<
-    Availability[]
-  >([]);
+  const [availability, setAvailability] = useState<Availability[]>([]);
 
   const [guideSearch, setGuideSearch] = useState("");
 
-  const [selectedDate, setSelectedDate] = useState<
-    string | null
-  >(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const [selectedGuideDetails, setSelectedGuideDetails] =
     useState<Guide | null>(null);
 
-  const [
-    selectedGuideAvailability,
-    setSelectedGuideAvailability,
-  ] = useState<Availability | null>(null);
+  const [selectedGuideAvailability, setSelectedGuideAvailability] =
+    useState<Availability | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
-  // ============================================================
-  // CARREGAMENTO INICIAL / TROCA DE MÊS
-  // ============================================================
+  /* ============================================================
+     CARREGAMENTO INICIAL / TROCA DE MÊS
+     ============================================================ */
 
   useEffect(() => {
     loadData();
   }, [currentMonth]);
 
-  // ============================================================
-  // REALTIME
-  // ============================================================
+  /* ============================================================
+     REALTIME
+     ============================================================ */
 
   useEffect(() => {
     const channel = supabase
       .channel("admin-availability-realtime")
 
-      // ========================================================
-      // NOVO REGISTRO
-      // ========================================================
+      /* ========================================================
+         NOVO REGISTRO
+         ======================================================== */
 
       .on(
         "postgres_changes",
@@ -99,8 +94,7 @@ export default function AdminCalendar() {
           table: "availability",
         },
         (payload) => {
-          const newItem =
-            payload.new as Availability;
+          const newItem = payload.new as Availability;
 
           setAvailability((current) => {
             const alreadyExists = current.some(
@@ -135,9 +129,9 @@ export default function AdminCalendar() {
         }
       )
 
-      // ========================================================
-      // REGISTRO ATUALIZADO
-      // ========================================================
+      /* ========================================================
+         REGISTRO ATUALIZADO
+         ======================================================== */
 
       .on(
         "postgres_changes",
@@ -147,8 +141,7 @@ export default function AdminCalendar() {
           table: "availability",
         },
         (payload) => {
-          const updatedItem =
-            payload.new as Availability;
+          const updatedItem = payload.new as Availability;
 
           setAvailability((current) =>
             current.map((item) =>
@@ -158,8 +151,6 @@ export default function AdminCalendar() {
             )
           );
 
-          // Se o guia que está aberto no modal foi alterado,
-          // atualiza também o status mostrado no modal.
           setSelectedGuideAvailability((current) => {
             if (
               current &&
@@ -173,9 +164,9 @@ export default function AdminCalendar() {
         }
       )
 
-      // ========================================================
-      // REGISTRO REMOVIDO
-      // ========================================================
+      /* ========================================================
+         REGISTRO REMOVIDO
+         ======================================================== */
 
       .on(
         "postgres_changes",
@@ -185,13 +176,11 @@ export default function AdminCalendar() {
           table: "availability",
         },
         (payload) => {
-          const deletedItem =
-            payload.old as Availability;
+          const deletedItem = payload.old as Availability;
 
           setAvailability((current) =>
             current.filter(
-              (item) =>
-                item.id !== deletedItem.id
+              (item) => item.id !== deletedItem.id
             )
           );
 
@@ -215,9 +204,9 @@ export default function AdminCalendar() {
     };
   }, [currentMonth]);
 
-  // ============================================================
-  // CARREGAR DADOS
-  // ============================================================
+  /* ============================================================
+     CARREGAR DADOS
+     ============================================================ */
 
   async function loadData() {
     setLoading(true);
@@ -252,9 +241,9 @@ export default function AdminCalendar() {
           .order("date"),
       ]);
 
-    // ============================================================
-    // GUIAS
-    // ============================================================
+    /* ============================================================
+       GUIAS
+       ============================================================ */
 
     if (guidesResult.error) {
       console.error(
@@ -266,77 +255,67 @@ export default function AdminCalendar() {
         data: { session },
       } = await supabase.auth.getSession();
 
-      const guidesWithDetails =
-        await Promise.all(
-          (guidesResult.data || []).map(
-            async (guide) => {
-              if (!session) {
-                return {
-                  ...guide,
-                  languages:
-                    guide.languages || [],
-                  phone:
-                    guide.phone || "",
-                  email: "",
-                  pix_key: "",
-                };
-              }
-
-              try {
-                const response =
-                  await fetch(
-                    `/api/guides/${guide.id}`,
-                    {
-                      method: "GET",
-                      headers: {
-                        Authorization: `Bearer ${session.access_token}`,
-                      },
-                    }
-                  );
-
-                const result =
-                  await response.json();
-
-                return {
-                  ...guide,
-                  languages:
-                    guide.languages || [],
-                  phone:
-                    guide.phone || "",
-                  email:
-                    result.email || "",
-                  pix_key:
-                    result.pix_key ||
-                    result.pix ||
-                    result.pixKey ||
-                    "",
-                };
-              } catch (error) {
-                console.error(
-                  `Erro ao buscar detalhes do guia ${guide.id}:`,
-                  error
-                );
-
-                return {
-                  ...guide,
-                  languages:
-                    guide.languages || [],
-                  phone:
-                    guide.phone || "",
-                  email: "",
-                  pix_key: "",
-                };
-              }
+      const guidesWithDetails = await Promise.all(
+        (guidesResult.data || []).map(
+          async (guide) => {
+            if (!session) {
+              return {
+                ...guide,
+                languages: guide.languages || [],
+                phone: guide.phone || "",
+                email: "",
+                pix_key: "",
+              };
             }
-          )
-        );
+
+            try {
+              const response = await fetch(
+                `/api/guides/${guide.id}`,
+                {
+                  method: "GET",
+                  headers: {
+                    Authorization: `Bearer ${session.access_token}`,
+                  },
+                }
+              );
+
+              const result = await response.json();
+
+              return {
+                ...guide,
+                languages: guide.languages || [],
+                phone: guide.phone || "",
+                email: result.email || "",
+                pix_key:
+                  result.pix_key ||
+                  result.pix ||
+                  result.pixKey ||
+                  "",
+              };
+            } catch (error) {
+              console.error(
+                `Erro ao buscar detalhes do guia ${guide.id}:`,
+                error
+              );
+
+              return {
+                ...guide,
+                languages: guide.languages || [],
+                phone: guide.phone || "",
+                email: "",
+                pix_key: "",
+              };
+            }
+          }
+        )
+      );
 
       setGuides(guidesWithDetails);
     }
 
-    // ============================================================
-    // DISPONIBILIDADE
-    // ============================================================
+    /* ============================================================
+       DISPONIBILIDADE
+       ============================================================ */
 
     if (availabilityResult.error) {
       console.error(
@@ -352,9 +331,9 @@ export default function AdminCalendar() {
     setLoading(false);
   }
 
-  // ============================================================
-  // GUIAS FILTRADOS PELO NOME
-  // ============================================================
+  /* ============================================================
+     GUIAS FILTRADOS PELO NOME
+     ============================================================ */
 
   const normalizedSearch =
     guideSearch.trim().toLowerCase();
@@ -371,9 +350,9 @@ export default function AdminCalendar() {
     );
   }, [guides, normalizedSearch]);
 
-  // ============================================================
-  // MAPA DOS GUIAS
-  // ============================================================
+  /* ============================================================
+     MAPA DOS GUIAS
+     ============================================================ */
 
   const guideMap = useMemo(() => {
     return new Map(
@@ -384,9 +363,9 @@ export default function AdminCalendar() {
     );
   }, [guides]);
 
-  // ============================================================
-  // DISPONIBILIDADE FILTRADA
-  // ============================================================
+  /* ============================================================
+     DISPONIBILIDADE FILTRADA
+     ============================================================ */
 
   const filteredAvailability = useMemo(() => {
     if (!normalizedSearch) {
@@ -410,9 +389,9 @@ export default function AdminCalendar() {
     normalizedSearch,
   ]);
 
-  // ============================================================
-  // CALENDÁRIO
-  // ============================================================
+  /* ============================================================
+     CALENDÁRIO
+     ============================================================ */
 
   const calendarStart = startOfWeek(
     startOfMonth(currentMonth),
@@ -433,9 +412,9 @@ export default function AdminCalendar() {
     end: calendarEnd,
   });
 
-  // ============================================================
-  // DIA SELECIONADO
-  // ============================================================
+  /* ============================================================
+     DIA SELECIONADO
+     ============================================================ */
 
   const selectedDayData = selectedDate
     ? filteredAvailability.filter(
@@ -462,69 +441,71 @@ export default function AdminCalendar() {
         item.status === "escalated"
     );
 
-  // ============================================================
-  // DISPONIBILIDADE DO DIA
-  // ============================================================
+  /* ============================================================
+     DISPONIBILIDADE DO DIA
+     ============================================================ */
 
-  function getDayAvailability(
-    date: string
-  ) {
+  function getDayAvailability(date: string) {
     return filteredAvailability.filter(
       (item) =>
         item.date === date
     );
   }
 
-  // ============================================================
-  // NOME DO GUIA
-  // ============================================================
+  /* ============================================================
+     NOME DO GUIA
+     ============================================================ */
 
-  function getGuideName(
-    guideId: string
-  ) {
+  function getGuideName(guideId: string) {
     return (
       guideMap.get(guideId)?.name ||
       "Guia"
     );
   }
 
-  // ============================================================
-  // BANDEIRAS
-  // ============================================================
+  /* ============================================================
+     BANDEIRAS
+     ============================================================ */
 
-  function getGuideFlags(
-    guideId: string
-  ) {
-    const guide =
-      guideMap.get(guideId);
+  function getGuideFlags(guideId: string) {
+    const guide = guideMap.get(guideId);
 
     if (
       !guide?.languages ||
       guide.languages.length === 0
     ) {
-      return "";
+      return null;
     }
 
-    return guide.languages
-      .map(
-        (language) =>
-          LANGUAGE_FLAGS[
-            language
-          ] || ""
-      )
-      .filter(Boolean)
-      .join(" ");
+    return (
+      <span className="inline-flex items-center gap-0.5 align-middle">
+        {guide.languages.map((language) => {
+          const flag = LANGUAGE_FLAGS[language];
+
+          if (!flag) {
+            return null;
+          }
+
+          return (
+            <img
+              key={`${guideId}-${language}`}
+              src={flag}
+              alt={language}
+              title={language}
+              className="inline-block h-3.5 w-5 rounded-sm object-cover sm:h-4 sm:w-6"
+            />
+          );
+        })}
+      </span>
+    );
   }
 
-  // ============================================================
-  // TELEFONE
-  // ============================================================
+  /* ============================================================
+     TELEFONE
+     ============================================================ */
 
-  function formatGuidePhone(
-    value: string
-  ) {
-    const numbers =
-      value.replace(/\D/g, "");
+  function formatGuidePhone(value: string) {
+    const numbers = value.replace(/\D/g, "");
 
     if (numbers.length === 11) {
       return `(${numbers.slice(
@@ -549,9 +530,9 @@ export default function AdminCalendar() {
     return value;
   }
 
-  // ============================================================
-  // ESCALAR GUIA
-  // ============================================================
+  /* ============================================================
+     ESCALAR GUIA
+     ============================================================ */
 
   async function escalateGuide() {
     if (!selectedGuideAvailability) {
@@ -587,7 +568,6 @@ export default function AdminCalendar() {
     setSelectedGuideDetails(null);
     setSelectedGuideAvailability(null);
 
-    // Atualiza localmente sem precisar de loading.
     setAvailability((current) =>
       current.map((item) =>
         item.id ===
@@ -603,9 +583,9 @@ export default function AdminCalendar() {
     setUpdating(false);
   }
 
-  // ============================================================
-  // REMOVER ESCALA
-  // ============================================================
+  /* ============================================================
+     REMOVER ESCALA
+     ============================================================ */
 
   async function unEscalateGuide() {
     if (!selectedGuideAvailability) {
@@ -644,7 +624,6 @@ export default function AdminCalendar() {
     setSelectedGuideDetails(null);
     setSelectedGuideAvailability(null);
 
-    // Atualiza localmente sem loading.
     setAvailability((current) =>
       current.map((item) =>
         item.id === availabilityId
@@ -659,9 +638,9 @@ export default function AdminCalendar() {
     setUpdating(false);
   }
 
-  // ============================================================
-  // MÊS
-  // ============================================================
+  /* ============================================================
+     MÊS
+     ============================================================ */
 
   const monthName = format(
     currentMonth,
@@ -671,9 +650,9 @@ export default function AdminCalendar() {
     }
   );
 
-  // ============================================================
-  // RENDER
-  // ============================================================
+  /* ============================================================
+     RENDER
+     ============================================================ */
 
   return (
     <div className="mt-4 rounded-2xl bg-white p-3 shadow-sm sm:mt-6 sm:rounded-3xl sm:p-6">
@@ -734,6 +713,7 @@ export default function AdminCalendar() {
 
       {guideSearch.trim() && (
         <div className="mb-4 rounded-xl bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-800 sm:mb-6 sm:text-sm">
+
           {filteredGuides.length === 0 ? (
             <>
               Nenhum guia encontrado para "
@@ -755,6 +735,7 @@ export default function AdminCalendar() {
                 : ""}.
             </>
           )}
+
         </div>
       )}
 
@@ -1148,13 +1129,16 @@ export default function AdminCalendar() {
                           className="flex w-full items-center justify-between rounded-xl bg-[#f3e5a5] px-4 py-3 text-left text-sm font-bold text-[#806600] transition hover:bg-[#ead98c]"
                         >
 
-                          <span>
+                          <span className="flex min-w-0 items-center gap-2">
                             {getGuideFlags(
                               item.guide_id
-                            )}{" "}
-                            {getGuideName(
-                              item.guide_id
                             )}
+
+                            <span className="truncate">
+                              {getGuideName(
+                                item.guide_id
+                              )}
+                            </span>
                           </span>
 
                           <span>
@@ -1214,13 +1198,16 @@ export default function AdminCalendar() {
                           className="flex w-full items-center justify-between rounded-xl bg-green-50 px-4 py-3 text-left text-sm font-bold text-green-800 transition hover:bg-green-100"
                         >
 
-                          <span>
+                          <span className="flex min-w-0 items-center gap-2">
                             {getGuideFlags(
                               item.guide_id
-                            )}{" "}
-                            {getGuideName(
-                              item.guide_id
                             )}
+
+                            <span className="truncate">
+                              {getGuideName(
+                                item.guide_id
+                              )}
+                            </span>
                           </span>
 
                           <span className="text-green-600">
@@ -1280,13 +1267,16 @@ export default function AdminCalendar() {
                           className="flex w-full items-center justify-between rounded-xl bg-red-50 px-4 py-3 text-left text-sm font-bold text-red-800 transition hover:bg-red-100"
                         >
 
-                          <span>
+                          <span className="flex min-w-0 items-center gap-2">
                             {getGuideFlags(
                               item.guide_id
-                            )}{" "}
-                            {getGuideName(
-                              item.guide_id
                             )}
+
+                            <span className="truncate">
+                              {getGuideName(
+                                item.guide_id
+                              )}
+                            </span>
                           </span>
 
                           <span className="text-red-600">
@@ -1348,11 +1338,16 @@ export default function AdminCalendar() {
 
               <div>
 
-                <h3 className="text-xl font-extrabold text-gray-900">
+                <h3 className="flex flex-wrap items-center gap-2 text-xl font-extrabold text-gray-900">
+
                   {getGuideFlags(
                     selectedGuideDetails.id
-                  )}{" "}
-                  {selectedGuideDetails.name}
+                  )}
+
+                  <span>
+                    {selectedGuideDetails.name}
+                  </span>
+
                 </h3>
 
                 <p className="mt-1 text-sm font-medium text-gray-500">
@@ -1414,9 +1409,7 @@ export default function AdminCalendar() {
 
               </div>
 
-              {/* ================================================== */}
               {/* PIX */}
-              {/* ================================================== */}
 
               <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-100">
 
@@ -1515,4 +1508,3 @@ export default function AdminCalendar() {
     </div>
   );
 }
-
