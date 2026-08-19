@@ -1,3 +1,16 @@
+export async function GET(request: Request) {
+  try {
+    const authorization = request.headers.get("authorization");
+
+    console.log("================================");
+    console.log("GOOGLE AUTH - REQUEST");
+    console.log("AUTHORIZATION EXISTE:", !!authorization);
+    console.log(
+      "AUTHORIZATION COMEÇA COM BEARER:",
+      authorization?.startsWith("Bearer ")
+    );
+    console.log("================================");
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
