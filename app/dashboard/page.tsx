@@ -989,7 +989,19 @@ export default function Dashboard() {
                   🏆 Ranking
                 </button>
               )}
-
+{isAdmin && (
+  <button
+    type="button"
+    onClick={() =>
+      navigateTo(
+        "/admin/logins"
+      )
+    }
+    className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
+  >
+    🔐 Logins
+  </button>
+)}
               <button
                 type="button"
                 onClick={() =>
@@ -1332,6 +1344,26 @@ export default function Dashboard() {
                         }
                         className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-yellow-50 hover:text-yellow-600"
                       >
+
+{isAdmin && (
+  <button
+    type="button"
+    onClick={() =>
+      navigateTo(
+        "/admin/logins"
+      )
+    }
+    className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
+  >
+    <span className="text-lg">
+      🔐
+    </span>
+
+    <span>
+      Logins
+    </span>
+  </button>
+)}
                         <span className="text-lg">
                           🏆
                         </span>
