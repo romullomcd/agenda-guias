@@ -318,7 +318,7 @@ export default function Dashboard() {
             ascending: false,
           }
         )
-        .limit(50);
+        .limit(10);
 
       if (error) {
         console.error(

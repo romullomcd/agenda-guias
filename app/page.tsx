@@ -1,3 +1,4 @@
+
 "use client";
 
 import { FormEvent, useState } from "react";
@@ -12,49 +13,163 @@ export default function Home() {
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    // Evita duas tentativas simultâneas
+    if (loading) {
+      return;
+    }
+
     setLoading(true);
     setError("");
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      // ==========================================================
+      // LOGIN
+      // ==========================================================
 
-    if (error) {
-      setError("E-mail ou senha incorretos.");
-      setLoading(false);
-      return;
-    }
+      const {
+        data: loginData,
+        error: loginError,
+      } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    if (!data.user) {
-      setError("Não foi possível entrar.");
-      setLoading(false);
-      return;
-    }
+      if (loginError) {
+        console.error(
+          "ERRO NO LOGIN:",
+          loginError.message,
+          loginError
+        );
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("active")
-      .eq("id", data.user.id)
-      .single();
+        setError("E-mail ou senha incorretos.");
+        setLoading(false);
+        return;
+      }
 
-    if (profileError || !profile) {
-      await supabase.auth.signOut();
-      setError("Não foi possível verificar seu acesso.");
-      setLoading(false);
-      return;
-    }
+      if (!loginData.user) {
+        console.error(
+          "LOGIN SEM USUÁRIO:",
+          loginData
+        );
 
-    if (!profile.active) {
-      await supabase.auth.signOut();
-      setError(
-        "Seu acesso está desativado. Entre em contato com o administrador."
+        setError("Não foi possível entrar.");
+        setLoading(false);
+        return;
+      }
+
+      // ==========================================================
+      // CONFIRMAR QUE A SESSÃO FOI REALMENTE ESTABELECIDA
+      // ==========================================================
+
+      let session = loginData.session;
+
+      // Se por algum motivo a sessão não veio diretamente
+      // no retorno do login, tenta recuperá-la.
+      if (!session) {
+        const {
+          data: sessionData,
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error(
+            "ERRO AO RECUPERAR SESSÃO:",
+            sessionError
+          );
+
+          await supabase.auth.signOut();
+
+          setError(
+            "Não foi possível estabelecer sua sessão. Tente novamente."
+          );
+
+          setLoading(false);
+          return;
+        }
+
+        session = sessionData.session;
+      }
+
+      if (!session?.user) {
+        console.error(
+          "SESSÃO NÃO DISPONÍVEL APÓS LOGIN"
+        );
+
+        await supabase.auth.signOut();
+
+        setError(
+          "Não foi possível estabelecer sua sessão. Tente novamente."
+        );
+
+        setLoading(false);
+        return;
+      }
+
+      // ==========================================================
+      // VERIFICAR PERFIL
+      // ==========================================================
+
+      const {
+        data: profile,
+        error: profileError,
+      } = await supabase
+        .from("profiles")
+        .select("active")
+        .eq("id", session.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error(
+          "ERRO AO VERIFICAR PERFIL:",
+          profileError
+        );
+
+        await supabase.auth.signOut();
+
+        setError(
+          "Não foi possível verificar seu acesso."
+        );
+
+        setLoading(false);
+        return;
+      }
+
+      // ==========================================================
+      // VERIFICAR SE O USUÁRIO ESTÁ ATIVO
+      // ==========================================================
+
+      if (!profile.active) {
+        await supabase.auth.signOut();
+
+        setError(
+          "Seu acesso está desativado. Entre em contato com o administrador."
+        );
+
+        setLoading(false);
+        return;
+      }
+
+      // ==========================================================
+      // PEQUENA GARANTIA ANTES DO REDIRECIONAMENTO
+      // ==========================================================
+      //
+      // O Supabase já confirmou a sessão acima.
+      // Usamos replace em vez de href para evitar deixar
+      // a página de login no histórico de navegação.
+
+      window.location.replace("/dashboard");
+    } catch (error) {
+      console.error(
+        "ERRO INESPERADO NO LOGIN:",
+        error
       );
-      setLoading(false);
-      return;
-    }
 
-    window.location.href = "/dashboard";
+      setError(
+        "Ocorreu um erro ao entrar. Tente novamente."
+      );
+
+      setLoading(false);
+    }
   }
 
   return (
@@ -78,7 +193,7 @@ export default function Home() {
 
           <div className="mb-6 flex justify-center">
             <div className="flex h-28 w-72 items-center justify-center rounded-3xl bg-[#e91e8c] shadow-xl shadow-pink-200">
-              
+
               <img
                 src="/logo-branca.png"
                 alt="Way To Know Rio"
@@ -126,11 +241,14 @@ export default function Home() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) =>
+                  setEmail(e.target.value)
+                }
                 required
                 autoComplete="email"
                 placeholder="seu@email.com"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-[#e91e8c] focus:bg-white focus:ring-4 focus:ring-pink-100"
+                disabled={loading}
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-[#e91e8c] focus:bg-white focus:ring-4 focus:ring-pink-100 disabled:cursor-not-allowed disabled:opacity-60"
               />
 
             </div>
@@ -146,11 +264,14 @@ export default function Home() {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) =>
+                  setPassword(e.target.value)
+                }
                 required
                 autoComplete="current-password"
                 placeholder="Digite sua senha"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-[#e91e8c] focus:bg-white focus:ring-4 focus:ring-pink-100"
+                disabled={loading}
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-[#e91e8c] focus:bg-white focus:ring-4 focus:ring-pink-100 disabled:cursor-not-allowed disabled:opacity-60"
               />
 
             </div>
@@ -170,7 +291,9 @@ export default function Home() {
               disabled={loading}
               className="w-full rounded-xl bg-[#e91e8c] px-5 py-3.5 font-bold text-white shadow-lg shadow-pink-200 transition hover:bg-[#d81780] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "Entrando..." : "Entrar"}
+              {loading
+                ? "Entrando..."
+                : "Entrar"}
             </button>
 
           </form>
@@ -211,3 +334,4 @@ export default function Home() {
     </main>
   );
 }
+
