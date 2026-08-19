@@ -822,99 +822,108 @@ export default function Dashboard() {
   // ============================================================
 
   async function connectGoogleCalendar() {
-    try {
-      console.log(
-        "🔵 INICIANDO CONEXÃO COM GOOGLE CALENDAR"
-      );
+  try {
+    console.log(
+      "🔵 INICIANDO CONEXÃO COM GOOGLE CALENDAR"
+    );
 
-      const {
-        data: {
-          session,
-        },
-        error,
-      } = await supabase.auth.getSession();
+    const {
+      data: {
+        session,
+      },
+      error,
+    } = await supabase.auth.getSession();
 
-      if (error) {
-        console.error(
-          "❌ ERRO AO PEGAR SESSÃO:",
-          error
-        );
-
-        alert(
-          "Não foi possível verificar seu login."
-        );
-
-        return;
-      }
-
-      if (!session?.access_token) {
-        console.error(
-          "❌ TOKEN DO SUPABASE NÃO ENCONTRADO"
-        );
-
-        alert(
-          "Sua sessão expirou. Faça login novamente."
-        );
-
-        return;
-      }
-
-      console.log(
-        "✅ SESSÃO ENCONTRADA"
-      );
-
-      const response =
-        await fetch(
-          "/api/google/auth",
-          {
-            method: "GET",
-            headers: {
-              Authorization:
-                `Bearer ${session.access_token}`,
-            },
-          }
-        );
-
-      if (!response.ok) {
-        const data =
-          await response.json().catch(
-            () => null
-          );
-
-        console.error(
-          "❌ ERRO AO INICIAR GOOGLE:",
-          data
-        );
-
-        alert(
-          data?.error ||
-            "Não foi possível conectar ao Google Calendar."
-        );
-
-        return;
-      }
-
-      const googleUrl =
-        response.url;
-
-      console.log(
-        "🔵 REDIRECIONANDO PARA GOOGLE:",
-        googleUrl
-      );
-
-      window.location.href =
-        googleUrl;
-    } catch (error) {
+    if (error) {
       console.error(
-        "❌ ERRO AO CONECTAR GOOGLE CALENDAR:",
+        "❌ ERRO AO PEGAR SESSÃO:",
         error
       );
 
       alert(
-        "Ocorreu um erro ao conectar ao Google Calendar."
+        "Não foi possível verificar seu login."
       );
+
+      return;
     }
+
+    if (!session?.access_token) {
+      console.error(
+        "❌ TOKEN DO SUPABASE NÃO ENCONTRADO"
+      );
+
+      alert(
+        "Sua sessão expirou. Faça login novamente."
+      );
+
+      return;
+    }
+
+    console.log(
+      "✅ SESSÃO ENCONTRADA"
+    );
+
+    const response =
+      await fetch(
+        "/api/google/auth",
+        {
+          method: "GET",
+          headers: {
+            Authorization:
+              `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+    const data =
+      await response.json().catch(
+        () => null
+      );
+
+    if (!response.ok) {
+      console.error(
+        "❌ ERRO AO INICIAR GOOGLE:",
+        data
+      );
+
+      alert(
+        data?.error ||
+          "Não foi possível conectar ao Google Calendar."
+      );
+
+      return;
+    }
+
+    if (!data?.url) {
+      console.error(
+        "❌ URL DO GOOGLE NÃO RECEBIDA:",
+        data
+      );
+
+      alert(
+        "Não foi possível gerar a autorização do Google."
+      );
+
+      return;
+    }
+
+    console.log(
+      "🔵 REDIRECIONANDO PARA GOOGLE:"
+    );
+
+    window.location.href =
+      data.url;
+  } catch (error) {
+    console.error(
+      "❌ ERRO AO CONECTAR GOOGLE CALENDAR:",
+      error
+    );
+
+    alert(
+      "Ocorreu um erro ao conectar ao Google Calendar."
+    );
   }
+}
 
   // ============================================================
   // LOGOUT

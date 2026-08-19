@@ -1,26 +1,20 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET(request: Request) {
   try {
-    console.log("================================");
-    console.log("GOOGLE AUTH - REQUEST");
-    console.log(
-      "AUTHORIZATION EXISTE:",
-      !!request.headers.get("authorization")
-    );
-    console.log(
-      "AUTHORIZATION COMEÇA COM BEARER:",
-      request.headers
-        .get("authorization")
-        ?.startsWith("Bearer ")
-    );
-    console.log("================================");
+    console.log("==========================================");
+    console.log("🔵 INICIANDO GOOGLE OAUTH");
+    console.log("==========================================");
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
     if (!clientId || !redirectUri) {
+      console.error(
+        "❌ GOOGLE_CLIENT_ID OU GOOGLE_REDIRECT_URI NÃO CONFIGURADO"
+      );
+
       return NextResponse.json(
         {
           error:
@@ -30,10 +24,29 @@ export async function GET(request: Request) {
       );
     }
 
+    console.log("✅ GOOGLE_CLIENT_ID ENCONTRADO");
+    console.log(
+      "🔗 GOOGLE_REDIRECT_URI:",
+      redirectUri
+    );
+
+    // ============================================================
+    // AUTHORIZATION
+    // ============================================================
+
     const authorization =
       request.headers.get("authorization");
 
+    console.log(
+      "🔐 AUTHORIZATION RECEBIDO:",
+      authorization ? "SIM" : "NÃO"
+    );
+
     if (!authorization?.startsWith("Bearer ")) {
+      console.error(
+        "❌ HEADER AUTHORIZATION NÃO ENCONTRADO"
+      );
+
       return NextResponse.json(
         {
           error: "Usuário não autenticado.",
@@ -43,21 +56,21 @@ export async function GET(request: Request) {
     }
 
     const accessToken =
-      authorization.replace("Bearer ", "");
+      authorization.substring(7);
 
     console.log(
-      "✅ TOKEN RECEBIDO PELA API"
+      "🔑 ACCESS TOKEN RECEBIDO:",
+      accessToken ? "SIM" : "NÃO"
     );
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-    );
+    // ============================================================
+    // VALIDAR USUÁRIO
+    // ============================================================
 
     const {
       data: { user },
-      error,
-    } = await supabase.auth.getUser(
+      error: userError,
+    } = await supabaseAdmin.auth.getUser(
       accessToken
     );
 
@@ -66,12 +79,14 @@ export async function GET(request: Request) {
       user?.id || null
     );
 
-    if (error || !user) {
+    if (userError) {
       console.error(
         "❌ ERRO AO VALIDAR USUÁRIO:",
-        error
+        userError
       );
+    }
 
+    if (userError || !user) {
       return NextResponse.json(
         {
           error: "Usuário não autenticado.",
@@ -79,6 +94,10 @@ export async function GET(request: Request) {
         { status: 401 }
       );
     }
+
+    // ============================================================
+    // GERAR URL DO GOOGLE
+    // ============================================================
 
     const params = new URLSearchParams({
       client_id: clientId,
@@ -95,12 +114,18 @@ export async function GET(request: Request) {
       `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
     console.log(
-      "✅ REDIRECIONANDO PARA GOOGLE"
+      "✅ URL DO GOOGLE GERADA"
     );
 
-    return NextResponse.redirect(
-      googleUrl
+    console.log(
+      "🔵 REDIRECT:",
+      redirectUri
     );
+
+    return NextResponse.json({
+      success: true,
+      url: googleUrl,
+    });
   } catch (error) {
     console.error(
       "❌ ERRO AO INICIAR GOOGLE OAUTH:",
