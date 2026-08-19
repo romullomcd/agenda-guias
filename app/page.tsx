@@ -15,7 +15,7 @@ export default function Home() {
     event.preventDefault();
 
     // ==========================================================
-    // EVITAR DUAS TENTATIVAS SIMULTÂNEAS
+    // EVITAR DUPLO LOGIN
     // ==========================================================
 
     if (loading) {
@@ -26,141 +26,263 @@ export default function Home() {
     setError("");
 
     try {
-      // ==========================================================
+      // ========================================================
+      // LIMPAR E-MAIL
+      // ========================================================
+
+      const cleanEmail =
+        email.trim().toLowerCase();
+
+      console.log(
+        "=========================================="
+      );
+
+      console.log(
+        "🔐 INICIANDO LOGIN"
+      );
+
+      console.log(
+        "📧 E-MAIL:",
+        cleanEmail
+      );
+
+      console.log(
+        "=========================================="
+      );
+
+      // ========================================================
       // LOGIN
-      // ==========================================================
+      // ========================================================
 
       const {
-        data: loginData,
+        data,
         error: loginError,
-      } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
+      } =
+        await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
 
-      // ==========================================================
-      // ERRO NO LOGIN
-      // ==========================================================
+      // ========================================================
+      // ERRO DO SUPABASE
+      // ========================================================
 
       if (loginError) {
         console.error(
-          "❌ ERRO NO LOGIN:",
-          loginError.message,
+          "=========================================="
+        );
+
+        console.error(
+          "❌ ERRO REAL DO SUPABASE NO LOGIN"
+        );
+
+        console.error(
+          "MESSAGE:",
+          loginError.message
+        );
+
+        console.error(
+          "STATUS:",
+          loginError.status
+        );
+
+        console.error(
+          "NAME:",
+          loginError.name
+        );
+
+        console.error(
+          "ERROR COMPLETO:",
           loginError
         );
 
-        setError(
-          "E-mail ou senha incorretos."
-        );
-
-        setLoading(false);
-        return;
-      }
-
-      // ==========================================================
-      // GARANTIR QUE O USUÁRIO EXISTE
-      // ==========================================================
-
-      if (!loginData.user) {
         console.error(
-          "❌ LOGIN SEM USUÁRIO:",
-          loginData
+          "=========================================="
         );
 
-        setError(
-          "Não foi possível entrar."
-        );
+        // Se for realmente credencial inválida,
+        // mostramos uma mensagem amigável.
+        if (
+          loginError.message
+            .toLowerCase()
+            .includes("invalid login credentials")
+        ) {
+          setError(
+            "E-mail ou senha incorretos."
+          );
+        } else {
+          setError(
+            loginError.message ||
+              "Não foi possível realizar o login."
+          );
+        }
 
         setLoading(false);
         return;
       }
 
-      // ==========================================================
-      // OBTER SESSÃO
-      // ==========================================================
-      //
-      // IMPORTANTE:
-      //
-      // Não fazemos:
-      //
-      // let session = ...
-      // session = ...
-      //
-      // Isso estava causando o erro de TypeScript.
-      //
-      // Aqui criamos a sessão uma única vez.
+      // ========================================================
+      // VERIFICAR USUÁRIO RETORNADO PELO LOGIN
+      // ========================================================
 
-      const session =
-        loginData.session ??
-        (
-          await supabase.auth.getSession()
-        ).data.session;
+      const user = data.user;
 
-      // ==========================================================
-      // GARANTIR QUE EXISTE UMA SESSÃO
-      // ==========================================================
-
-      if (!session) {
+      if (!user) {
         console.error(
-          "❌ SESSÃO NÃO DISPONÍVEL APÓS LOGIN"
+          "❌ LOGIN REALIZADO, MAS SUPABASE NÃO RETORNOU USUÁRIO"
         );
 
-        await supabase.auth.signOut();
-
-        setError(
-          "Não foi possível estabelecer sua sessão. Tente novamente."
-        );
-
-        setLoading(false);
-        return;
-      }
-
-      // ==========================================================
-      // GARANTIR QUE EXISTE USUÁRIO NA SESSÃO
-      // ==========================================================
-
-      if (!session.user) {
         console.error(
-          "❌ SESSÃO SEM USUÁRIO"
+          "LOGIN DATA:",
+          data
         );
 
-        await supabase.auth.signOut();
-
         setError(
-          "Não foi possível identificar seu usuário. Tente novamente."
+          "Não foi possível identificar seu usuário."
         );
 
         setLoading(false);
         return;
       }
 
-      // ==========================================================
+      console.log(
+        "✅ LOGIN SUPABASE REALIZADO"
+      );
+
+      console.log(
+        "👤 USER ID:",
+        user.id
+      );
+
+      console.log(
+        "📧 USER EMAIL:",
+        user.email
+      );
+
+      console.log(
+        "🔐 SESSION RECEBIDA:",
+        !!data.session
+      );
+
+      // ========================================================
+      // VERIFICAR SESSÃO
+      // ========================================================
+      //
+      // Normalmente signInWithPassword já retorna a sessão.
+      //
+      // Não fazemos mais uma chamada obrigatória ao
+      // getSession() antes de consultar o perfil.
+      //
+      // Isso evita a corrida que pode acontecer logo após
+      // o primeiro login.
+
+      if (!data.session) {
+        console.warn(
+          "⚠️ LOGIN RETORNOU USUÁRIO, MAS NÃO RETORNOU SESSÃO"
+        );
+
+        // Damos uma pequena oportunidade para o Supabase
+        // persistir a sessão.
+
+        const {
+          data: sessionData,
+          error: sessionError,
+        } =
+          await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error(
+            "❌ ERRO AO RECUPERAR SESSÃO:",
+            sessionError
+          );
+
+          setError(
+            "Não foi possível estabelecer sua sessão. Tente novamente."
+          );
+
+          setLoading(false);
+          return;
+        }
+
+        if (!sessionData.session) {
+          console.error(
+            "❌ NENHUMA SESSÃO DISPONÍVEL APÓS LOGIN"
+          );
+
+          setError(
+            "Não foi possível estabelecer sua sessão. Tente novamente."
+          );
+
+          setLoading(false);
+          return;
+        }
+
+        console.log(
+          "✅ SESSÃO RECUPERADA"
+        );
+      }
+
+      // ========================================================
       // VERIFICAR PERFIL
-      // ==========================================================
+      // ========================================================
+
+      console.log(
+        "📋 VERIFICANDO PERFIL..."
+      );
 
       const {
         data: profile,
         error: profileError,
-      } = await supabase
-        .from("profiles")
-        .select("active")
-        .eq(
-          "id",
-          session.user.id
-        )
-        .single();
+      } =
+        await supabase
+          .from("profiles")
+          .select("active")
+          .eq(
+            "id",
+            user.id
+          )
+          .single();
 
-      // ==========================================================
-      // ERRO AO CARREGAR PERFIL
-      // ==========================================================
+      // ========================================================
+      // ERRO AO VERIFICAR PERFIL
+      // ========================================================
 
-      if (
-        profileError ||
-        !profile
-      ) {
+      if (profileError) {
         console.error(
-          "❌ ERRO AO VERIFICAR PERFIL:",
+          "=========================================="
+        );
+
+        console.error(
+          "❌ ERRO AO VERIFICAR PERFIL"
+        );
+
+        console.error(
+          "MESSAGE:",
+          profileError.message
+        );
+
+        console.error(
+          "DETAILS:",
+          profileError.details
+        );
+
+        console.error(
+          "HINT:",
+          profileError.hint
+        );
+
+        console.error(
+          "CODE:",
+          profileError.code
+        );
+
+        console.error(
+          "ERROR COMPLETO:",
           profileError
+        );
+
+        console.error(
+          "=========================================="
         );
 
         await supabase.auth.signOut();
@@ -173,14 +295,37 @@ export default function Home() {
         return;
       }
 
-      // ==========================================================
-      // VERIFICAR SE USUÁRIO ESTÁ ATIVO
-      // ==========================================================
+      // ========================================================
+      // PERFIL NÃO ENCONTRADO
+      // ========================================================
+
+      if (!profile) {
+        console.error(
+          "❌ PERFIL NÃO ENCONTRADO"
+        );
+
+        await supabase.auth.signOut();
+
+        setError(
+          "Seu perfil não foi encontrado."
+        );
+
+        setLoading(false);
+        return;
+      }
+
+      console.log(
+        "✅ PERFIL ENCONTRADO:",
+        profile
+      );
+
+      // ========================================================
+      // VERIFICAR SE ESTÁ ATIVO
+      // ========================================================
 
       if (!profile.active) {
         console.warn(
-          "⚠️ USUÁRIO DESATIVADO:",
-          session.user.id
+          "⚠️ USUÁRIO DESATIVADO"
         );
 
         await supabase.auth.signOut();
@@ -193,57 +338,68 @@ export default function Home() {
         return;
       }
 
-      // ==========================================================
-      // LOGIN REALIZADO COM SUCESSO
-      // ==========================================================
+      // ========================================================
+      // TUDO OK
+      // ========================================================
 
       console.log(
         "=========================================="
       );
 
       console.log(
-        "✅ LOGIN REALIZADO COM SUCESSO"
+        "✅ LOGIN COMPLETO COM SUCESSO"
       );
 
       console.log(
-        "👤 USER ID:",
-        session.user.id
+        "👤 USER:",
+        user.id
       );
 
       console.log(
         "📧 EMAIL:",
-        session.user.email
+        user.email
       );
 
       console.log(
-        "🔐 SESSÃO:",
-        !!session
+        "🟢 PERFIL ATIVO:",
+        profile.active
       );
 
       console.log(
-        "✅ PERFIL ATIVO"
+        "➡️ REDIRECIONANDO PARA /dashboard"
       );
 
       console.log(
         "=========================================="
       );
 
-      // ==========================================================
-      // REDIRECIONAR PARA DASHBOARD
-      // ==========================================================
+      // ========================================================
+      // REDIRECIONAR
+      // ========================================================
 
       window.location.replace(
         "/dashboard"
       );
 
     } catch (error) {
-      // ==========================================================
+      // ========================================================
       // ERRO INESPERADO
-      // ==========================================================
+      // ========================================================
 
       console.error(
-        "❌ ERRO INESPERADO NO LOGIN:",
+        "=========================================="
+      );
+
+      console.error(
+        "❌ ERRO INESPERADO NO LOGIN"
+      );
+
+      console.error(
         error
+      );
+
+      console.error(
+        "=========================================="
       );
 
       setError(
@@ -304,7 +460,7 @@ export default function Home() {
         </div>
 
         {/* ==================================================== */}
-        {/* CARD DE LOGIN */}
+        {/* CARD */}
         {/* ==================================================== */}
 
         <div className="rounded-3xl bg-white p-8 shadow-2xl shadow-gray-200/70">
@@ -381,7 +537,7 @@ export default function Home() {
             </div>
 
             {/* ================================================= */}
-            {/* MENSAGEM DE ERRO */}
+            {/* ERRO */}
             {/* ================================================= */}
 
             {error && (
@@ -391,7 +547,7 @@ export default function Home() {
             )}
 
             {/* ================================================= */}
-            {/* BOTÃO ENTRAR */}
+            {/* BOTÃO */}
             {/* ================================================= */}
 
             <button
@@ -407,7 +563,7 @@ export default function Home() {
           </form>
 
           {/* ================================================= */}
-          {/* CORES DA EMPRESA */}
+          {/* CORES */}
           {/* ================================================= */}
 
           <div className="mt-7 flex justify-center gap-2">
