@@ -144,74 +144,142 @@ export default function Dashboard() {
     }
   }
 
- {/* ==================================================== */}
-{/* GOOGLE CALENDAR - SOMENTE ADMIN */}
-{/* ==================================================== */}
+  // ============================================================
+  // GOOGLE CALENDAR
+  // SOMENTE ADMIN
+  // ============================================================
 
-{isAdmin && (
-  <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
+  async function checkGoogleConnection() {
+    try {
+      setCheckingGoogle(true);
 
-    <div className="flex h-1">
+      console.log(
+        "=========================================="
+      );
 
-      <div className="flex-1 bg-[#4285F4]" />
-      <div className="flex-1 bg-[#34A853]" />
-      <div className="flex-1 bg-[#FBBC05]" />
-      <div className="flex-1 bg-[#EA4335]" />
+      console.log(
+        "🔎 VERIFICANDO CONEXÃO COM GOOGLE CALENDAR..."
+      );
 
-    </div>
+      console.log(
+        "=========================================="
+      );
 
-    <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+      const {
+        data: {
+          session,
+        },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-      <div className="flex items-center gap-4">
+      if (sessionError) {
+        console.error(
+          "❌ ERRO AO PEGAR SESSÃO:",
+          sessionError
+        );
 
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-2xl">
-          📅
-        </div>
+        setGoogleConnected(false);
+        return;
+      }
 
-        <div>
+      if (!session?.access_token) {
+        console.error(
+          "❌ TOKEN DO SUPABASE NÃO ENCONTRADO"
+        );
 
-          <h2 className="text-base font-extrabold text-gray-900 sm:text-lg">
-            Google Calendar
-          </h2>
+        setGoogleConnected(false);
+        return;
+      }
 
-          <p className="mt-1 text-xs leading-relaxed text-gray-500 sm:text-sm">
-            {checkingGoogle
-              ? "Verificando conexão..."
-              : googleConnected
-              ? "Sua conta está conectada e pronta para sincronizar sua agenda."
-              : "Conecte sua conta para sincronizar sua agenda."}
-          </p>
+      const response =
+        await fetch(
+          "/api/google/status",
+          {
+            method: "GET",
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+            cache: "no-store",
+          }
+        );
 
-        </div>
+      const data =
+        await response.json().catch(
+          () => null
+        );
 
-      </div>
+      console.log(
+        "🔎 RESPOSTA STATUS GOOGLE:",
+        data
+      );
 
-      {!checkingGoogle &&
-        !googleConnected && (
-          <button
-            type="button"
-            onClick={connectGoogleCalendar}
-            className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] sm:w-auto"
-          >
-            📅 Conectar Google
-          </button>
-        )}
+      if (!response.ok) {
+        console.error(
+          "❌ ERRO AO VERIFICAR GOOGLE:",
+          data
+        );
 
-      {!checkingGoogle &&
-        googleConnected && (
-          <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-extrabold text-green-700 sm:w-auto">
-            <span>✓</span>
+        setGoogleConnected(false);
+        return;
+      }
 
-            <span>
-              Google conectado
-            </span>
-          </div>
-        )}
+      const connected =
+        data?.connected === true;
 
-    </div>
+      console.log(
+        "🔑 ACCESS TOKEN:",
+        data?.hasAccessToken
+      );
 
-  </div>
-)}
+      console.log(
+        "🔄 REFRESH TOKEN:",
+        data?.hasRefreshToken
+      );
+
+      console.log(
+        "📅 GOOGLE CONECTADO:",
+        connected
+      );
+
+      setGoogleConnected(
+        connected
+      );
+    } catch (error) {
+      console.error(
+        "❌ ERRO AO VERIFICAR CONEXÃO GOOGLE:",
+        error
+      );
+
+      setGoogleConnected(false);
+    } finally {
+      setCheckingGoogle(false);
+    }
+  }
+
+  // ============================================================
+  // VERIFICAR GOOGLE
+  // SOMENTE ADMIN
+  // ============================================================
+
+  useEffect(() => {
+    if (!profile) {
+      return;
+    }
+
+    if (profile.role !== "admin") {
+      console.log(
+        "ℹ️ Usuário não administrador. Google Calendar não será carregado."
+      );
+
+      setCheckingGoogle(false);
+      setGoogleConnected(false);
+
+      return;
+    }
+
+    checkGoogleConnection();
+  }, [profile]);
 
   // ============================================================
   // NAVEGAÇÃO
@@ -231,8 +299,13 @@ export default function Dashboard() {
   function openNotificationModal(
     notification: Notification
   ) {
-    setActiveNotification(notification);
-    setShowNotificationModal(true);
+    setActiveNotification(
+      notification
+    );
+
+    setShowNotificationModal(
+      true
+    );
   }
 
   // ============================================================
@@ -300,6 +373,7 @@ export default function Dashboard() {
 
   // ============================================================
   // CARREGAR NOTIFICAÇÕES
+  // SOMENTE GUIAS
   // ============================================================
 
   useEffect(() => {
@@ -398,45 +472,8 @@ export default function Dashboard() {
 
       if (error) {
         console.error(
-          "❌ ERRO AO CARREGAR NOTIFICAÇÕES"
-        );
-
-        console.error(
-          "MESSAGE:",
-          error.message
-        );
-
-        console.error(
-          "DETAILS:",
-          error.details
-        );
-
-        console.error(
-          "HINT:",
-          error.hint
-        );
-
-        console.error(
-          "CODE:",
-          error.code
-        );
-
-        console.error(
-          "ERROR COMPLETO:",
-          JSON.stringify(
-            {
-              message:
-                error.message,
-              details:
-                error.details,
-              hint:
-                error.hint,
-              code:
-                error.code,
-            },
-            null,
-            2
-          )
+          "❌ ERRO AO CARREGAR NOTIFICAÇÕES:",
+          error
         );
 
         return;
@@ -445,11 +482,6 @@ export default function Dashboard() {
       console.log(
         "✅ NOTIFICAÇÕES CARREGADAS:",
         data?.length || 0
-      );
-
-      console.log(
-        "📋 NOTIFICAÇÕES:",
-        data
       );
 
       if (cancelled) {
@@ -464,7 +496,7 @@ export default function Dashboard() {
       );
 
       // ========================================================
-      // ABRIR MODAL SE EXISTIR NOTIFICAÇÃO NÃO LIDA
+      // ABRIR MODAL SE EXISTIR NÃO LIDA
       // ========================================================
 
       const firstUnread =
@@ -478,7 +510,7 @@ export default function Dashboard() {
         !cancelled
       ) {
         console.log(
-          "📢 EXISTE NOTIFICAÇÃO NÃO LIDA. ABRINDO MODAL:",
+          "📢 EXISTE NOTIFICAÇÃO NÃO LIDA:",
           firstUnread
         );
 
@@ -513,20 +545,8 @@ export default function Dashboard() {
           },
           (payload) => {
             console.log(
-              "=========================================="
-            );
-
-            console.log(
-              "🆕 NOVA NOTIFICAÇÃO RECEBIDA VIA REALTIME"
-            );
-
-            console.log(
-              "PAYLOAD:",
+              "🆕 NOVA NOTIFICAÇÃO:",
               payload
-            );
-
-            console.log(
-              "=========================================="
             );
 
             const newNotification =
@@ -544,10 +564,6 @@ export default function Dashboard() {
                 if (
                   alreadyExists
                 ) {
-                  console.log(
-                    "⚠️ NOTIFICAÇÃO JÁ EXISTE NA LISTA"
-                  );
-
                   return current;
                 }
 
@@ -561,10 +577,6 @@ export default function Dashboard() {
             if (
               !newNotification.read
             ) {
-              console.log(
-                "📢 ABRINDO MODAL PARA NOVA NOTIFICAÇÃO"
-              );
-
               setActiveNotification(
                 newNotification
               );
@@ -585,7 +597,7 @@ export default function Dashboard() {
           },
           (payload) => {
             console.log(
-              "✏️ NOTIFICAÇÃO ATUALIZADA VIA REALTIME:",
+              "✏️ NOTIFICAÇÃO ATUALIZADA:",
               payload
             );
 
@@ -625,7 +637,7 @@ export default function Dashboard() {
           },
           (payload) => {
             console.log(
-              "🗑️ NOTIFICAÇÃO EXCLUÍDA VIA REALTIME:",
+              "🗑️ NOTIFICAÇÃO EXCLUÍDA:",
               payload
             );
 
@@ -673,7 +685,7 @@ export default function Dashboard() {
             "CHANNEL_ERROR"
           ) {
             console.error(
-              "❌ ERRO NO CANAL REALTIME DE NOTIFICAÇÕES"
+              "❌ ERRO NO CANAL REALTIME"
             );
           }
 
@@ -682,7 +694,7 @@ export default function Dashboard() {
             "TIMED_OUT"
           ) {
             console.error(
-              "⏱️ REALTIME DE NOTIFICAÇÕES EXPIROU"
+              "⏱️ REALTIME EXPIROU"
             );
           }
 
@@ -691,7 +703,7 @@ export default function Dashboard() {
             "CLOSED"
           ) {
             console.warn(
-              "⚠️ CANAL REALTIME FOI FECHADO"
+              "⚠️ CANAL REALTIME FECHADO"
             );
           }
         });
@@ -699,16 +711,12 @@ export default function Dashboard() {
 
     setupNotifications();
 
-    // ==========================================================
-    // LIMPEZA
-    // ==========================================================
-
     return () => {
       cancelled = true;
 
       if (channel) {
         console.log(
-          "🧹 REMOVENDO CANAL REALTIME DE NOTIFICAÇÕES"
+          "🧹 REMOVENDO CANAL REALTIME"
         );
 
         supabase.removeChannel(
@@ -897,11 +905,15 @@ export default function Dashboard() {
   }
 
   // ============================================================
-  // GOOGLE CALENDAR
+  // CONECTAR GOOGLE CALENDAR
+  // SOMENTE ADMIN
   // ============================================================
 
   async function connectGoogleCalendar() {
-    if (connectingGoogle) {
+    if (
+      connectingGoogle ||
+      profile?.role !== "admin"
+    ) {
       return;
     }
 
@@ -1015,7 +1027,6 @@ export default function Dashboard() {
       window.location.assign(
         data.url
       );
-
     } catch (error) {
       console.error(
         "❌ ERRO AO CONECTAR GOOGLE CALENDAR:",
@@ -1025,7 +1036,6 @@ export default function Dashboard() {
       alert(
         "Ocorreu um erro ao conectar ao Google Calendar."
       );
-
     } finally {
       setConnectingGoogle(false);
     }
@@ -1036,6 +1046,14 @@ export default function Dashboard() {
   // ============================================================
 
   useEffect(() => {
+    if (!profile) {
+      return;
+    }
+
+    if (profile.role !== "admin") {
+      return;
+    }
+
     const params =
       new URLSearchParams(
         window.location.search
@@ -1052,20 +1070,17 @@ export default function Dashboard() {
         "🎉 RETORNO DO GOOGLE DETECTADO"
       );
 
-      // Remove ?google=success da URL
       window.history.replaceState(
         {},
         document.title,
         "/dashboard"
       );
 
-      // Dá um pequeno tempo para garantir
-      // que o callback terminou de salvar
       setTimeout(() => {
         checkGoogleConnection();
       }, 300);
     }
-  }, []);
+  }, [profile]);
 
   // ============================================================
   // LOGOUT
@@ -1122,6 +1137,10 @@ export default function Dashboard() {
       </main>
     );
   }
+
+  // ============================================================
+  // ADMIN
+  // ============================================================
 
   const isAdmin =
     profile.role === "admin";
@@ -1276,7 +1295,7 @@ export default function Dashboard() {
 
             </div>
 
-            {/* SINO */}
+            {/* SINO - SOMENTE GUIA */}
 
             {!isAdmin && (
               <div className="relative z-[100]">
@@ -1602,9 +1621,10 @@ export default function Dashboard() {
                       </button>
                     )}
 
-                    {/* GOOGLE CALENDAR */}
+                    {/* GOOGLE CALENDAR - SOMENTE ADMIN */}
 
-                    {!checkingGoogle &&
+                    {isAdmin &&
+                      !checkingGoogle &&
                       !googleConnected && (
                         <button
                           type="button"
@@ -1629,7 +1649,8 @@ export default function Dashboard() {
                         </button>
                       )}
 
-                    {!checkingGoogle &&
+                    {isAdmin &&
+                      !checkingGoogle &&
                       googleConnected && (
                         <div className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-green-600">
                           <span className="text-lg">
@@ -1723,83 +1744,87 @@ export default function Dashboard() {
       <section className="relative z-10 mx-auto max-w-7xl px-5 py-7 sm:px-6 sm:py-9">
 
         {/* ==================================================== */}
-        {/* GOOGLE CALENDAR */}
+        {/* GOOGLE CALENDAR - SOMENTE ADMIN */}
         {/* ==================================================== */}
 
-        <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
+        {isAdmin && (
+          <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
 
-          <div className="flex h-1">
+            <div className="flex h-1">
 
-            <div className="flex-1 bg-[#4285F4]" />
-            <div className="flex-1 bg-[#34A853]" />
-            <div className="flex-1 bg-[#FBBC05]" />
-            <div className="flex-1 bg-[#EA4335]" />
-
-          </div>
-
-          <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-
-            <div className="flex items-center gap-4">
-
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-2xl">
-                📅
-              </div>
-
-              <div>
-
-                <h2 className="text-base font-extrabold text-gray-900 sm:text-lg">
-                  Google Calendar
-                </h2>
-
-                <p className="mt-1 text-xs leading-relaxed text-gray-500 sm:text-sm">
-                  {checkingGoogle
-                    ? "Verificando conexão..."
-                    : googleConnected
-                    ? "Sua conta está conectada e pronta para sincronizar sua agenda."
-                    : "Conecte sua conta para sincronizar sua agenda."}
-                </p>
-
-              </div>
+              <div className="flex-1 bg-[#4285F4]" />
+              <div className="flex-1 bg-[#34A853]" />
+              <div className="flex-1 bg-[#FBBC05]" />
+              <div className="flex-1 bg-[#EA4335]" />
 
             </div>
 
-            {!checkingGoogle &&
-              !googleConnected && (
-                <button
-                  type="button"
-                  disabled={
-                    connectingGoogle
-                  }
-                  onClick={
-                    connectGoogleCalendar
-                  }
-                  className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                >
-                  {connectingGoogle
-                    ? "⏳ Conectando..."
-                    : "📅 Conectar Google"}
-                </button>
-              )}
+            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
 
-            {!checkingGoogle &&
-              googleConnected && (
-                <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-extrabold text-green-700 sm:w-auto">
-                  <span>
-                    ✓
-                  </span>
+              <div className="flex items-center gap-4">
 
-                  <span>
-                    Google conectado
-                  </span>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-2xl">
+                  📅
                 </div>
-              )}
+
+                <div>
+
+                  <h2 className="text-base font-extrabold text-gray-900 sm:text-lg">
+                    Google Calendar
+                  </h2>
+
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500 sm:text-sm">
+                    {checkingGoogle
+                      ? "Verificando conexão..."
+                      : googleConnected
+                      ? "Sua conta está conectada e pronta para sincronizar sua agenda."
+                      : "Conecte sua conta para sincronizar sua agenda."}
+                  </p>
+
+                </div>
+
+              </div>
+
+              {!checkingGoogle &&
+                !googleConnected && (
+                  <button
+                    type="button"
+                    disabled={
+                      connectingGoogle
+                    }
+                    onClick={
+                      connectGoogleCalendar
+                    }
+                    className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                  >
+                    {connectingGoogle
+                      ? "⏳ Conectando..."
+                      : "📅 Conectar Google"}
+                  </button>
+                )}
+
+              {!checkingGoogle &&
+                googleConnected && (
+                  <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-extrabold text-green-700 sm:w-auto">
+
+                    <span>
+                      ✓
+                    </span>
+
+                    <span>
+                      Google conectado
+                    </span>
+
+                  </div>
+                )}
+
+            </div>
 
           </div>
-
-        </div>
+        )}
 
         {/* ==================================================== */}
-        {/* ADMIN */}
+        {/* CALENDÁRIO */}
         {/* ==================================================== */}
 
         {isAdmin ? (
@@ -1820,9 +1845,7 @@ export default function Dashboard() {
             </div>
 
           </div>
-
         ) : (
-
           <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
 
             <div className="flex h-1">
@@ -1840,7 +1863,6 @@ export default function Dashboard() {
             </div>
 
           </div>
-
         )}
 
         {/* ==================================================== */}
@@ -1852,7 +1874,9 @@ export default function Dashboard() {
           <div className="mb-4 flex justify-center gap-2">
 
             <span className="h-2 w-8 rounded-full bg-[#e91e8c]" />
+
             <span className="h-2 w-8 rounded-full bg-[#1687d9]" />
+
             <span className="h-2 w-8 rounded-full bg-[#ffd21c]" />
 
           </div>
@@ -1874,9 +1898,11 @@ export default function Dashboard() {
 
       {/* ====================================================== */}
       {/* MODAL CENTRAL DE NOTIFICAÇÃO */}
+      {/* SOMENTE GUIA */}
       {/* ====================================================== */}
 
-      {showNotificationModal &&
+      {!isAdmin &&
+        showNotificationModal &&
         activeNotification && (
           <div
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 px-5 backdrop-blur-[3px]"
