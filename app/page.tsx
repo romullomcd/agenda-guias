@@ -1,3 +1,4 @@
+
 "use client";
 
 import { FormEvent, useState } from "react";
@@ -14,10 +15,6 @@ export default function Home() {
   ) {
     event.preventDefault();
 
-    // ==========================================================
-    // EVITAR DUPLO LOGIN
-    // ==========================================================
-
     if (loading) {
       return;
     }
@@ -27,44 +24,64 @@ export default function Home() {
 
     try {
       // ========================================================
-      // LIMPAR E-MAIL
+      // PEGAR DADOS DIRETAMENTE DO FORMULÁRIO
       // ========================================================
 
-      const cleanEmail =
-        email.trim().toLowerCase();
+      const formData = new FormData(event.currentTarget);
 
-      console.log(
-        "=========================================="
+      const cleanEmail = String(
+        formData.get("email") ?? ""
+      )
+        .trim()
+        .toLowerCase();
+
+      const formPassword = String(
+        formData.get("password") ?? ""
       );
 
+      console.log("==========================================");
+      console.log("🔐 INICIANDO LOGIN");
+      console.log("📧 E-MAIL:", cleanEmail);
       console.log(
-        "🔐 INICIANDO LOGIN"
+        "🔑 SENHA RECEBIDA:",
+        formPassword.length > 0
       );
-
-      console.log(
-        "📧 E-MAIL:",
-        cleanEmail
-      );
-
-      console.log(
-        "=========================================="
-      );
+      console.log("==========================================");
 
       // ========================================================
-      // LOGIN
+      // VALIDAR E-MAIL
+      // ========================================================
+
+      if (!cleanEmail) {
+        setError("Digite seu e-mail.");
+        setLoading(false);
+        return;
+      }
+
+      // ========================================================
+      // VALIDAR SENHA
+      // ========================================================
+
+      if (!formPassword) {
+        setError("Digite sua senha.");
+        setLoading(false);
+        return;
+      }
+
+      // ========================================================
+      // LOGIN SUPABASE
       // ========================================================
 
       const {
         data,
         error: loginError,
-      } =
-        await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
+      } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: formPassword,
+      });
 
       // ========================================================
-      // ERRO DO SUPABASE
+      // ERRO DO LOGIN
       // ========================================================
 
       if (loginError) {
@@ -100,15 +117,27 @@ export default function Home() {
           "=========================================="
         );
 
-        // Se for realmente credencial inválida,
-        // mostramos uma mensagem amigável.
+        const message =
+          loginError.message.toLowerCase();
+
         if (
-          loginError.message
-            .toLowerCase()
-            .includes("invalid login credentials")
+          message.includes(
+            "invalid login credentials"
+          )
         ) {
           setError(
             "E-mail ou senha incorretos."
+          );
+        } else if (
+          message.includes(
+            "missing email"
+          ) ||
+          message.includes(
+            "missing email or phone"
+          )
+        ) {
+          setError(
+            "Digite seu e-mail."
           );
         } else {
           setError(
@@ -122,14 +151,14 @@ export default function Home() {
       }
 
       // ========================================================
-      // VERIFICAR USUÁRIO RETORNADO PELO LOGIN
+      // VERIFICAR USUÁRIO
       // ========================================================
 
       const user = data.user;
 
       if (!user) {
         console.error(
-          "❌ LOGIN REALIZADO, MAS SUPABASE NÃO RETORNOU USUÁRIO"
+          "❌ LOGIN REALIZADO, MAS USUÁRIO NÃO RETORNADO"
         );
 
         console.error(
@@ -165,24 +194,13 @@ export default function Home() {
       );
 
       // ========================================================
-      // VERIFICAR SESSÃO
+      // GARANTIR QUE EXISTE SESSÃO
       // ========================================================
-      //
-      // Normalmente signInWithPassword já retorna a sessão.
-      //
-      // Não fazemos mais uma chamada obrigatória ao
-      // getSession() antes de consultar o perfil.
-      //
-      // Isso evita a corrida que pode acontecer logo após
-      // o primeiro login.
 
       if (!data.session) {
         console.warn(
           "⚠️ LOGIN RETORNOU USUÁRIO, MAS NÃO RETORNOU SESSÃO"
         );
-
-        // Damos uma pequena oportunidade para o Supabase
-        // persistir a sessão.
 
         const {
           data: sessionData,
@@ -196,6 +214,8 @@ export default function Home() {
             sessionError
           );
 
+          await supabase.auth.signOut();
+
           setError(
             "Não foi possível estabelecer sua sessão. Tente novamente."
           );
@@ -208,6 +228,8 @@ export default function Home() {
           console.error(
             "❌ NENHUMA SESSÃO DISPONÍVEL APÓS LOGIN"
           );
+
+          await supabase.auth.signOut();
 
           setError(
             "Não foi possível estabelecer sua sessão. Tente novamente."
@@ -339,7 +361,7 @@ export default function Home() {
       }
 
       // ========================================================
-      // TUDO OK
+      // LOGIN CONCLUÍDO
       // ========================================================
 
       console.log(
@@ -382,10 +404,6 @@ export default function Home() {
       );
 
     } catch (error) {
-      // ========================================================
-      // ERRO INESPERADO
-      // ========================================================
-
       console.error(
         "=========================================="
       );
@@ -413,9 +431,7 @@ export default function Home() {
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f7fb] px-6 py-10">
 
-      {/* ====================================================== */}
-      {/* FUNDO COLORIDO */}
-      {/* ====================================================== */}
+      {/* FUNDO */}
 
       <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-[#e91e8c] opacity-20 blur-3xl" />
 
@@ -423,15 +439,11 @@ export default function Home() {
 
       <div className="absolute right-20 top-20 h-32 w-32 rounded-full bg-[#ffd21c] opacity-30 blur-3xl" />
 
-      {/* ====================================================== */}
       {/* CONTEÚDO */}
-      {/* ====================================================== */}
 
       <div className="relative z-10 w-full max-w-md">
 
-        {/* ==================================================== */}
         {/* LOGO */}
-        {/* ==================================================== */}
 
         <div className="mb-8 text-center">
 
@@ -459,9 +471,7 @@ export default function Home() {
 
         </div>
 
-        {/* ==================================================== */}
         {/* CARD */}
-        {/* ==================================================== */}
 
         <div className="rounded-3xl bg-white p-8 shadow-2xl shadow-gray-200/70">
 
@@ -473,18 +483,14 @@ export default function Home() {
             Entre com seus dados para continuar.
           </p>
 
-          {/* ================================================== */}
           {/* FORMULÁRIO */}
-          {/* ================================================== */}
 
           <form
             onSubmit={handleLogin}
             className="mt-7 space-y-5"
           >
 
-            {/* ================================================= */}
             {/* EMAIL */}
-            {/* ================================================= */}
 
             <div>
 
@@ -494,6 +500,7 @@ export default function Home() {
 
               <input
                 type="email"
+                name="email"
                 value={email}
                 onChange={(event) =>
                   setEmail(
@@ -509,9 +516,7 @@ export default function Home() {
 
             </div>
 
-            {/* ================================================= */}
             {/* SENHA */}
-            {/* ================================================= */}
 
             <div>
 
@@ -521,6 +526,7 @@ export default function Home() {
 
               <input
                 type="password"
+                name="password"
                 value={password}
                 onChange={(event) =>
                   setPassword(
@@ -536,9 +542,7 @@ export default function Home() {
 
             </div>
 
-            {/* ================================================= */}
             {/* ERRO */}
-            {/* ================================================= */}
 
             {error && (
               <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
@@ -546,9 +550,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* ================================================= */}
             {/* BOTÃO */}
-            {/* ================================================= */}
 
             <button
               type="submit"
@@ -562,9 +564,7 @@ export default function Home() {
 
           </form>
 
-          {/* ================================================= */}
           {/* CORES */}
-          {/* ================================================= */}
 
           <div className="mt-7 flex justify-center gap-2">
 
@@ -578,9 +578,7 @@ export default function Home() {
 
         </div>
 
-        {/* ==================================================== */}
         {/* RODAPÉ */}
-        {/* ==================================================== */}
 
         <div className="mt-8 text-center">
 
@@ -602,3 +600,4 @@ export default function Home() {
     </main>
   );
 }
+
