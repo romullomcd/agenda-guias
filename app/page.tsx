@@ -9,10 +9,15 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+  async function handleLogin(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
-    // Evita duas tentativas simultâneas
+    // ==========================================================
+    // EVITAR DUAS TENTATIVAS SIMULTÂNEAS
+    // ==========================================================
+
     if (loading) {
       return;
     }
@@ -33,65 +38,71 @@ export default function Home() {
         password,
       });
 
+      // ==========================================================
+      // ERRO NO LOGIN
+      // ==========================================================
+
       if (loginError) {
         console.error(
-          "ERRO NO LOGIN:",
+          "❌ ERRO NO LOGIN:",
           loginError.message,
           loginError
         );
 
-        setError("E-mail ou senha incorretos.");
+        setError(
+          "E-mail ou senha incorretos."
+        );
+
         setLoading(false);
         return;
       }
+
+      // ==========================================================
+      // GARANTIR QUE O USUÁRIO EXISTE
+      // ==========================================================
 
       if (!loginData.user) {
         console.error(
-          "LOGIN SEM USUÁRIO:",
+          "❌ LOGIN SEM USUÁRIO:",
           loginData
         );
 
-        setError("Não foi possível entrar.");
+        setError(
+          "Não foi possível entrar."
+        );
+
         setLoading(false);
         return;
       }
 
       // ==========================================================
-      // CONFIRMAR QUE A SESSÃO FOI REALMENTE ESTABELECIDA
+      // OBTER SESSÃO
+      // ==========================================================
+      //
+      // IMPORTANTE:
+      //
+      // Não fazemos:
+      //
+      // let session = ...
+      // session = ...
+      //
+      // Isso estava causando o erro de TypeScript.
+      //
+      // Aqui criamos a sessão uma única vez.
+
+      const session =
+        loginData.session ??
+        (
+          await supabase.auth.getSession()
+        ).data.session;
+
+      // ==========================================================
+      // GARANTIR QUE EXISTE UMA SESSÃO
       // ==========================================================
 
-      let session = loginData.session;
-
-      // Se por algum motivo a sessão não veio diretamente
-      // no retorno do login, tenta recuperá-la.
       if (!session) {
-        const {
-          data: sessionData,
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          console.error(
-            "ERRO AO RECUPERAR SESSÃO:",
-            sessionError
-          );
-
-          await supabase.auth.signOut();
-
-          setError(
-            "Não foi possível estabelecer sua sessão. Tente novamente."
-          );
-
-          setLoading(false);
-          return;
-        }
-
-        session = sessionData.session;
-      }
-
-      if (!session?.user) {
         console.error(
-          "SESSÃO NÃO DISPONÍVEL APÓS LOGIN"
+          "❌ SESSÃO NÃO DISPONÍVEL APÓS LOGIN"
         );
 
         await supabase.auth.signOut();
@@ -104,9 +115,24 @@ export default function Home() {
         return;
       }
 
-      // Guarda o ID do usuário depois de confirmar
-      // que existe uma sessão e um usuário.
-      const userId = session.user.id;
+      // ==========================================================
+      // GARANTIR QUE EXISTE USUÁRIO NA SESSÃO
+      // ==========================================================
+
+      if (!session.user) {
+        console.error(
+          "❌ SESSÃO SEM USUÁRIO"
+        );
+
+        await supabase.auth.signOut();
+
+        setError(
+          "Não foi possível identificar seu usuário. Tente novamente."
+        );
+
+        setLoading(false);
+        return;
+      }
 
       // ==========================================================
       // VERIFICAR PERFIL
@@ -118,12 +144,22 @@ export default function Home() {
       } = await supabase
         .from("profiles")
         .select("active")
-        .eq("id", userId)
+        .eq(
+          "id",
+          session.user.id
+        )
         .single();
 
-      if (profileError || !profile) {
+      // ==========================================================
+      // ERRO AO CARREGAR PERFIL
+      // ==========================================================
+
+      if (
+        profileError ||
+        !profile
+      ) {
         console.error(
-          "ERRO AO VERIFICAR PERFIL:",
+          "❌ ERRO AO VERIFICAR PERFIL:",
           profileError
         );
 
@@ -138,10 +174,15 @@ export default function Home() {
       }
 
       // ==========================================================
-      // VERIFICAR SE O USUÁRIO ESTÁ ATIVO
+      // VERIFICAR SE USUÁRIO ESTÁ ATIVO
       // ==========================================================
 
       if (!profile.active) {
+        console.warn(
+          "⚠️ USUÁRIO DESATIVADO:",
+          session.user.id
+        );
+
         await supabase.auth.signOut();
 
         setError(
@@ -153,17 +194,55 @@ export default function Home() {
       }
 
       // ==========================================================
-      // PEQUENA GARANTIA ANTES DO REDIRECIONAMENTO
+      // LOGIN REALIZADO COM SUCESSO
       // ==========================================================
-      //
-      // O Supabase já confirmou a sessão acima.
-      // Usamos replace em vez de href para evitar deixar
-      // a página de login no histórico de navegação.
 
-      window.location.replace("/dashboard");
+      console.log(
+        "=========================================="
+      );
+
+      console.log(
+        "✅ LOGIN REALIZADO COM SUCESSO"
+      );
+
+      console.log(
+        "👤 USER ID:",
+        session.user.id
+      );
+
+      console.log(
+        "📧 EMAIL:",
+        session.user.email
+      );
+
+      console.log(
+        "🔐 SESSÃO:",
+        !!session
+      );
+
+      console.log(
+        "✅ PERFIL ATIVO"
+      );
+
+      console.log(
+        "=========================================="
+      );
+
+      // ==========================================================
+      // REDIRECIONAR PARA DASHBOARD
+      // ==========================================================
+
+      window.location.replace(
+        "/dashboard"
+      );
+
     } catch (error) {
+      // ==========================================================
+      // ERRO INESPERADO
+      // ==========================================================
+
       console.error(
-        "ERRO INESPERADO NO LOGIN:",
+        "❌ ERRO INESPERADO NO LOGIN:",
         error
       );
 
@@ -178,7 +257,9 @@ export default function Home() {
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f7fb] px-6 py-10">
 
-      {/* Fundo colorido */}
+      {/* ====================================================== */}
+      {/* FUNDO COLORIDO */}
+      {/* ====================================================== */}
 
       <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-[#e91e8c] opacity-20 blur-3xl" />
 
@@ -186,15 +267,20 @@ export default function Home() {
 
       <div className="absolute right-20 top-20 h-32 w-32 rounded-full bg-[#ffd21c] opacity-30 blur-3xl" />
 
-      {/* Conteúdo */}
+      {/* ====================================================== */}
+      {/* CONTEÚDO */}
+      {/* ====================================================== */}
 
       <div className="relative z-10 w-full max-w-md">
 
-        {/* Logo */}
+        {/* ==================================================== */}
+        {/* LOGO */}
+        {/* ==================================================== */}
 
         <div className="mb-8 text-center">
 
           <div className="mb-6 flex justify-center">
+
             <div className="flex h-28 w-72 items-center justify-center rounded-3xl bg-[#e91e8c] shadow-xl shadow-pink-200">
 
               <img
@@ -204,6 +290,7 @@ export default function Home() {
               />
 
             </div>
+
           </div>
 
           <h1 className="text-3xl font-extrabold text-gray-900">
@@ -216,7 +303,9 @@ export default function Home() {
 
         </div>
 
-        {/* Card */}
+        {/* ==================================================== */}
+        {/* CARD DE LOGIN */}
+        {/* ==================================================== */}
 
         <div className="rounded-3xl bg-white p-8 shadow-2xl shadow-gray-200/70">
 
@@ -228,12 +317,18 @@ export default function Home() {
             Entre com seus dados para continuar.
           </p>
 
+          {/* ================================================== */}
+          {/* FORMULÁRIO */}
+          {/* ================================================== */}
+
           <form
             onSubmit={handleLogin}
             className="mt-7 space-y-5"
           >
 
-            {/* Email */}
+            {/* ================================================= */}
+            {/* EMAIL */}
+            {/* ================================================= */}
 
             <div>
 
@@ -244,8 +339,10 @@ export default function Home() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
+                onChange={(event) =>
+                  setEmail(
+                    event.target.value
+                  )
                 }
                 required
                 autoComplete="email"
@@ -256,7 +353,9 @@ export default function Home() {
 
             </div>
 
-            {/* Senha */}
+            {/* ================================================= */}
+            {/* SENHA */}
+            {/* ================================================= */}
 
             <div>
 
@@ -267,8 +366,10 @@ export default function Home() {
               <input
                 type="password"
                 value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
+                onChange={(event) =>
+                  setPassword(
+                    event.target.value
+                  )
                 }
                 required
                 autoComplete="current-password"
@@ -279,7 +380,9 @@ export default function Home() {
 
             </div>
 
-            {/* Erro */}
+            {/* ================================================= */}
+            {/* MENSAGEM DE ERRO */}
+            {/* ================================================= */}
 
             {error && (
               <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
@@ -287,7 +390,9 @@ export default function Home() {
               </div>
             )}
 
-            {/* Botão */}
+            {/* ================================================= */}
+            {/* BOTÃO ENTRAR */}
+            {/* ================================================= */}
 
             <button
               type="submit"
@@ -301,7 +406,9 @@ export default function Home() {
 
           </form>
 
-          {/* Cores da empresa */}
+          {/* ================================================= */}
+          {/* CORES DA EMPRESA */}
+          {/* ================================================= */}
 
           <div className="mt-7 flex justify-center gap-2">
 
@@ -315,7 +422,9 @@ export default function Home() {
 
         </div>
 
-        {/* Rodapé */}
+        {/* ==================================================== */}
+        {/* RODAPÉ */}
+        {/* ==================================================== */}
 
         <div className="mt-8 text-center">
 
