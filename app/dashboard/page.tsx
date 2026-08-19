@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -25,6 +26,12 @@ export default function Dashboard() {
     useState<Profile | null>(null);
 
   const [loading, setLoading] =
+    useState(true);
+
+  const [googleConnected, setGoogleConnected] =
+    useState(false);
+
+  const [checkingGoogle, setCheckingGoogle] =
     useState(true);
 
   // ============================================================
@@ -131,6 +138,99 @@ export default function Dashboard() {
       );
 
       setLoading(false);
+    }
+  }
+
+  // ============================================================
+  // VERIFICAR GOOGLE CALENDAR
+  // ============================================================
+
+  useEffect(() => {
+    if (!profile) {
+      return;
+    }
+
+    checkGoogleConnection();
+  }, [profile]);
+
+  async function checkGoogleConnection() {
+    try {
+      setCheckingGoogle(true);
+
+      console.log(
+        "🔎 VERIFICANDO CONEXÃO COM GOOGLE CALENDAR..."
+      );
+
+      const {
+        data: {
+          session,
+        },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error(
+          "❌ ERRO AO PEGAR SESSÃO PARA VERIFICAR GOOGLE:",
+          sessionError
+        );
+
+        setGoogleConnected(false);
+        return;
+      }
+
+      if (!session?.access_token) {
+        console.error(
+          "❌ TOKEN SUPABASE NÃO ENCONTRADO"
+        );
+
+        setGoogleConnected(false);
+        return;
+      }
+
+      const response =
+        await fetch(
+          "/api/google/status",
+          {
+            method: "GET",
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+          }
+        );
+
+      const data =
+        await response.json().catch(
+          () => null
+        );
+
+      if (!response.ok) {
+        console.error(
+          "❌ ERRO AO VERIFICAR GOOGLE:",
+          data
+        );
+
+        setGoogleConnected(false);
+        return;
+      }
+
+      console.log(
+        "🔎 STATUS GOOGLE:",
+        data
+      );
+
+      setGoogleConnected(
+        data?.connected === true
+      );
+    } catch (error) {
+      console.error(
+        "❌ ERRO AO VERIFICAR CONEXÃO GOOGLE:",
+        error
+      );
+
+      setGoogleConnected(false);
+    } finally {
+      setCheckingGoogle(false);
     }
   }
 
@@ -822,108 +922,108 @@ export default function Dashboard() {
   // ============================================================
 
   async function connectGoogleCalendar() {
-  try {
-    console.log(
-      "🔵 INICIANDO CONEXÃO COM GOOGLE CALENDAR"
-    );
+    try {
+      console.log(
+        "🔵 INICIANDO CONEXÃO COM GOOGLE CALENDAR"
+      );
 
-    const {
-      data: {
-        session,
-      },
-      error,
-    } = await supabase.auth.getSession();
+      const {
+        data: {
+          session,
+        },
+        error,
+      } = await supabase.auth.getSession();
 
-    if (error) {
+      if (error) {
+        console.error(
+          "❌ ERRO AO PEGAR SESSÃO:",
+          error
+        );
+
+        alert(
+          "Não foi possível verificar seu login."
+        );
+
+        return;
+      }
+
+      if (!session?.access_token) {
+        console.error(
+          "❌ TOKEN DO SUPABASE NÃO ENCONTRADO"
+        );
+
+        alert(
+          "Sua sessão expirou. Faça login novamente."
+        );
+
+        return;
+      }
+
+      console.log(
+        "✅ SESSÃO ENCONTRADA"
+      );
+
+      const response =
+        await fetch(
+          "/api/google/auth",
+          {
+            method: "GET",
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+            },
+          }
+        );
+
+      const data =
+        await response.json().catch(
+          () => null
+        );
+
+      if (!response.ok) {
+        console.error(
+          "❌ ERRO AO INICIAR GOOGLE:",
+          data
+        );
+
+        alert(
+          data?.error ||
+            "Não foi possível conectar ao Google Calendar."
+        );
+
+        return;
+      }
+
+      if (!data?.url) {
+        console.error(
+          "❌ URL DO GOOGLE NÃO RECEBIDA:",
+          data
+        );
+
+        alert(
+          "Não foi possível gerar a autorização do Google."
+        );
+
+        return;
+      }
+
+      console.log(
+        "🔵 REDIRECIONANDO PARA GOOGLE:"
+      );
+
+      window.location.href =
+        data.url;
+    } catch (error) {
       console.error(
-        "❌ ERRO AO PEGAR SESSÃO:",
+        "❌ ERRO AO CONECTAR GOOGLE CALENDAR:",
         error
       );
 
       alert(
-        "Não foi possível verificar seu login."
+        "Ocorreu um erro ao conectar ao Google Calendar."
       );
-
-      return;
     }
-
-    if (!session?.access_token) {
-      console.error(
-        "❌ TOKEN DO SUPABASE NÃO ENCONTRADO"
-      );
-
-      alert(
-        "Sua sessão expirou. Faça login novamente."
-      );
-
-      return;
-    }
-
-    console.log(
-      "✅ SESSÃO ENCONTRADA"
-    );
-
-    const response =
-      await fetch(
-        "/api/google/auth",
-        {
-          method: "GET",
-          headers: {
-            Authorization:
-              `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-    const data =
-      await response.json().catch(
-        () => null
-      );
-
-    if (!response.ok) {
-      console.error(
-        "❌ ERRO AO INICIAR GOOGLE:",
-        data
-      );
-
-      alert(
-        data?.error ||
-          "Não foi possível conectar ao Google Calendar."
-      );
-
-      return;
-    }
-
-    if (!data?.url) {
-      console.error(
-        "❌ URL DO GOOGLE NÃO RECEBIDA:",
-        data
-      );
-
-      alert(
-        "Não foi possível gerar a autorização do Google."
-      );
-
-      return;
-    }
-
-    console.log(
-      "🔵 REDIRECIONANDO PARA GOOGLE:"
-    );
-
-    window.location.href =
-      data.url;
-  } catch (error) {
-    console.error(
-      "❌ ERRO AO CONECTAR GOOGLE CALENDAR:",
-      error
-    );
-
-    alert(
-      "Ocorreu um erro ao conectar ao Google Calendar."
-    );
   }
-}
 
   // ============================================================
   // LOGOUT
@@ -1009,9 +1109,7 @@ export default function Dashboard() {
 
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6">
 
-          {/* ================================================= */}
           {/* MARCA */}
-          {/* ================================================= */}
 
           <div className="flex items-center gap-3">
 
@@ -1041,15 +1139,11 @@ export default function Dashboard() {
 
           </div>
 
-          {/* ================================================= */}
           {/* ÁREA DO USUÁRIO */}
-          {/* ================================================= */}
 
           <div className="flex items-center gap-2 sm:gap-3">
 
-            {/* ================================================= */}
             {/* MENU DESKTOP */}
-            {/* ================================================= */}
 
             <nav className="hidden items-center gap-1 lg:flex">
 
@@ -1124,9 +1218,7 @@ export default function Dashboard() {
 
             </nav>
 
-            {/* ================================================= */}
             {/* NOME */}
-            {/* ================================================= */}
 
             <div className="hidden text-right xl:block">
 
@@ -1142,9 +1234,7 @@ export default function Dashboard() {
 
             </div>
 
-            {/* ================================================= */}
             {/* SINO */}
-            {/* ================================================= */}
 
             {!isAdmin && (
               <div className="relative z-[100]">
@@ -1173,10 +1263,6 @@ export default function Dashboard() {
                   )}
 
                 </button>
-
-                {/* ================================================= */}
-                {/* DROPDOWN */}
-                {/* ================================================= */}
 
                 {showNotifications && (
                   <div className="absolute right-0 top-12 z-[200] w-[340px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
@@ -1337,9 +1423,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* ================================================= */}
             {/* AVATAR */}
-            {/* ================================================= */}
 
             <div
               className={
@@ -1354,9 +1438,7 @@ export default function Dashboard() {
                 .toUpperCase()}
             </div>
 
-            {/* ================================================= */}
             {/* MENU MOBILE */}
-            {/* ================================================= */}
 
             <div className="relative lg:hidden">
 
@@ -1382,7 +1464,7 @@ export default function Dashboard() {
               {showMenu && (
                 <div className="absolute right-0 top-12 z-[300] w-[290px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
 
-                  {/* CABEÇALHO DO MENU */}
+                  {/* CABEÇALHO */}
 
                   <div className="border-b border-gray-100 bg-gray-50 px-5 py-4">
 
@@ -1397,8 +1479,6 @@ export default function Dashboard() {
                     </p>
 
                   </div>
-
-                  {/* OPÇÕES */}
 
                   <div className="p-2">
 
@@ -1482,24 +1562,40 @@ export default function Dashboard() {
                       </button>
                     )}
 
-                    {/* GOOGLE CALENDAR NO MENU MOBILE */}
+                    {/* GOOGLE CALENDAR */}
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMenu(false);
-                        connectGoogleCalendar();
-                      }}
-                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-green-50 hover:text-green-600"
-                    >
-                      <span className="text-lg">
-                        📅
-                      </span>
+                    {!checkingGoogle &&
+                      !googleConnected && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowMenu(false);
+                            connectGoogleCalendar();
+                          }}
+                          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-green-50 hover:text-green-600"
+                        >
+                          <span className="text-lg">
+                            📅
+                          </span>
 
-                      <span>
-                        Conectar Google Calendar
-                      </span>
-                    </button>
+                          <span>
+                            Conectar Google Calendar
+                          </span>
+                        </button>
+                      )}
+
+                    {!checkingGoogle &&
+                      googleConnected && (
+                        <div className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-green-600">
+                          <span className="text-lg">
+                            ✅
+                          </span>
+
+                          <span>
+                            Google Calendar conectado
+                          </span>
+                        </div>
+                      )}
 
                     <button
                       type="button"
@@ -1521,11 +1617,7 @@ export default function Dashboard() {
 
                   </div>
 
-                  {/* SEPARADOR */}
-
                   <div className="mx-4 border-t border-gray-100" />
-
-                  {/* SAIR */}
 
                   <div className="p-2">
 
@@ -1552,9 +1644,7 @@ export default function Dashboard() {
 
             </div>
 
-            {/* ================================================= */}
             {/* SAIR DESKTOP */}
-            {/* ================================================= */}
 
             <button
               onClick={
@@ -1569,9 +1659,7 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ====================================================== */}
         {/* FAIXA */}
-        {/* ====================================================== */}
 
         <div className="flex h-1">
 
@@ -1619,22 +1707,42 @@ export default function Dashboard() {
                 </h2>
 
                 <p className="mt-1 text-xs leading-relaxed text-gray-500 sm:text-sm">
-                  Conecte sua conta para sincronizar sua agenda.
+                  {checkingGoogle
+                    ? "Verificando conexão..."
+                    : googleConnected
+                    ? "Sua conta está conectada e pronta para sincronizar sua agenda."
+                    : "Conecte sua conta para sincronizar sua agenda."}
                 </p>
 
               </div>
 
             </div>
 
-            <button
-              type="button"
-              onClick={
-                connectGoogleCalendar
-              }
-              className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] sm:w-auto"
-            >
-              📅 Conectar Google
-            </button>
+            {!checkingGoogle &&
+              !googleConnected && (
+                <button
+                  type="button"
+                  onClick={
+                    connectGoogleCalendar
+                  }
+                  className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] sm:w-auto"
+                >
+                  📅 Conectar Google
+                </button>
+              )}
+
+            {!checkingGoogle &&
+              googleConnected && (
+                <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-extrabold text-green-700 sm:w-auto">
+                  <span>
+                    ✓
+                  </span>
+
+                  <span>
+                    Google conectado
+                  </span>
+                </div>
+              )}
 
           </div>
 
@@ -1665,9 +1773,7 @@ export default function Dashboard() {
 
         ) : (
 
-          /* ================================================== */
           /* GUIA */
-          /* ================================================== */
 
           <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
 
@@ -1778,3 +1884,4 @@ export default function Dashboard() {
     </main>
   );
 }
+
