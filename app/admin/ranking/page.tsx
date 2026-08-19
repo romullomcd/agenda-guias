@@ -354,27 +354,23 @@ export default function GuideRanking() {
 
   if (!loading && accessDenied) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] px-5">
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f7fb] px-5">
 
         <div className="pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full bg-[#e91e8c] opacity-[0.08] blur-3xl" />
 
         <div className="pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#1687d9] opacity-[0.08] blur-3xl" />
 
-        <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-xl">
-
-          {/* FAIXA */}
+        <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-xl">
 
           <div className="flex h-1">
-
             <div className="flex-1 bg-[#e91e8c]" />
             <div className="flex-1 bg-[#ffd21c]" />
             <div className="flex-1 bg-[#1687d9]" />
-
           </div>
 
-          <div className="p-7 text-center sm:p-9">
+          <div className="p-8 text-center sm:p-10">
 
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-50 text-4xl">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-red-50 text-4xl">
               🔒
             </div>
 
@@ -383,9 +379,7 @@ export default function GuideRanking() {
             </h1>
 
             <p className="mt-3 text-sm leading-6 text-gray-500">
-              Esta área é exclusiva para administradores.
-              Você não possui permissão para visualizar o
-              ranking de guias.
+              Esta página é exclusiva para administradores da Agenda de Guias.
             </p>
 
             <button
@@ -419,7 +413,7 @@ export default function GuideRanking() {
 
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c]" />
 
-          <p className="mt-4 text-sm font-medium text-gray-500">
+          <p className="mt-4 text-sm font-semibold text-gray-500">
             Verificando acesso...
           </p>
 
@@ -430,29 +424,59 @@ export default function GuideRanking() {
   }
 
   // ============================================================
-  // RENDER
+  // PÁGINA ADMINISTRATIVA
   // ============================================================
 
   return (
     <main className="min-h-screen bg-[#f7f7fb]">
 
       {/* ====================================================== */}
-      {/* FUNDO */}
+      {/* DECORAÇÃO DE FUNDO */}
       {/* ====================================================== */}
 
       <div className="pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full bg-[#e91e8c] opacity-[0.08] blur-3xl" />
 
       <div className="pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#1687d9] opacity-[0.08] blur-3xl" />
 
+      <div className="pointer-events-none fixed left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-[#ffd21c] opacity-[0.04] blur-3xl" />
+
       {/* ====================================================== */}
-      {/* CONTEÚDO */}
+      {/* HEADER — IGUAL AO DE GUIAS */}
       {/* ====================================================== */}
 
-      <section className="relative z-10 mx-auto max-w-5xl px-5 py-7 sm:px-6 sm:py-10">
+      <header className="relative z-10 border-b border-gray-100 bg-white">
 
-        {/* CABEÇALHO */}
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6">
 
-        <div className="mb-6 flex items-center gap-3">
+          {/* LOGO + TÍTULO */}
+
+          <div className="flex items-center gap-3">
+
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e91e8c] shadow-md shadow-pink-200">
+
+              <img
+                src="/logo-branca.png"
+                alt="Way To Know Rio"
+                className="max-h-8 max-w-[38px] object-contain"
+              />
+
+            </div>
+
+            <div>
+
+              <h1 className="text-lg font-extrabold leading-tight text-gray-900 sm:text-xl">
+                Agenda de Guias
+              </h1>
+
+              <p className="text-xs text-gray-500">
+                Ranking de guias
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* BOTÃO VOLTAR */}
 
           <button
             type="button"
@@ -460,26 +484,68 @@ export default function GuideRanking() {
               window.location.href =
                 "/dashboard";
             }}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-lg font-bold text-gray-700 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
+            className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:px-4"
           >
-            ←
+            ← Voltar
           </button>
 
-          <div>
+        </div>
 
-            <h1 className="text-xl font-extrabold text-gray-900 sm:text-2xl">
-              🏆 Ranking de Guias
-            </h1>
+        {/* FAIXA COLORIDA */}
 
-            <p className="mt-1 text-xs font-medium text-gray-500 sm:text-sm">
-              Quantidade de vezes que cada guia foi escalado no mês.
-            </p>
+        <div className="flex h-1">
+          <div className="flex-1 bg-[#e91e8c]" />
+          <div className="flex-1 bg-[#ffd21c]" />
+          <div className="flex-1 bg-[#1687d9]" />
+        </div>
+
+      </header>
+
+      {/* ====================================================== */}
+      {/* CONTEÚDO */}
+      {/* ====================================================== */}
+
+      <section className="relative z-10 mx-auto max-w-5xl px-5 py-7 sm:px-6 sm:py-9">
+
+        {/* ==================================================== */}
+        {/* TÍTULO */}
+        {/* ==================================================== */}
+
+        <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
+
+          <div className="p-6 sm:p-8">
+
+            <div className="flex items-center gap-4">
+
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-yellow-50 text-3xl">
+                🏆
+              </div>
+
+              <div>
+
+                <p className="text-sm font-medium text-gray-400">
+                  Administração
+                </p>
+
+                <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-gray-900">
+                  Ranking de Guias
+                </h2>
+
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base">
+                  Confira a quantidade de vezes que cada guia foi escalado no mês.
+                </p>
+
+              </div>
+
+            </div>
 
           </div>
 
         </div>
 
-        {/* CARD */}
+        {/* ==================================================== */}
+        {/* CARD DO RANKING */}
+        {/* ==================================================== */}
 
         <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
 
@@ -495,7 +561,9 @@ export default function GuideRanking() {
 
           <div className="p-5 sm:p-7">
 
-            {/* NAVEGAÇÃO */}
+            {/* ================================================= */}
+            {/* NAVEGAÇÃO DO MÊS */}
+            {/* ================================================= */}
 
             <div className="mb-6 flex items-center justify-between rounded-2xl bg-gray-50 p-2 sm:p-3">
 
@@ -547,7 +615,9 @@ export default function GuideRanking() {
 
             </div>
 
+            {/* ================================================= */}
             {/* INFORMAÇÃO */}
+            {/* ================================================= */}
 
             <div className="mb-6 rounded-2xl bg-blue-50 px-4 py-3">
 
@@ -563,7 +633,9 @@ export default function GuideRanking() {
 
             </div>
 
+            {/* ================================================= */}
             {/* RANKING */}
+            {/* ================================================= */}
 
             {ranking.length === 0 ? (
 
@@ -616,6 +688,8 @@ export default function GuideRanking() {
                         ].join(" ")}
                       >
 
+                        {/* POSIÇÃO */}
+
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-lg font-extrabold shadow-sm sm:h-12 sm:w-12">
 
                           {getPositionIcon(
@@ -623,6 +697,8 @@ export default function GuideRanking() {
                           )}
 
                         </div>
+
+                        {/* GUIA */}
 
                         <div className="min-w-0 flex-1">
 
@@ -645,6 +721,8 @@ export default function GuideRanking() {
                           </p>
 
                         </div>
+
+                        {/* QUANTIDADE */}
 
                         <div className="text-right">
 
@@ -669,13 +747,17 @@ export default function GuideRanking() {
                 )}
 
               </div>
+
             )}
 
+            {/* ================================================= */}
             {/* EXPANDIR */}
+            {/* ================================================= */}
 
             {!loading &&
               ranking.length >
                 3 && (
+
                 <button
                   type="button"
                   onClick={() =>
@@ -690,20 +772,25 @@ export default function GuideRanking() {
                     ? "Ocultar guias"
                     : `Mostrar todos (${ranking.length})`}
                 </button>
+
               )}
 
           </div>
 
         </div>
 
+        {/* ==================================================== */}
         {/* RODAPÉ */}
+        {/* ==================================================== */}
 
-        <footer className="mt-10 pb-5 text-center">
+        <footer className="mt-12 pb-5 text-center">
 
           <div className="mb-4 flex justify-center gap-2">
 
             <span className="h-2 w-8 rounded-full bg-[#e91e8c]" />
+
             <span className="h-2 w-8 rounded-full bg-[#1687d9]" />
+
             <span className="h-2 w-8 rounded-full bg-[#ffd21c]" />
 
           </div>

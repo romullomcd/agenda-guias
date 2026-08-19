@@ -79,6 +79,8 @@ if (profile.role !== "admin") {
 const email = String(body.email || "").trim();
 const phone = String(body.phone || "").trim();
 const password = String(body.password || "");
+const pixKey = String(body.pix_key || "").trim();
+
 
 const languages = Array.isArray(body.languages)
   ? body.languages.map((language: unknown) => String(language))
@@ -136,7 +138,9 @@ const { error: newProfileError } = await supabaseAdmin
     id: newUser.id,
     name,
     role: "guide",
+    phone,
     languages,
+    pix_key: pixKey || null,
   });
 
     // Se o perfil não for criado, remove também o usuário

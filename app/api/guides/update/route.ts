@@ -64,6 +64,7 @@ const name = String(body.name || "").trim();
 const email = String(body.email || "").trim();
 const phone = String(body.phone || "").trim();
 const password = String(body.password || "");
+const pixKey = String(body.pix_key || "").trim();
 
 const languages = Array.isArray(body.languages)
   ? body.languages
@@ -161,13 +162,14 @@ const languages = Array.isArray(body.languages)
       await supabaseAdmin
         .from("profiles")
         .update({
-          name,
+  name,
   phone,
-          languages,
-        })
+  languages,
+  pix_key: pixKey || null,
+})
         .eq("id", guideId)
         .eq("role", "guide")
-        .select("id, name, role, active, languages, phone")
+        .select("id, name, role, active, languages, phone, pix_key")
         .single();
 
     if (profileError) {

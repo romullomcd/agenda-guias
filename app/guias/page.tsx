@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type Guide = {
@@ -11,17 +12,50 @@ type Guide = {
   languages: string[];
   phone: string;
   email: string;
+  pix_key: string;
 };
 
 const LANGUAGES = [
-  { value: "Português", label: "🇧🇷 Português", flag: "🇧🇷" },
-  { value: "Inglês", label: "🇺🇸 Inglês", flag: "🇺🇸" },
-  { value: "Espanhol", label: "🇪🇸 Espanhol", flag: "🇪🇸" },
-  { value: "Francês", label: "🇫🇷 Francês", flag: "🇫🇷" },
-  { value: "Italiano", label: "🇮🇹 Italiano", flag: "🇮🇹" },
-  { value: "Alemão", label: "🇩🇪 Alemão", flag: "🇩🇪" },
-  { value: "Mandarim", label: "🇨🇳 Mandarim", flag: "🇨🇳" },
-  { value: "Japonês", label: "🇯🇵 Japonês", flag: "🇯🇵" },
+  {
+    value: "Português",
+    label: "Português",
+    flag: "/flags/br.png",
+  },
+  {
+    value: "Inglês",
+    label: "Inglês",
+    flag: "/flags/us.png",
+  },
+  {
+    value: "Espanhol",
+    label: "Espanhol",
+    flag: "/flags/es.png",
+  },
+  {
+    value: "Francês",
+    label: "Francês",
+    flag: "/flags/fr.png",
+  },
+  {
+    value: "Italiano",
+    label: "Italiano",
+    flag: "/flags/it.png",
+  },
+  {
+    value: "Alemão",
+    label: "Alemão",
+    flag: "/flags/de.png",
+  },
+  {
+    value: "Mandarim",
+    label: "Mandarim",
+    flag: "/flags/cn.png",
+  },
+  {
+    value: "Japonês",
+    label: "Japonês",
+    flag: "/flags/jp.png",
+  },
 ];
 
 const ITEMS_PER_PAGE = 10;
@@ -30,29 +64,29 @@ export default function GuiasPage() {
   const [guides, setGuides] = useState<Guide[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Controle de acesso
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
 
-  // Formulário
   const [showForm, setShowForm] = useState(false);
-  const [editingGuide, setEditingGuide] = useState<Guide | null>(null);
+  const [editingGuide, setEditingGuide] =
+    useState<Guide | null>(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [languages, setLanguages] = useState<string[]>([]);
+  const [pixKey, setPixKey] = useState("");
 
-  // Mensagens
+  const formRef = useRef<HTMLDivElement>(null);
+
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingGuideId, setDeletingGuideId] =
     useState<string | null>(null);
 
-  // Busca e paginação
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -60,9 +94,14 @@ export default function GuiasPage() {
     checkAccess();
   }, []);
 
-  // ============================================
-  // FORMATA TELEFONE
-  // ============================================
+  function scrollToForm() {
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  }
 
   function formatPhone(value: string) {
     const numbers = value.replace(/\D/g, "").slice(0, 11);
@@ -85,17 +124,9 @@ export default function GuiasPage() {
     )}-${numbers.slice(7)}`;
   }
 
-  // ============================================
-  // LIMPA TELEFONE PARA SALVAR
-  // ============================================
-
   function cleanPhone(value: string) {
     return value.replace(/\D/g, "");
   }
-
-  // ============================================
-  // VERIFICA ACESSO
-  // ============================================
 
   async function checkAccess() {
     setCheckingAccess(true);
@@ -109,11 +140,12 @@ export default function GuiasPage() {
       return;
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    const { data: profile, error: profileError } =
+      await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
 
     if (profileError) {
       console.error(
@@ -140,26 +172,25 @@ export default function GuiasPage() {
     await loadGuides();
   }
 
-  // ============================================
-  // CARREGA GUIAS
-  // ============================================
-
   async function loadGuides() {
     setLoading(true);
     setError("");
 
     try {
-      const { data, error: guidesError } = await supabase
-        .from("profiles")
-        .select(
-          "id, name, role, active, languages, phone"
-        )
-        .eq("role", "guide")
-        .order("name");
+      const { data, error: guidesError } =
+        await supabase
+          .from("profiles")
+          .select(
+            "id, name, role, active, languages, phone"
+          )
+          .eq("role", "guide")
+          .order("name");
 
       if (guidesError) {
         console.error(guidesError);
-        setError("Não foi possível carregar os guias.");
+        setError(
+          "Não foi possível carregar os guias."
+        );
         setLoading(false);
         return;
       }
@@ -195,6 +226,7 @@ export default function GuiasPage() {
               ...guide,
               email: result.email || "",
               phone: guide.phone || "",
+              pix_key: result.pix_key || "",
             };
           } catch (fetchError) {
             console.error(
@@ -206,6 +238,7 @@ export default function GuiasPage() {
               ...guide,
               email: "",
               phone: guide.phone || "",
+              pix_key: "",
             };
           }
         })
@@ -215,15 +248,13 @@ export default function GuiasPage() {
       setCurrentPage(1);
     } catch (loadError) {
       console.error(loadError);
-      setError("Não foi possível carregar os guias.");
+      setError(
+        "Não foi possível carregar os guias."
+      );
     }
 
     setLoading(false);
   }
-
-  // ============================================
-  // IDIOMAS
-  // ============================================
 
   function toggleLanguage(language: string) {
     setLanguages((current) =>
@@ -233,21 +264,17 @@ export default function GuiasPage() {
     );
   }
 
-  // ============================================
-  // PEGA BANDEIRA DO IDIOMA
-  // ============================================
-
-  function getLanguageFlag(language: string) {
-    const found = LANGUAGES.find(
-      (item) => item.value === language
+  function getLanguage(language: string) {
+    return (
+      LANGUAGES.find(
+        (item) => item.value === language
+      ) || {
+        value: language,
+        label: language,
+        flag: "",
+      }
     );
-
-    return found?.flag || "🌐";
   }
-
-  // ============================================
-  // LIMPA FORMULÁRIO
-  // ============================================
 
   function clearForm() {
     setName("");
@@ -255,13 +282,10 @@ export default function GuiasPage() {
     setPhone("");
     setPassword("");
     setLanguages([]);
+    setPixKey("");
     setEditingGuide(null);
     setShowForm(false);
   }
-
-  // ============================================
-  // ABRE FORMULÁRIO DE CRIAÇÃO
-  // ============================================
 
   function openCreateForm() {
     setMessage("");
@@ -272,13 +296,12 @@ export default function GuiasPage() {
     setPhone("");
     setPassword("");
     setLanguages([]);
+    setPixKey("");
     setEditingGuide(null);
     setShowForm(true);
-  }
 
-  // ============================================
-  // EDITAR GUIA
-  // ============================================
+    scrollToForm();
+  }
 
   async function openEditForm(guide: Guide) {
     setMessage("");
@@ -326,12 +349,12 @@ export default function GuiasPage() {
       formatPhone(result.phone || "")
     );
 
-    setShowForm(true);
-  }
+    setPixKey(result.pix_key || "");
 
-  // ============================================
-  // CRIAR GUIA
-  // ============================================
+    setShowForm(true);
+
+    scrollToForm();
+  }
 
   async function createGuide(
     event: React.FormEvent
@@ -392,6 +415,7 @@ export default function GuiasPage() {
           phone: cleanPhone(phone),
           password,
           languages,
+          pix_key: pixKey.trim(),
         }),
       }
     );
@@ -416,10 +440,6 @@ export default function GuiasPage() {
 
     await loadGuides();
   }
-
-  // ============================================
-  // ATUALIZAR GUIA
-  // ============================================
 
   async function updateGuide(
     event: React.FormEvent
@@ -488,6 +508,7 @@ export default function GuiasPage() {
           phone: cleanPhone(phone),
           password,
           languages,
+          pix_key: pixKey.trim(),
         }),
       }
     );
@@ -512,10 +533,6 @@ export default function GuiasPage() {
 
     await loadGuides();
   }
-
-  // ============================================
-  // ATIVAR / DESATIVAR
-  // ============================================
 
   async function toggleGuide(guide: Guide) {
     setError("");
@@ -566,10 +583,6 @@ export default function GuiasPage() {
     await loadGuides();
   }
 
-  // ============================================
-  // DELETAR GUIA
-  // ============================================
-
   async function deleteGuide(guide: Guide) {
     const confirmed = window.confirm(
       `Tem certeza que deseja deletar o guia "${guide.name}"?\n\nEssa ação não poderá ser desfeita.`
@@ -608,24 +621,24 @@ export default function GuiasPage() {
 
       const responseText = await response.text();
 
-let result: any = {};
+      let result: any = {};
 
-if (responseText) {
-  try {
-    result = JSON.parse(responseText);
-  } catch {
-    result = {};
-  }
-}
+      if (responseText) {
+        try {
+          result = JSON.parse(responseText);
+        } catch {
+          result = {};
+        }
+      }
 
-if (!response.ok) {
-  setError(
-    result.error ||
-      "Não foi possível deletar o guia."
-  );
-  setDeletingGuideId(null);
-  return;
-}
+      if (!response.ok) {
+        setError(
+          result.error ||
+            "Não foi possível deletar o guia."
+        );
+        setDeletingGuideId(null);
+        return;
+      }
 
       setMessage(
         `O guia "${guide.name}" foi deletado com sucesso.`
@@ -644,10 +657,6 @@ if (!response.ok) {
       setDeletingGuideId(null);
     }
   }
-
-  // ============================================
-  // FILTRO DE BUSCA
-  // ============================================
 
   const filteredGuides = useMemo(() => {
     const searchValue = search
@@ -682,10 +691,6 @@ if (!response.ok) {
     });
   }, [guides, search]);
 
-  // ============================================
-  // PAGINAÇÃO
-  // ============================================
-
   const totalPages = Math.max(
     1,
     Math.ceil(
@@ -715,29 +720,19 @@ if (!response.ok) {
     }
   }, [currentPage, totalPages]);
 
-  // ============================================
-  // VERIFICANDO ACESSO
-  // ============================================
-
   if (checkingAccess) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] px-5">
         <div className="text-center">
-
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c]" />
 
           <p className="mt-4 text-sm font-semibold text-gray-500">
             Verificando acesso...
           </p>
-
         </div>
       </main>
     );
   }
-
-  // ============================================
-  // ACESSO NEGADO
-  // ============================================
 
   if (accessDenied || !isAdmin) {
     return (
@@ -788,22 +783,14 @@ if (!response.ok) {
     );
   }
 
-  // ============================================
-  // PÁGINA ADMINISTRATIVA
-  // ============================================
-
   return (
     <main className="min-h-screen bg-[#f7f7fb]">
-
-      {/* DECORAÇÃO DE FUNDO */}
 
       <div className="pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full bg-[#e91e8c] opacity-[0.08] blur-3xl" />
 
       <div className="pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#1687d9] opacity-[0.08] blur-3xl" />
 
       <div className="pointer-events-none fixed left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-[#ffd21c] opacity-[0.04] blur-3xl" />
-
-      {/* HEADER */}
 
       <header className="relative z-10 border-b border-gray-100 bg-white">
 
@@ -855,11 +842,7 @@ if (!response.ok) {
 
       </header>
 
-      {/* CONTEÚDO */}
-
       <section className="relative z-10 mx-auto max-w-7xl px-5 py-7 sm:px-6 sm:py-9">
-
-        {/* TÍTULO */}
 
         <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
 
@@ -912,8 +895,6 @@ if (!response.ok) {
 
         </div>
 
-        {/* BUSCA + BOTÃO */}
-
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
           <div className="relative w-full sm:max-w-md">
@@ -961,8 +942,6 @@ if (!response.ok) {
 
         </div>
 
-        {/* RESULTADO DA BUSCA */}
-
         {!loading && search && (
           <div className="mb-4 text-sm font-medium text-gray-500">
             {filteredGuides.length === 0
@@ -975,10 +954,11 @@ if (!response.ok) {
           </div>
         )}
 
-        {/* FORMULÁRIO */}
-
         {showForm && (
-          <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
+          <div
+            ref={formRef}
+            className="mb-6 scroll-mt-5 overflow-hidden rounded-3xl bg-white shadow-sm"
+          >
 
             <div className="h-1 bg-[#1687d9]" />
 
@@ -1017,8 +997,6 @@ if (!response.ok) {
                 className="mt-6 grid gap-5"
               >
 
-                {/* NOME */}
-
                 <div>
 
                   <label className="mb-2 block text-sm font-bold text-gray-800">
@@ -1038,8 +1016,6 @@ if (!response.ok) {
                   />
 
                 </div>
-
-                {/* EMAIL */}
 
                 <div>
 
@@ -1061,8 +1037,6 @@ if (!response.ok) {
                   />
 
                 </div>
-
-                {/* TELEFONE */}
 
                 <div>
 
@@ -1091,7 +1065,27 @@ if (!response.ok) {
 
                 </div>
 
-                {/* SENHA */}
+                <div>
+
+                  <label className="mb-2 block text-sm font-bold text-gray-800">
+                    Chave PIX
+                  </label>
+
+                  <input
+                    type="text"
+                    value={pixKey}
+                    onChange={(e) =>
+                      setPixKey(e.target.value)
+                    }
+                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50"
+                    placeholder="CPF, CNPJ, telefone, e-mail ou chave aleatória"
+                  />
+
+                  <p className="mt-2 text-xs font-medium text-gray-400">
+                    Chave utilizada para pagamentos ao guia.
+                  </p>
+
+                </div>
 
                 <div>
 
@@ -1126,8 +1120,6 @@ if (!response.ok) {
                   )}
 
                 </div>
-
-                {/* IDIOMAS */}
 
                 <div>
 
@@ -1165,7 +1157,17 @@ if (!response.ok) {
                             className="mr-2 accent-[#e91e8c]"
                           />
 
-                          {language.label}
+                          <span className="inline-flex items-center gap-2">
+
+                            <img
+                              src={language.flag}
+                              alt=""
+                              className="h-4 w-6 rounded-sm object-cover shadow-sm"
+                            />
+
+                            {language.label}
+
+                          </span>
 
                         </label>
 
@@ -1175,8 +1177,6 @@ if (!response.ok) {
                   </div>
 
                 </div>
-
-                {/* SALVAR */}
 
                 <button
                   type="submit"
@@ -1197,23 +1197,17 @@ if (!response.ok) {
           </div>
         )}
 
-        {/* MENSAGEM */}
-
         {message && (
           <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 font-semibold text-green-700">
             {message}
           </div>
         )}
 
-        {/* ERRO */}
-
         {error && (
           <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">
             {error}
           </div>
         )}
-
-        {/* LISTA DE GUIAS */}
 
         <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
 
@@ -1271,11 +1265,7 @@ if (!response.ok) {
                     className="flex flex-col gap-5 p-6 transition hover:bg-gray-50 md:flex-row md:items-center md:justify-between"
                   >
 
-                    {/* INFORMAÇÕES */}
-
                     <div className="min-w-0">
-
-                      {/* NOME */}
 
                       <div className="flex items-center gap-3">
 
@@ -1299,8 +1289,6 @@ if (!response.ok) {
 
                       </div>
 
-                      {/* CONTATO */}
-
                       <div className="mt-3 space-y-1">
 
                         {guide.email && (
@@ -1318,28 +1306,51 @@ if (!response.ok) {
                           </p>
                         )}
 
-                      </div>
+                        {guide.pix_key && (
+                          <p className="truncate text-sm font-medium text-gray-500">
+                            💰 PIX: {guide.pix_key}
+                          </p>
+                        )}
 
-                      {/* IDIOMAS */}
+                      </div>
 
                       <div className="mt-4 flex flex-wrap gap-2">
 
                         {guide.languages?.length > 0 ? (
 
                           guide.languages.map(
-                            (language) => (
+                            (language) => {
 
-                              <span
-                                key={language}
-                                className="rounded-full bg-yellow-50 px-3 py-1.5 text-xs font-bold text-yellow-700 ring-1 ring-yellow-200"
-                              >
-                                {getLanguageFlag(
+                              const languageData =
+                                getLanguage(
                                   language
-                                )}{" "}
-                                {language}
-                              </span>
+                                );
 
-                            )
+                              return (
+                                <span
+                                  key={language}
+                                  className="inline-flex items-center gap-2 rounded-full bg-yellow-50 px-3 py-1.5 text-xs font-bold text-yellow-700 ring-1 ring-yellow-200"
+                                >
+
+                                  {languageData.flag ? (
+                                    <img
+                                      src={
+                                        languageData.flag
+                                      }
+                                      alt=""
+                                      className="h-3.5 w-5 rounded-sm object-cover"
+                                    />
+                                  ) : (
+                                    <span>
+                                      🌐
+                                    </span>
+                                  )}
+
+                                  {language}
+
+                                </span>
+                              );
+                            }
                           )
 
                         ) : (
@@ -1354,11 +1365,7 @@ if (!response.ok) {
 
                     </div>
 
-                    {/* AÇÕES */}
-
                     <div className="flex flex-wrap items-center gap-3">
-
-                      {/* STATUS */}
 
                       <span
                         className={`rounded-full px-3 py-1.5 text-sm font-extrabold ${
@@ -1372,8 +1379,6 @@ if (!response.ok) {
                           : "Inativo"}
                       </span>
 
-                      {/* EDITAR */}
-
                       <button
                         type="button"
                         onClick={() =>
@@ -1385,8 +1390,6 @@ if (!response.ok) {
                       >
                         ✏️ Editar
                       </button>
-
-                      {/* ATIVAR / DESATIVAR */}
 
                       <button
                         type="button"
@@ -1406,20 +1409,23 @@ if (!response.ok) {
                           : "Ativar"}
                       </button>
 
-{/* DELETAR */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          deleteGuide(guide)
+                        }
+                        disabled={
+                          deletingGuideId ===
+                          guide.id
+                        }
+                        className="rounded-xl bg-red-600 px-4 py-2 text-sm font-extrabold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {deletingGuideId ===
+                        guide.id
+                          ? "Deletando..."
+                          : "🗑️ Deletar"}
+                      </button>
 
-<button
-  type="button"
-  onClick={() =>
-    deleteGuide(guide)
-  }
-  disabled={deletingGuideId === guide.id}
-  className="rounded-xl bg-red-600 px-4 py-2 text-sm font-extrabold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
->
-  {deletingGuideId === guide.id
-    ? "Deletando..."
-    : "🗑️ Deletar"}
-</button>
                     </div>
 
                   </div>
@@ -1430,8 +1436,6 @@ if (!response.ok) {
             </div>
 
           )}
-
-          {/* PAGINAÇÃO */}
 
           {!loading &&
             filteredGuides.length >
@@ -1524,8 +1528,6 @@ if (!response.ok) {
 
         </div>
 
-        {/* RODAPÉ */}
-
         <footer className="mt-12 pb-5 text-center">
 
           <div className="mb-4 flex justify-center gap-2">
@@ -1554,3 +1556,4 @@ if (!response.ok) {
     </main>
   );
 }
+

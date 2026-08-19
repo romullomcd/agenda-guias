@@ -100,9 +100,9 @@ export async function GET(
     const { data: profile, error: profileError } =
       await supabaseAdmin
         .from("profiles")
-        .select(
-          "id, name, role, active, languages, phone"
-        )
+.select(
+  "id, name, role, active, languages, phone, pix_key"
+)
         .eq("id", id)
         .eq("role", "guide")
         .single();
@@ -136,15 +136,17 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({
-      id: profile.id,
-      name: profile.name,
-      email: guideUser.email || "",
-      role: profile.role,
-      active: profile.active,
-      languages: profile.languages || [],
-      phone: profile.phone || "",
-    });
+return NextResponse.json({
+  id: profile.id,
+  name: profile.name,
+  email: guideUser.email || "",
+  role: profile.role,
+  active: profile.active,
+  languages: profile.languages || [],
+  phone: profile.phone || "",
+  pix_key: profile.pix_key || "",
+});
+
   } catch (error) {
     console.error(
       "ERRO AO BUSCAR GUIA:",

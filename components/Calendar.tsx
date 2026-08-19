@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -39,10 +40,18 @@ export default function Calendar() {
   // ============================================================
 
   useEffect(() => {
-    loadAvailability();
+    // Carregamento inicial / troca de mês
+    loadAvailability(true);
 
     // ==========================================================
     // ATUALIZAÇÃO EM TEMPO REAL
+    // ==========================================================
+    //
+    // IMPORTANTE:
+    // Aqui NÃO chamamos loadAvailability(true).
+    //
+    // O Realtime atualiza os dados silenciosamente,
+    // sem mostrar o loading novamente.
     // ==========================================================
 
     const channel = supabase
@@ -55,7 +64,7 @@ export default function Calendar() {
           table: "availability",
         },
         async () => {
-          await loadAvailability();
+          await loadAvailability(false);
         }
       )
       .subscribe();
@@ -65,8 +74,24 @@ export default function Calendar() {
     };
   }, [currentMonth]);
 
-  async function loadAvailability() {
-    setLoading(true);
+  // ============================================================
+  // BUSCAR DISPONIBILIDADE
+  // ============================================================
+
+  async function loadAvailability(
+    showLoading = false
+  ) {
+    // Só mostra loading quando realmente precisamos.
+    //
+    // Realtime:
+    // showLoading = false
+    //
+    // Carregamento inicial / troca de mês:
+    // showLoading = true
+
+    if (showLoading) {
+      setLoading(true);
+    }
 
     const {
       data: { user },
@@ -109,10 +134,14 @@ export default function Calendar() {
         String(error.hint)
       );
     } else {
+      // Atualiza os dados normalmente,
+      // mas sem ativar o loading.
       setAvailability(data || []);
     }
 
-    setLoading(false);
+    if (showLoading) {
+      setLoading(false);
+    }
   }
 
   // ============================================================
@@ -143,6 +172,7 @@ export default function Calendar() {
     // ==========================================================
     // ESCALADO
     // ==========================================================
+    //
     // O administrador escalou esse guia.
     //
     // O guia NÃO pode alterar esse dia.
@@ -188,6 +218,7 @@ export default function Calendar() {
         return;
       }
 
+      // Atualização imediata da tela.
       setAvailability(
         (current) => [
           ...current,
@@ -236,6 +267,7 @@ export default function Calendar() {
         return;
       }
 
+      // Atualização imediata da tela.
       setAvailability(
         (current) =>
           current.map(
@@ -282,6 +314,7 @@ export default function Calendar() {
         return;
       }
 
+      // Atualização imediata da tela.
       setAvailability(
         (current) =>
           current.filter(
@@ -618,3 +651,4 @@ export default function Calendar() {
     </div>
   );
 }
+

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -22,6 +23,7 @@ type Guide = {
   languages: string[];
   phone: string;
   email: string;
+  pix_key: string;
 };
 
 type Availability = {
@@ -43,49 +45,179 @@ const LANGUAGE_FLAGS: Record<string, string> = {
 };
 
 export default function AdminCalendar() {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(
+    new Date()
+  );
 
   const [guides, setGuides] = useState<Guide[]>([]);
-  const [availability, setAvailability] = useState<Availability[]>([]);
+  const [availability, setAvailability] = useState<
+    Availability[]
+  >([]);
 
-  const [selectedGuide, setSelectedGuide] = useState("all");
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [guideSearch, setGuideSearch] = useState("");
+
+  const [selectedDate, setSelectedDate] = useState<
+    string | null
+  >(null);
 
   const [selectedGuideDetails, setSelectedGuideDetails] =
     useState<Guide | null>(null);
 
-  const [selectedGuideAvailability, setSelectedGuideAvailability] =
-    useState<Availability | null>(null);
+  const [
+    selectedGuideAvailability,
+    setSelectedGuideAvailability,
+  ] = useState<Availability | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
   // ============================================================
-  // CARREGAR DADOS
+  // CARREGAMENTO INICIAL / TROCA DE MÊS
   // ============================================================
 
   useEffect(() => {
     loadData();
+  }, [currentMonth]);
 
+  // ============================================================
+  // REALTIME
+  // ============================================================
+
+  useEffect(() => {
     const channel = supabase
-      .channel("admin-availability")
+      .channel("admin-availability-realtime")
+
+      // ========================================================
+      // NOVO REGISTRO
+      // ========================================================
+
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "availability",
         },
-        () => {
-          loadData();
+        (payload) => {
+          const newItem =
+            payload.new as Availability;
+
+          setAvailability((current) => {
+            const alreadyExists = current.some(
+              (item) => item.id === newItem.id
+            );
+
+            if (alreadyExists) {
+              return current;
+            }
+
+            const firstDay = format(
+              startOfMonth(currentMonth),
+              "yyyy-MM-dd"
+            );
+
+            const lastDay = format(
+              endOfMonth(currentMonth),
+              "yyyy-MM-dd"
+            );
+
+            if (
+              newItem.date < firstDay ||
+              newItem.date > lastDay
+            ) {
+              return current;
+            }
+
+            return [...current, newItem].sort((a, b) =>
+              a.date.localeCompare(b.date)
+            );
+          });
         }
       )
+
+      // ========================================================
+      // REGISTRO ATUALIZADO
+      // ========================================================
+
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "availability",
+        },
+        (payload) => {
+          const updatedItem =
+            payload.new as Availability;
+
+          setAvailability((current) =>
+            current.map((item) =>
+              item.id === updatedItem.id
+                ? updatedItem
+                : item
+            )
+          );
+
+          // Se o guia que está aberto no modal foi alterado,
+          // atualiza também o status mostrado no modal.
+          setSelectedGuideAvailability((current) => {
+            if (
+              current &&
+              current.id === updatedItem.id
+            ) {
+              return updatedItem;
+            }
+
+            return current;
+          });
+        }
+      )
+
+      // ========================================================
+      // REGISTRO REMOVIDO
+      // ========================================================
+
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "availability",
+        },
+        (payload) => {
+          const deletedItem =
+            payload.old as Availability;
+
+          setAvailability((current) =>
+            current.filter(
+              (item) =>
+                item.id !== deletedItem.id
+            )
+          );
+
+          setSelectedGuideAvailability((current) => {
+            if (
+              current &&
+              current.id === deletedItem.id
+            ) {
+              return null;
+            }
+
+            return current;
+          });
+        }
+      )
+
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [currentMonth]);
+
+  // ============================================================
+  // CARREGAR DADOS
+  // ============================================================
 
   async function loadData() {
     setLoading(true);
@@ -146,6 +278,7 @@ export default function AdminCalendar() {
                   phone:
                     guide.phone || "",
                   email: "",
+                  pix_key: "",
                 };
               }
 
@@ -172,6 +305,11 @@ export default function AdminCalendar() {
                     guide.phone || "",
                   email:
                     result.email || "",
+                  pix_key:
+                    result.pix_key ||
+                    result.pix ||
+                    result.pixKey ||
+                    "",
                 };
               } catch (error) {
                 console.error(
@@ -186,6 +324,7 @@ export default function AdminCalendar() {
                   phone:
                     guide.phone || "",
                   email: "",
+                  pix_key: "",
                 };
               }
             }
@@ -214,22 +353,23 @@ export default function AdminCalendar() {
   }
 
   // ============================================================
-  // FILTRO
+  // GUIAS FILTRADOS PELO NOME
   // ============================================================
 
-  const filteredAvailability = useMemo(() => {
-    if (selectedGuide === "all") {
-      return availability;
+  const normalizedSearch =
+    guideSearch.trim().toLowerCase();
+
+  const filteredGuides = useMemo(() => {
+    if (!normalizedSearch) {
+      return guides;
     }
 
-    return availability.filter(
-      (item) =>
-        item.guide_id === selectedGuide
+    return guides.filter((guide) =>
+      guide.name
+        .toLowerCase()
+        .includes(normalizedSearch)
     );
-  }, [
-    availability,
-    selectedGuide,
-  ]);
+  }, [guides, normalizedSearch]);
 
   // ============================================================
   // MAPA DOS GUIAS
@@ -243,6 +383,32 @@ export default function AdminCalendar() {
       ])
     );
   }, [guides]);
+
+  // ============================================================
+  // DISPONIBILIDADE FILTRADA
+  // ============================================================
+
+  const filteredAvailability = useMemo(() => {
+    if (!normalizedSearch) {
+      return availability;
+    }
+
+    const matchingGuideIds = new Set(
+      filteredGuides.map(
+        (guide) => guide.id
+      )
+    );
+
+    return availability.filter((item) =>
+      matchingGuideIds.has(
+        item.guide_id
+      )
+    );
+  }, [
+    availability,
+    filteredGuides,
+    normalizedSearch,
+  ]);
 
   // ============================================================
   // CALENDÁRIO
@@ -336,7 +502,7 @@ export default function AdminCalendar() {
       !guide?.languages ||
       guide.languages.length === 0
     ) {
-      return "🌐";
+      return "";
     }
 
     return guide.languages
@@ -344,8 +510,9 @@ export default function AdminCalendar() {
         (language) =>
           LANGUAGE_FLAGS[
             language
-          ] || "🌐"
+          ] || ""
       )
+      .filter(Boolean)
       .join(" ");
   }
 
@@ -420,7 +587,18 @@ export default function AdminCalendar() {
     setSelectedGuideDetails(null);
     setSelectedGuideAvailability(null);
 
-    await loadData();
+    // Atualiza localmente sem precisar de loading.
+    setAvailability((current) =>
+      current.map((item) =>
+        item.id ===
+        selectedGuideAvailability.id
+          ? {
+              ...item,
+              status: "escalated",
+            }
+          : item
+      )
+    );
 
     setUpdating(false);
   }
@@ -460,10 +638,23 @@ export default function AdminCalendar() {
       return;
     }
 
+    const availabilityId =
+      selectedGuideAvailability.id;
+
     setSelectedGuideDetails(null);
     setSelectedGuideAvailability(null);
 
-    await loadData();
+    // Atualiza localmente sem loading.
+    setAvailability((current) =>
+      current.map((item) =>
+        item.id === availabilityId
+          ? {
+              ...item,
+              status: "available",
+            }
+          : item
+      )
+    );
 
     setUpdating(false);
   }
@@ -503,33 +694,69 @@ export default function AdminCalendar() {
           </p>
         </div>
 
-        <select
-          value={selectedGuide}
-          onChange={(event) =>
-            setSelectedGuide(
-              event.target.value
-            )
-          }
-          className="w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-800 outline-none transition focus:border-[#1687d9] focus:ring-4 focus:ring-blue-100 sm:w-auto sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm"
-        >
-          <option value="all">
-            Todos os guias
-          </option>
+        {/* ================================================== */}
+        {/* BUSCA DE GUIA */}
+        {/* ================================================== */}
 
-          {guides.map((guide) => (
-            <option
-              key={guide.id}
-              value={guide.id}
+        <div className="relative w-full md:w-80">
+
+          <input
+            type="text"
+            value={guideSearch}
+            onChange={(event) =>
+              setGuideSearch(
+                event.target.value
+              )
+            }
+            placeholder="Buscar guia pelo nome..."
+            className="w-full rounded-lg border-2 border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-100 sm:rounded-xl"
+          />
+
+          {guideSearch && (
+            <button
+              type="button"
+              onClick={() =>
+                setGuideSearch("")
+              }
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 hover:text-gray-700"
             >
-              {guide.name}
-              {!guide.active
-                ? " (Inativo)"
-                : ""}
-            </option>
-          ))}
-        </select>
+              ✕
+            </button>
+          )}
+
+        </div>
 
       </div>
+
+      {/* ====================================================== */}
+      {/* RESULTADO DA BUSCA */}
+      {/* ====================================================== */}
+
+      {guideSearch.trim() && (
+        <div className="mb-4 rounded-xl bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-800 sm:mb-6 sm:text-sm">
+          {filteredGuides.length === 0 ? (
+            <>
+              Nenhum guia encontrado para "
+              {guideSearch}".
+            </>
+          ) : (
+            <>
+              Mostrando a agenda de{" "}
+              <strong>
+                {filteredGuides.length}
+              </strong>{" "}
+              guia
+              {filteredGuides.length !== 1
+                ? "s"
+                : ""}{" "}
+              encontrado
+              {filteredGuides.length !== 1
+                ? "s"
+                : ""}.
+            </>
+          )}
+        </div>
+      )}
 
       {/* ====================================================== */}
       {/* NAVEGAÇÃO */}
@@ -591,7 +818,7 @@ export default function AdminCalendar() {
         <>
 
           {/* ================================================== */}
-          {/* DIAS */}
+          {/* DIAS DA SEMANA */}
           {/* ================================================== */}
 
           <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[9px] font-extrabold uppercase tracking-wide text-gray-800 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
@@ -613,7 +840,6 @@ export default function AdminCalendar() {
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
 
             {days.map((day) => {
-
               const date =
                 format(
                   day,
@@ -672,8 +898,6 @@ export default function AdminCalendar() {
                   ].join(" ")}
                 >
 
-                  {/* NÚMERO */}
-
                   <div
                     className={[
                       "mb-1 text-right text-[10px] font-extrabold sm:mb-2 sm:text-sm",
@@ -690,9 +914,9 @@ export default function AdminCalendar() {
 
                   <div className="space-y-0.5 sm:space-y-1">
 
-                    {/* ================================================= */}
+                    {/* ================================================== */}
                     {/* ESCALADOS */}
-                    {/* ================================================= */}
+                    {/* ================================================== */}
 
                     {escalated
                       .slice(0, 2)
@@ -725,9 +949,9 @@ export default function AdminCalendar() {
                       </div>
                     )}
 
-                    {/* ================================================= */}
+                    {/* ================================================== */}
                     {/* DISPONÍVEIS */}
-                    {/* ================================================= */}
+                    {/* ================================================== */}
 
                     {available
                       .slice(0, 2)
@@ -759,9 +983,9 @@ export default function AdminCalendar() {
                       </div>
                     )}
 
-                    {/* ================================================= */}
+                    {/* ================================================== */}
                     {/* INDISPONÍVEIS */}
-                    {/* ================================================= */}
+                    {/* ================================================== */}
 
                     {unavailable
                       .slice(0, 1)
@@ -881,9 +1105,9 @@ export default function AdminCalendar() {
 
             </div>
 
-            {/* ================================================= */}
+            {/* ================================================== */}
             {/* ESCALADOS */}
-            {/* ================================================= */}
+            {/* ================================================== */}
 
             <div className="mt-5 sm:mt-6">
 
@@ -901,7 +1125,6 @@ export default function AdminCalendar() {
                 ) : (
                   selectedEscalated.map(
                     (item) => {
-
                       const guide =
                         guideMap.get(
                           item.guide_id
@@ -912,7 +1135,6 @@ export default function AdminCalendar() {
                           key={item.id}
                           type="button"
                           onClick={() => {
-
                             if (guide) {
                               setSelectedGuideDetails(
                                 guide
@@ -922,7 +1144,6 @@ export default function AdminCalendar() {
                                 item
                               );
                             }
-
                           }}
                           className="flex w-full items-center justify-between rounded-xl bg-[#f3e5a5] px-4 py-3 text-left text-sm font-bold text-[#806600] transition hover:bg-[#ead98c]"
                         >
@@ -950,9 +1171,9 @@ export default function AdminCalendar() {
 
             </div>
 
-            {/* ================================================= */}
+            {/* ================================================== */}
             {/* DISPONÍVEIS */}
-            {/* ================================================= */}
+            {/* ================================================== */}
 
             <div className="mt-5 sm:mt-6">
 
@@ -970,7 +1191,6 @@ export default function AdminCalendar() {
                 ) : (
                   selectedAvailable.map(
                     (item) => {
-
                       const guide =
                         guideMap.get(
                           item.guide_id
@@ -981,7 +1201,6 @@ export default function AdminCalendar() {
                           key={item.id}
                           type="button"
                           onClick={() => {
-
                             if (guide) {
                               setSelectedGuideDetails(
                                 guide
@@ -991,7 +1210,6 @@ export default function AdminCalendar() {
                                 item
                               );
                             }
-
                           }}
                           className="flex w-full items-center justify-between rounded-xl bg-green-50 px-4 py-3 text-left text-sm font-bold text-green-800 transition hover:bg-green-100"
                         >
@@ -1019,9 +1237,9 @@ export default function AdminCalendar() {
 
             </div>
 
-            {/* ================================================= */}
+            {/* ================================================== */}
             {/* INDISPONÍVEIS */}
-            {/* ================================================= */}
+            {/* ================================================== */}
 
             <div className="mt-5 sm:mt-6">
 
@@ -1039,7 +1257,6 @@ export default function AdminCalendar() {
                 ) : (
                   selectedUnavailable.map(
                     (item) => {
-
                       const guide =
                         guideMap.get(
                           item.guide_id
@@ -1050,7 +1267,6 @@ export default function AdminCalendar() {
                           key={item.id}
                           type="button"
                           onClick={() => {
-
                             if (guide) {
                               setSelectedGuideDetails(
                                 guide
@@ -1060,7 +1276,6 @@ export default function AdminCalendar() {
                                 item
                               );
                             }
-
                           }}
                           className="flex w-full items-center justify-between rounded-xl bg-red-50 px-4 py-3 text-left text-sm font-bold text-red-800 transition hover:bg-red-100"
                         >
@@ -1125,7 +1340,9 @@ export default function AdminCalendar() {
             }
           >
 
+            {/* ================================================== */}
             {/* CABEÇALHO */}
+            {/* ================================================== */}
 
             <div className="flex items-start justify-between border-b border-gray-100 p-6">
 
@@ -1158,7 +1375,9 @@ export default function AdminCalendar() {
 
             </div>
 
+            {/* ================================================== */}
             {/* INFORMAÇÕES */}
+            {/* ================================================== */}
 
             <div className="space-y-4 p-6">
 
@@ -1195,9 +1414,48 @@ export default function AdminCalendar() {
 
               </div>
 
-              {/* ================================================= */}
+              {/* ================================================== */}
+              {/* PIX */}
+              {/* ================================================== */}
+
+              <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-100">
+
+                <p className="text-xs font-bold uppercase tracking-wide text-green-600">
+                  Chave PIX
+                </p>
+
+                <div className="mt-1 flex items-center justify-between gap-3">
+
+                  <p className="break-all text-sm font-bold text-gray-800">
+                    {selectedGuideDetails.pix_key ||
+                      "Não informado"}
+                  </p>
+
+                  {selectedGuideDetails.pix_key && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          selectedGuideDetails.pix_key
+                        );
+
+                        alert(
+                          "Chave PIX copiada!"
+                        );
+                      }}
+                      className="shrink-0 rounded-lg bg-white px-3 py-2 text-xs font-extrabold text-green-700 shadow-sm ring-1 ring-green-200 transition hover:bg-green-100"
+                    >
+                      Copiar
+                    </button>
+                  )}
+
+                </div>
+
+              </div>
+
+              {/* ================================================== */}
               {/* BOTÃO DE ESCALA */}
-              {/* ================================================= */}
+              {/* ================================================== */}
 
               {selectedGuideAvailability?.status ===
                 "available" && (
@@ -1213,9 +1471,9 @@ export default function AdminCalendar() {
                 </button>
               )}
 
-              {/* ================================================= */}
+              {/* ================================================== */}
               {/* REMOVER ESCALA */}
-              {/* ================================================= */}
+              {/* ================================================== */}
 
               {selectedGuideAvailability?.status ===
                 "escalated" && (
@@ -1231,7 +1489,9 @@ export default function AdminCalendar() {
                 </button>
               )}
 
+              {/* ================================================== */}
               {/* FECHAR */}
+              {/* ================================================== */}
 
               <button
                 type="button"
@@ -1255,3 +1515,4 @@ export default function AdminCalendar() {
     </div>
   );
 }
+
