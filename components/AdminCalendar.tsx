@@ -6363,21 +6363,50 @@ additional_email_2:
 
               {/* EMAIL */}
 
+                            {/* EMAIL */}
+
               <div className="rounded-2xl bg-gray-50 p-4">
 
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
                   E-mail adicional
                 </p>
 
-                <p className="mt-1 break-all text-sm font-bold text-gray-800">
+                <div className="mt-1 space-y-1 text-sm font-bold text-gray-800">
+
                   {
                     selectedTourEvent.additional_email ||
-                    "Nenhum e-mail adicional."
+                    selectedTourEvent.additional_email_2
+                      ? (
+                          <>
+                            {
+                              selectedTourEvent.additional_email && (
+                                <p className="break-all">
+                                  {
+                                    selectedTourEvent.additional_email
+                                  }
+                                </p>
+                              )
+                            }
+
+                            {
+                              selectedTourEvent.additional_email_2 && (
+                                <p className="break-all">
+                                  {
+                                    selectedTourEvent.additional_email_2
+                                  }
+                                </p>
+                              )
+                            }
+                          </>
+                        )
+                      : (
+                          "Nenhum e-mail adicional."
+                        )
                   }
-                </p>
+
+                </div>
 
               </div>
-
               {/* GOOGLE */}
 
               <div className="rounded-2xl bg-green-50 p-4">
