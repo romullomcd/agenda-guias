@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import type {
+  MouseEvent as ReactMouseEvent,
+} from "react";
+
 import {
   addMonths,
   eachDayOfInterval,
@@ -12,12 +22,13 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
+
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/lib/supabase";
 
 /* ============================================================
-   TIPOS
-   ============================================================ */
+TIPOS
+============================================================ */
 
 type Guide = {
   id: string;
@@ -33,7 +44,10 @@ type Availability = {
   id: number;
   guide_id: string;
   date: string;
-  status: "available" | "unavailable" | "escalated";
+  status:
+    | "available"
+    | "unavailable"
+    | "escalated";
 };
 
 type TourEvent = {
@@ -41,6 +55,7 @@ type TourEvent = {
   date: string;
   title: string;
   description: string | null;
+  address: string | null;
   all_day: boolean;
   guide_id: string;
   guide_email: string;
@@ -52,8 +67,8 @@ type TourEvent = {
 };
 
 /* ============================================================
-   BANDEIRAS
-   ============================================================ */
+BANDEIRAS
+============================================================ */
 
 const LANGUAGE_FLAGS: Record<string, string> = {
   Português: "/flags/br.png",
@@ -67,737 +82,2324 @@ const LANGUAGE_FLAGS: Record<string, string> = {
 };
 
 /* ============================================================
-   COMPONENTE
-   ============================================================ */
+NORMALIZAR HTML
+============================================================ */
+
+function normalizeDescriptionHtml(
+  html: string
+) {
+  return html
+    .replace(
+      /&nbsp;/gi,
+      " "
+    )
+    .replace(
+      /\u00a0/g,
+      " "
+    );
+}
+
+/* ============================================================
+SANITIZAÇÃO
+============================================================ */
+
+function sanitizeDescriptionHtml(
+  html: string
+) {
+  if (!html) {
+    return "";
+  }
+
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return normalizeDescriptionHtml(
+      html
+    );
+  }
+
+  const parser =
+    new DOMParser();
+
+  const documentNode =
+    parser.parseFromString(
+      html,
+      "text/html"
+    );
+
+  const allowedTags =
+    new Set([
+      "B",
+      "STRONG",
+      "I",
+      "EM",
+      "U",
+      "BR",
+      "P",
+      "DIV",
+      "UL",
+      "OL",
+      "LI",
+    ]);
+
+  documentNode.body
+    .querySelectorAll("*")
+    .forEach(
+      (element) => {
+        if (
+          !allowedTags.has(
+            element.tagName
+          )
+        ) {
+          const text =
+            documentNode.createTextNode(
+              element.textContent ||
+                ""
+            );
+
+          element.replaceWith(
+            text
+          );
+
+          return;
+        }
+
+        Array.from(
+          element.attributes
+        ).forEach(
+          (attribute) => {
+            element.removeAttribute(
+              attribute.name
+            );
+          }
+        );
+      }
+    );
+
+  return normalizeDescriptionHtml(
+    documentNode.body.innerHTML
+  );
+}
+
+/* ============================================================
+DESCRIÇÃO → HTML
+============================================================ */
+
+function descriptionToHtml(
+  value: string
+) {
+  if (!value) {
+    return "";
+  }
+
+  /*
+   * NÃO usamos trim().
+   * Espaços fazem parte da edição.
+   */
+  const original =
+    value;
+
+  /*
+   * Se já for HTML, preserva.
+   */
+  if (
+    /<\s*(b|strong|i|em|u|br|p|div|ul|ol|li)\b/i.test(
+      original
+    )
+  ) {
+    return original;
+  }
+
+  /*
+   * Texto antigo sem HTML.
+   */
+  return original
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /\r\n/g,
+      "<br />"
+    )
+    .replace(
+      /\n/g,
+      "<br />"
+    );
+}
+
+/* ============================================================
+HTML → TEXTO PURO
+============================================================ */
+
+function htmlToPlainText(
+  html: string
+) {
+  if (!html) {
+    return "";
+  }
+
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return normalizeDescriptionHtml(
+      html
+    )
+      .replace(
+        /<br\s*\/?>/gi,
+        "\n"
+      )
+      .replace(
+        /<\/p>/gi,
+        "\n"
+      )
+      .replace(
+        /<\/div>/gi,
+        "\n"
+      )
+      .replace(
+        /<\/li>/gi,
+        "\n"
+      )
+      .replace(
+        /<[^>]*>/g,
+        ""
+      )
+      .replace(
+        /\n{3,}/g,
+        "\n\n"
+      )
+      .trim();
+  }
+
+  const parser =
+    new DOMParser();
+
+  const documentNode =
+    parser.parseFromString(
+      html,
+      "text/html"
+    );
+
+  documentNode
+    .querySelectorAll("br")
+    .forEach(
+      (br) => {
+        br.replaceWith(
+          documentNode.createTextNode(
+            "\n"
+          )
+        );
+      }
+    );
+
+  documentNode
+    .querySelectorAll(
+      "p, div, li"
+    )
+    .forEach(
+      (element) => {
+        element.appendChild(
+          documentNode.createTextNode(
+            "\n"
+          )
+        );
+      }
+    );
+
+  return normalizeDescriptionHtml(
+    documentNode.body.textContent ||
+      ""
+  )
+    .replace(
+      /\n{3,}/g,
+      "\n\n"
+    )
+    .trim();
+}
+
+/* ============================================================
+EDITOR RICO
+============================================================ */
+
+type RichTextEditorProps = {
+  value: string;
+  onChange: (
+    value: string
+  ) => void;
+  disabled?: boolean;
+  minHeight?: string;
+};
+
+function RichTextEditor({
+  value,
+  onChange,
+  disabled = false,
+  minHeight = "300px",
+}: RichTextEditorProps) {
+  const editorRef =
+    useRef<HTMLDivElement | null>(
+      null
+    );
+
+  const savedRangeRef =
+    useRef<Range | null>(
+      null
+    );
+
+  const initializedRef =
+    useRef(false);
+
+  const internalChangeRef =
+    useRef(false);
+
+  const [
+    isFocused,
+    setIsFocused,
+  ] = useState(false);
+
+  /* ==========================================================
+  SALVAR SELEÇÃO
+  ========================================================== */
+
+  function saveSelection() {
+    const editor =
+      editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    const selection =
+      window.getSelection();
+
+    if (
+      !selection ||
+      selection.rangeCount ===
+        0
+    ) {
+      return;
+    }
+
+    const range =
+      selection.getRangeAt(0);
+
+    if (
+      !editor.contains(
+        range.commonAncestorContainer
+      )
+    ) {
+      return;
+    }
+
+    savedRangeRef.current =
+      range.cloneRange();
+  }
+
+  /* ==========================================================
+  RESTAURAR SELEÇÃO
+  ========================================================== */
+
+  function restoreSelection() {
+    const editor =
+      editorRef.current;
+
+    const range =
+      savedRangeRef.current;
+
+    if (
+      !editor ||
+      !range
+    ) {
+      return false;
+    }
+
+    if (
+      !editor.contains(
+        range.startContainer
+      ) ||
+      !editor.contains(
+        range.endContainer
+      )
+    ) {
+      return false;
+    }
+
+    const selection =
+      window.getSelection();
+
+    if (!selection) {
+      return false;
+    }
+
+    try {
+      selection.removeAllRanges();
+
+      selection.addRange(
+        range
+      );
+
+      return true;
+    } catch (
+      error
+    ) {
+      console.error(
+        "Erro ao restaurar seleção:",
+        error
+      );
+
+      return false;
+    }
+  }
+
+  /* ==========================================================
+  SINCRONIZAR VALOR
+  ========================================================== */
+
+  function syncValue() {
+    const editor =
+      editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    /*
+     * Durante a digitação NÃO sanitizamos
+     * e NÃO reconstruímos o DOM.
+     */
+    internalChangeRef.current =
+      true;
+
+    onChange(
+      editor.innerHTML
+    );
+  }
+
+  /* ==========================================================
+  CARREGAR VALOR EXTERNO
+  ========================================================== */
+
+  useEffect(() => {
+    const editor =
+      editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    /*
+     * Primeira montagem.
+     */
+    if (
+      !initializedRef.current
+    ) {
+      editor.innerHTML =
+        descriptionToHtml(
+          value
+        );
+
+      initializedRef.current =
+        true;
+
+      return;
+    }
+
+    /*
+     * A alteração veio do próprio editor.
+     */
+    if (
+      internalChangeRef.current
+    ) {
+      internalChangeRef.current =
+        false;
+
+      return;
+    }
+
+    /*
+     * Não mexemos no DOM enquanto
+     * o usuário está digitando.
+     */
+    if (
+      document.activeElement ===
+      editor
+    ) {
+      return;
+    }
+
+    const html =
+      descriptionToHtml(
+        value
+      );
+
+    if (
+      editor.innerHTML !==
+      html
+    ) {
+      editor.innerHTML =
+        html;
+    }
+  }, [value]);
+
+  /* ==========================================================
+  VERIFICAR SE TODO O FRAGMENTO ESTÁ EM BOLD
+  ========================================================== */
+
+  function fragmentIsCompletelyBold(
+    fragment: DocumentFragment
+  ) {
+    const walker =
+      document.createTreeWalker(
+        fragment,
+        NodeFilter.SHOW_TEXT
+      );
+
+    let foundText =
+      false;
+
+    let currentNode =
+      walker.nextNode();
+
+    while (
+      currentNode
+    ) {
+      const textNode =
+        currentNode as Text;
+
+      /*
+       * Ignora textos vazios.
+       */
+      if (
+        textNode.nodeValue
+          ?.length
+      ) {
+        foundText =
+          true;
+
+        let parent =
+          textNode.parentElement;
+
+        /*
+         * Procura um B/STRONG acima.
+         */
+        let isBold =
+          false;
+
+        while (
+          parent
+        ) {
+          if (
+            parent.tagName ===
+              "STRONG" ||
+            parent.tagName ===
+              "B"
+          ) {
+            isBold =
+              true;
+
+            break;
+          }
+
+          parent =
+            parent.parentElement;
+        }
+
+        /*
+         * Achou texto não negritado.
+         */
+        if (
+          !isBold
+        ) {
+          return false;
+        }
+      }
+
+      currentNode =
+        walker.nextNode();
+    }
+
+    /*
+     * Se não encontrou texto,
+     * não considera bold.
+     */
+    return foundText;
+  }
+
+  /* ==========================================================
+  REMOVER B/STRONG DE UM FRAGMENTO
+  ========================================================== */
+
+  function unwrapBoldFromFragment(
+    fragment: DocumentFragment
+  ) {
+    const elements =
+      Array.from(
+        fragment.querySelectorAll(
+          "strong, b"
+        )
+      );
+
+    elements.forEach(
+      (element) => {
+        const parent =
+          element.parentNode;
+
+        if (!parent) {
+          return;
+        }
+
+        while (
+          element.firstChild
+        ) {
+          parent.insertBefore(
+            element.firstChild,
+            element
+          );
+        }
+
+        parent.removeChild(
+          element
+        );
+      }
+    );
+  }
+
+  /* ==========================================================
+  BOLD MANUAL
+  ========================================================== */
+
+  function toggleBold() {
+    if (disabled) {
+      return;
+    }
+
+    const editor =
+      editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    /*
+     * Recupera a seleção salva.
+     */
+    restoreSelection();
+
+    const selection =
+      window.getSelection();
+
+    if (
+      !selection ||
+      selection.rangeCount ===
+        0
+    ) {
+      return;
+    }
+
+    const range =
+      selection.getRangeAt(0);
+
+    /*
+     * Sem texto selecionado.
+     */
+    if (
+      range.collapsed
+    ) {
+      return;
+    }
+
+    /*
+     * Seleção precisa estar dentro
+     * do editor.
+     */
+    if (
+      !editor.contains(
+        range.commonAncestorContainer
+      )
+    ) {
+      return;
+    }
+
+    try {
+      /*
+       * Primeiro pegamos uma cópia
+       * do conteúdo selecionado.
+       */
+      const preview =
+        range.cloneContents();
+
+      /*
+       * Descobre se TODO o conteúdo
+       * selecionado já está em bold.
+       */
+      const completelyBold =
+        fragmentIsCompletelyBold(
+          preview
+        );
+
+      /*
+       * Agora extraímos apenas a seleção
+       * do DOM real.
+       *
+       * O navegador preserva o restante
+       * da formatação fora da seleção.
+       */
+      const fragment =
+        range.extractContents();
+
+      /*
+       * ======================================================
+       * REMOVER BOLD
+       * ======================================================
+       */
+
+      if (
+        completelyBold
+      ) {
+        unwrapBoldFromFragment(
+          fragment
+        );
+      }
+
+      /*
+       * ======================================================
+       * APLICAR BOLD
+       * ======================================================
+       */
+
+      else {
+        const strong =
+          document.createElement(
+            "strong"
+          );
+
+        /*
+         * Todo o conteúdo selecionado
+         * fica dentro do STRONG.
+         */
+        strong.appendChild(
+          fragment
+        );
+
+        fragment.appendChild(
+          strong
+        );
+      }
+
+      /*
+       * Antes de inserir, guardamos
+       * o conteúdo que será inserido.
+       */
+      const nodesToSelect =
+        Array.from(
+          fragment.childNodes
+        );
+
+      /*
+       * Insere exatamente no local
+       * da seleção antiga.
+       */
+      range.insertNode(
+        fragment
+      );
+
+      /*
+       * Seleção nova.
+       */
+      if (
+        nodesToSelect.length >
+        0
+      ) {
+        const firstNode =
+          nodesToSelect[0];
+
+        const lastNode =
+          nodesToSelect[
+            nodesToSelect.length -
+              1
+          ];
+
+        const newRange =
+          document.createRange();
+
+        newRange.setStartBefore(
+          firstNode
+        );
+
+        newRange.setEndAfter(
+          lastNode
+        );
+
+        selection.removeAllRanges();
+
+        selection.addRange(
+          newRange
+        );
+
+        /*
+         * Salva a seleção atualizada.
+         */
+        saveSelection();
+      }
+
+      /*
+       * Atualiza React.
+       */
+      syncValue();
+    } catch (
+      error
+    ) {
+      console.error(
+        "❌ ERRO NO BOLD:",
+        error
+      );
+    }
+  }
+
+  /* ==========================================================
+  EXECUTAR OUTROS COMANDOS
+  ========================================================== */
+
+  function executeCommand(
+    command: string
+  ) {
+    if (disabled) {
+      return;
+    }
+
+    /*
+     * Bold é totalmente manual.
+     */
+    if (
+      command ===
+      "bold"
+    ) {
+      toggleBold();
+
+      return;
+    }
+
+    const editor =
+      editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    try {
+      restoreSelection();
+
+      document.execCommand(
+        command,
+        false
+      );
+
+      syncValue();
+
+      saveSelection();
+    } catch (
+      error
+    ) {
+      console.error(
+        `Erro ao executar ${command}:`,
+        error
+      );
+    }
+  }
+
+  /* ==========================================================
+  MOUSEDOWN TOOLBAR
+  ========================================================== */
+
+  function handleToolbarMouseDown(
+    event: ReactMouseEvent<HTMLButtonElement>,
+    command: string
+  ) {
+    /*
+     * Impede o botão de roubar
+     * a seleção.
+     */
+    event.preventDefault();
+
+    if (disabled) {
+      return;
+    }
+
+    /*
+     * Salva ANTES de executar.
+     */
+    saveSelection();
+
+    executeCommand(
+      command
+    );
+  }
+
+  /* ==========================================================
+  LIMPAR FORMATAÇÃO
+  ========================================================== */
+
+  function clearFormatting() {
+    if (disabled) {
+      return;
+    }
+
+    try {
+      restoreSelection();
+
+      document.execCommand(
+        "removeFormat",
+        false
+      );
+
+      document.execCommand(
+        "unlink",
+        false
+      );
+
+      syncValue();
+
+      saveSelection();
+    } catch (
+      error
+    ) {
+      console.error(
+        "Erro ao limpar formatação:",
+        error
+      );
+    }
+  }
+
+  /* ==========================================================
+  RENDER EDITOR
+  ========================================================== */
+
+  return (
+    <div
+      className={[
+        "overflow-hidden rounded-2xl border-2 bg-white transition",
+        isFocused
+          ? "border-[#1687d9] ring-4 ring-blue-100"
+          : "border-gray-200",
+        disabled
+          ? "opacity-60"
+          : "",
+      ].join(" ")}
+    >
+      {/* ======================================================
+         BARRA
+      ====================================================== */}
+
+      <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-2">
+
+        {/* BOLD */}
+
+        <button
+          type="button"
+          disabled={
+            disabled
+          }
+          onMouseDown={(event) =>
+            handleToolbarMouseDown(
+              event,
+              "bold"
+            )
+          }
+          title="Negrito"
+          className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 text-sm font-black text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <strong>
+            B
+          </strong>
+        </button>
+
+        {/* ITÁLICO */}
+
+        <button
+          type="button"
+          disabled={
+            disabled
+          }
+          onMouseDown={(event) =>
+            handleToolbarMouseDown(
+              event,
+              "italic"
+            )
+          }
+          title="Itálico"
+          className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 text-sm font-bold italic text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <em>
+            I
+          </em>
+        </button>
+
+        {/* SUBLINHADO */}
+
+        <button
+          type="button"
+          disabled={
+            disabled
+          }
+          onMouseDown={(event) =>
+            handleToolbarMouseDown(
+              event,
+              "underline"
+            )
+          }
+          title="Sublinhado"
+          className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 text-sm font-bold text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span className="underline">
+            U
+          </span>
+        </button>
+
+        <div className="mx-1 h-6 w-px bg-gray-300" />
+
+        {/* LISTA */}
+
+        <button
+          type="button"
+          disabled={
+            disabled
+          }
+          onMouseDown={(event) =>
+            handleToolbarMouseDown(
+              event,
+              "insertUnorderedList"
+            )
+          }
+          title="Lista com marcadores"
+          className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 text-sm font-bold text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          ☷
+        </button>
+
+        {/* LISTA NUMERADA */}
+
+        <button
+          type="button"
+          disabled={
+            disabled
+          }
+          onMouseDown={(event) =>
+            handleToolbarMouseDown(
+              event,
+              "insertOrderedList"
+            )
+          }
+          title="Lista numerada"
+          className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 text-sm font-bold text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          1.
+        </button>
+
+        <div className="mx-1 h-6 w-px bg-gray-300" />
+
+        {/* LIMPAR */}
+
+        <button
+          type="button"
+          disabled={
+            disabled
+          }
+          onMouseDown={(event) => {
+            event.preventDefault();
+
+            saveSelection();
+
+            clearFormatting();
+          }}
+          title="Limpar formatação"
+          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Limpar
+        </button>
+      </div>
+
+      {/* ======================================================
+         EDITOR
+      ====================================================== */}
+
+      <div
+        ref={editorRef}
+        contentEditable={
+          !disabled
+        }
+        suppressContentEditableWarning
+        role="textbox"
+        aria-multiline="true"
+        spellCheck
+        onInput={() => {
+          syncValue();
+
+          saveSelection();
+        }}
+        onKeyUp={() => {
+          saveSelection();
+        }}
+        onMouseUp={() => {
+          saveSelection();
+        }}
+        onFocus={() => {
+          setIsFocused(
+            true
+          );
+
+          saveSelection();
+        }}
+        onBlur={() => {
+          setIsFocused(
+            false
+          );
+
+          saveSelection();
+        }}
+        data-placeholder="Digite aqui as informações detalhadas do tour..."
+        className="min-h-[300px] w-full overflow-y-auto px-4 py-4 text-sm font-medium leading-7 text-gray-900 outline-none"
+        style={{
+          minHeight,
+        }}
+      />
+
+      <style jsx>{`
+        [contenteditable="true"]:empty:before {
+          content: attr(data-placeholder);
+          color: #9ca3af;
+          pointer-events: none;
+        }
+
+        [contenteditable="true"] ul {
+          list-style: disc;
+          padding-left: 1.5rem;
+        }
+
+        [contenteditable="true"] ol {
+          list-style: decimal;
+          padding-left: 1.5rem;
+        }
+
+        [contenteditable="true"] li {
+          margin: 0.25rem 0;
+        }
+
+        [contenteditable="true"] p {
+          margin: 0.35rem 0;
+        }
+
+        [contenteditable="true"] div {
+          min-height: 1.5rem;
+        }
+
+        [contenteditable="true"] br {
+          line-height: 1.7;
+        }
+
+        [contenteditable="true"] strong,
+        [contenteditable="true"] b {
+          font-weight: 800;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/* ============================================================
+COMPONENTE PRINCIPAL
+============================================================ */
 
 export default function AdminCalendar() {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [
+    currentMonth,
+    setCurrentMonth,
+  ] = useState(
+    new Date()
+  );
 
-  const [guides, setGuides] = useState<Guide[]>([]);
-  const [availability, setAvailability] = useState<Availability[]>([]);
-  const [tourEvents, setTourEvents] = useState<TourEvent[]>([]);
+  const [
+    guides,
+    setGuides,
+  ] = useState<Guide[]>(
+    []
+  );
 
-  const [guideSearch, setGuideSearch] = useState("");
+  const [
+    availability,
+    setAvailability,
+  ] = useState<
+    Availability[]
+  >([]);
 
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [
+    tourEvents,
+    setTourEvents,
+  ] = useState<
+    TourEvent[]
+  >([]);
 
-  const [selectedGuideDetails, setSelectedGuideDetails] =
-    useState<Guide | null>(null);
+  const [
+    guideSearch,
+    setGuideSearch,
+  ] = useState("");
 
-  const [selectedGuideAvailability, setSelectedGuideAvailability] =
-    useState<Availability | null>(null);
+  const [
+    selectedDate,
+    setSelectedDate,
+  ] = useState<
+    string | null
+  >(null);
 
-  const [selectedTourEvent, setSelectedTourEvent] =
-    useState<TourEvent | null>(null);
+  const [
+    selectedGuideDetails,
+    setSelectedGuideDetails,
+  ] = useState<
+    Guide | null
+  >(null);
 
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  const [
+    selectedGuideAvailability,
+    setSelectedGuideAvailability,
+  ] = useState<
+    Availability | null
+  >(null);
+
+  const [
+    selectedTourEvent,
+    setSelectedTourEvent,
+  ] = useState<
+    TourEvent | null
+  >(null);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(
+    true
+  );
+
+  const [
+    updating,
+    setUpdating,
+  ] = useState(
+    false
+  );
 
   /* ============================================================
-     FORMULÁRIO DE TOUR
-     ============================================================ */
+  FORMULÁRIO
+  ============================================================ */
 
-  const [showTourForm, setShowTourForm] = useState(false);
+  const [
+    showTourForm,
+    setShowTourForm,
+  ] = useState(
+    false
+  );
 
-  const [tourTitle, setTourTitle] = useState("");
-  const [tourDescription, setTourDescription] = useState("");
-  const [tourAllDay, setTourAllDay] = useState(true);
-  const [tourGuideId, setTourGuideId] = useState("");
-  const [tourAdditionalEmail, setTourAdditionalEmail] = useState("");
+  const [
+    tourTitle,
+    setTourTitle,
+  ] = useState("");
+
+  const [
+    tourDescription,
+    setTourDescription,
+  ] = useState("");
+
+  const [
+    tourAddress,
+    setTourAddress,
+  ] = useState("");
+
+  const [
+    tourAllDay,
+    setTourAllDay,
+  ] = useState(
+    true
+  );
+
+  const [
+    tourGuideId,
+    setTourGuideId,
+  ] = useState("");
+
+  const [
+    tourAdditionalEmail,
+    setTourAdditionalEmail,
+  ] = useState("");
 
   /* ============================================================
-     EDIÇÃO DE TOUR
-     ============================================================ */
+  EDIÇÃO
+  ============================================================ */
 
-  const [showTourEdit, setShowTourEdit] = useState(false);
+  const [
+    showTourEdit,
+    setShowTourEdit,
+  ] = useState(
+    false
+  );
 
-  const [editTourTitle, setEditTourTitle] = useState("");
-  const [editTourDescription, setEditTourDescription] = useState("");
-  const [editTourAllDay, setEditTourAllDay] = useState(true);
-  const [editTourGuideId, setEditTourGuideId] = useState("");
-  const [editTourAdditionalEmail, setEditTourAdditionalEmail] =
-    useState("");
+  const [
+    editTourTitle,
+    setEditTourTitle,
+  ] = useState("");
+
+  const [
+    editTourDescription,
+    setEditTourDescription,
+  ] = useState("");
+
+  const [
+    editTourAddress,
+    setEditTourAddress,
+  ] = useState("");
+
+  const [
+    editTourAllDay,
+    setEditTourAllDay,
+  ] = useState(
+    true
+  );
+
+  const [
+    editTourGuideId,
+    setEditTourGuideId,
+  ] = useState("");
+
+  const [
+    editTourAdditionalEmail,
+    setEditTourAdditionalEmail,
+  ] = useState("");
 
   /* ============================================================
-     CARREGAMENTO
-     ============================================================ */
+  CARREGAMENTO
+  ============================================================ */
 
   useEffect(() => {
     loadData();
-  }, [currentMonth]);
+  }, [
+    currentMonth,
+  ]);
 
   /* ============================================================
-     REALTIME - AVAILABILITY + TOUR EVENTS
-     ============================================================ */
+  REALTIME
+  ============================================================ */
 
   useEffect(() => {
-    const channel = supabase
-      .channel("admin-calendar-realtime")
+    const channel =
+      supabase
+        .channel(
+          "admin-calendar-realtime"
+        )
 
-      /* ========================================================
-         AVAILABILITY INSERT
-         ======================================================== */
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "INSERT",
+            schema:
+              "public",
+            table:
+              "availability",
+          },
+          (payload) => {
+            const newItem =
+              payload.new as Availability;
 
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "availability",
-        },
-        (payload) => {
-          const newItem = payload.new as Availability;
+            setAvailability(
+              (current) => {
+                const alreadyExists =
+                  current.some(
+                    (item) =>
+                      item.id ===
+                      newItem.id
+                  );
 
-          setAvailability((current) => {
-            const alreadyExists = current.some(
-              (item) => item.id === newItem.id
+                if (
+                  alreadyExists
+                ) {
+                  return current;
+                }
+
+                const firstDay =
+                  format(
+                    startOfMonth(
+                      currentMonth
+                    ),
+                    "yyyy-MM-dd"
+                  );
+
+                const lastDay =
+                  format(
+                    endOfMonth(
+                      currentMonth
+                    ),
+                    "yyyy-MM-dd"
+                  );
+
+                if (
+                  newItem.date <
+                    firstDay ||
+                  newItem.date >
+                    lastDay
+                ) {
+                  return current;
+                }
+
+                return [
+                  ...current,
+                  newItem,
+                ].sort(
+                  (a, b) =>
+                    a.date.localeCompare(
+                      b.date
+                    )
+                );
+              }
             );
-
-            if (alreadyExists) {
-              return current;
-            }
-
-            const firstDay = format(
-              startOfMonth(currentMonth),
-              "yyyy-MM-dd"
-            );
-
-            const lastDay = format(
-              endOfMonth(currentMonth),
-              "yyyy-MM-dd"
-            );
-
-            if (
-              newItem.date < firstDay ||
-              newItem.date > lastDay
-            ) {
-              return current;
-            }
-
-            return [...current, newItem].sort((a, b) =>
-              a.date.localeCompare(b.date)
-            );
-          });
-        }
-      )
-
-      /* ========================================================
-         AVAILABILITY UPDATE
-         ======================================================== */
-
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "availability",
-        },
-        (payload) => {
-          const updatedItem = payload.new as Availability;
-
-          setAvailability((current) =>
-            current.map((item) =>
-              item.id === updatedItem.id
-                ? updatedItem
-                : item
-            )
-          );
-
-          setSelectedGuideAvailability((current) => {
-            if (
-              current &&
-              current.id === updatedItem.id
-            ) {
-              return updatedItem;
-            }
-
-            return current;
-          });
-        }
-      )
-
-      /* ========================================================
-         AVAILABILITY DELETE
-         ======================================================== */
-
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "availability",
-        },
-        (payload) => {
-          const deletedItem = payload.old as Availability;
-
-          setAvailability((current) =>
-            current.filter(
-              (item) => item.id !== deletedItem.id
-            )
-          );
-
-          setSelectedGuideAvailability((current) => {
-            if (
-              current &&
-              current.id === deletedItem.id
-            ) {
-              return null;
-            }
-
-            return current;
-          });
-        }
-      )
-
-      /* ========================================================
-         TOUR EVENT INSERT
-         ======================================================== */
-
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "tour_events",
-        },
-        (payload) => {
-          const newEvent = payload.new as TourEvent;
-
-          const firstDay = format(
-            startOfMonth(currentMonth),
-            "yyyy-MM-dd"
-          );
-
-          const lastDay = format(
-            endOfMonth(currentMonth),
-            "yyyy-MM-dd"
-          );
-
-          if (
-            newEvent.date < firstDay ||
-            newEvent.date > lastDay
-          ) {
-            return;
           }
+        )
 
-          setTourEvents((current) => {
-            const alreadyExists = current.some(
-              (event) => event.id === newEvent.id
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "UPDATE",
+            schema:
+              "public",
+            table:
+              "availability",
+          },
+          (payload) => {
+            const updatedItem =
+              payload.new as Availability;
+
+            setAvailability(
+              (current) =>
+                current.map(
+                  (item) =>
+                    item.id ===
+                    updatedItem.id
+                      ? updatedItem
+                      : item
+                )
             );
 
-            if (alreadyExists) {
-              return current;
-            }
-
-            return [...current, newEvent].sort((a, b) =>
-              a.date.localeCompare(b.date)
+            setSelectedGuideAvailability(
+              (current) =>
+                current &&
+                current.id ===
+                  updatedItem.id
+                  ? updatedItem
+                  : current
             );
-          });
-        }
-      )
+          }
+        )
 
-      /* ========================================================
-         TOUR EVENT UPDATE
-         ======================================================== */
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "DELETE",
+            schema:
+              "public",
+            table:
+              "availability",
+          },
+          (payload) => {
+            const deletedItem =
+              payload.old as Availability;
 
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "tour_events",
-        },
-        (payload) => {
-          const updatedEvent = payload.new as TourEvent;
+            setAvailability(
+              (current) =>
+                current.filter(
+                  (item) =>
+                    item.id !==
+                    deletedItem.id
+                )
+            );
 
-          setTourEvents((current) =>
-            current.map((event) =>
-              event.id === updatedEvent.id
-                ? updatedEvent
-                : event
-            )
-          );
+            setSelectedGuideAvailability(
+              (current) =>
+                current &&
+                current.id ===
+                  deletedItem.id
+                  ? null
+                  : current
+            );
+          }
+        )
 
-          setSelectedTourEvent((current) => {
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "INSERT",
+            schema:
+              "public",
+            table:
+              "tour_events",
+          },
+          (payload) => {
+            const newEvent =
+              payload.new as TourEvent;
+
+            const firstDay =
+              format(
+                startOfMonth(
+                  currentMonth
+                ),
+                "yyyy-MM-dd"
+              );
+
+            const lastDay =
+              format(
+                endOfMonth(
+                  currentMonth
+                ),
+                "yyyy-MM-dd"
+              );
+
             if (
-              current &&
-              current.id === updatedEvent.id
+              newEvent.date <
+                firstDay ||
+              newEvent.date >
+                lastDay
             ) {
-              return updatedEvent;
+              return;
             }
 
-            return current;
-          });
-        }
-      )
+            setTourEvents(
+              (current) => {
+                const alreadyExists =
+                  current.some(
+                    (event) =>
+                      event.id ===
+                      newEvent.id
+                  );
 
-      /* ========================================================
-         TOUR EVENT DELETE
-         ======================================================== */
+                if (
+                  alreadyExists
+                ) {
+                  return current;
+                }
 
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "tour_events",
-        },
-        (payload) => {
-          const deletedEvent = payload.old as TourEvent;
+                return [
+                  ...current,
+                  newEvent,
+                ].sort(
+                  (a, b) =>
+                    a.date.localeCompare(
+                      b.date
+                    )
+                );
+              }
+            );
+          }
+        )
 
-          setTourEvents((current) =>
-            current.filter(
-              (event) => event.id !== deletedEvent.id
-            )
-          );
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "UPDATE",
+            schema:
+              "public",
+            table:
+              "tour_events",
+          },
+          (payload) => {
+            const updatedEvent =
+              payload.new as TourEvent;
 
-          setSelectedTourEvent((current) => {
-            if (
-              current &&
-              current.id === deletedEvent.id
-            ) {
-              return null;
-            }
+            setTourEvents(
+              (current) =>
+                current.map(
+                  (event) =>
+                    event.id ===
+                    updatedEvent.id
+                      ? updatedEvent
+                      : event
+                )
+            );
 
-            return current;
-          });
-        }
-      )
+            setSelectedTourEvent(
+              (current) =>
+                current &&
+                current.id ===
+                  updatedEvent.id
+                  ? updatedEvent
+                  : current
+            );
+          }
+        )
 
-      .subscribe();
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "DELETE",
+            schema:
+              "public",
+            table:
+              "tour_events",
+          },
+          (payload) => {
+            const deletedEvent =
+              payload.old as TourEvent;
+
+            setTourEvents(
+              (current) =>
+                current.filter(
+                  (event) =>
+                    event.id !==
+                    deletedEvent.id
+                )
+            );
+
+            setSelectedTourEvent(
+              (current) =>
+                current &&
+                current.id ===
+                  deletedEvent.id
+                  ? null
+                  : current
+            );
+          }
+        )
+
+        .subscribe(
+          (status) => {
+            console.log(
+              "📡 ADMIN CALENDAR REALTIME:",
+              status
+            );
+          }
+        );
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(
+        channel
+      );
     };
-  }, [currentMonth]);
+  }, [
+    currentMonth,
+  ]);
 
   /* ============================================================
-     CARREGAR DADOS
-     ============================================================ */
+  CARREGAR DADOS
+  ============================================================ */
 
   async function loadData() {
-    setLoading(true);
-
-    const firstDay = format(
-      startOfMonth(currentMonth),
-      "yyyy-MM-dd"
+    setLoading(
+      true
     );
 
-    const lastDay = format(
-      endOfMonth(currentMonth),
-      "yyyy-MM-dd"
-    );
+    const firstDay =
+      format(
+        startOfMonth(
+          currentMonth
+        ),
+        "yyyy-MM-dd"
+      );
+
+    const lastDay =
+      format(
+        endOfMonth(
+          currentMonth
+        ),
+        "yyyy-MM-dd"
+      );
 
     const [
       guidesResult,
       availabilityResult,
       tourEventsResult,
-    ] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select(
-          "id, name, active, languages, phone"
-        )
-        .eq("role", "guide")
-        .order("name"),
+    ] =
+      await Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            "id, name, active, languages, phone"
+          )
+          .eq(
+            "role",
+            "guide"
+          )
+          .order(
+            "name"
+          ),
 
-      supabase
-        .from("availability")
-        .select(
-          "id, guide_id, date, status"
-        )
-        .gte("date", firstDay)
-        .lte("date", lastDay)
-        .order("date"),
+        supabase
+          .from(
+            "availability"
+          )
+          .select(
+            "id, guide_id, date, status"
+          )
+          .gte(
+            "date",
+            firstDay
+          )
+          .lte(
+            "date",
+            lastDay
+          )
+          .order(
+            "date"
+          ),
 
-      supabase
-        .from("tour_events")
-        .select(
-          "id, date, title, description, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
-        )
-        .gte("date", firstDay)
-        .lte("date", lastDay)
-        .order("date"),
-    ]);
+        supabase
+          .from(
+            "tour_events"
+          )
+          .select(
+            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+          )
+          .gte(
+            "date",
+            firstDay
+          )
+          .lte(
+            "date",
+            lastDay
+          )
+          .order(
+            "date"
+          ),
+      ]);
 
-    /* ============================================================
+    /* ==========================================================
        GUIAS
-       ============================================================ */
+    ========================================================== */
 
-    if (guidesResult.error) {
+    if (
+      guidesResult.error
+    ) {
       console.error(
         "ERRO AO CARREGAR GUIAS:",
         guidesResult.error
       );
     } else {
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
+        data: {
+          session,
+        },
+      } =
+        await supabase.auth.getSession();
 
-      const guidesWithDetails = await Promise.all(
-        (guidesResult.data || []).map(
-          async (guide) => {
-            if (!session) {
-              return {
-                ...guide,
-                languages: guide.languages || [],
-                phone: guide.phone || "",
-                email: "",
-                pix_key: "",
-              };
-            }
+      const guidesWithDetails =
+        await Promise.all(
+          (
+            guidesResult.data ||
+            []
+          ).map(
+            async (
+              guide
+            ) => {
+              if (
+                !session
+              ) {
+                return {
+                  ...guide,
+                  languages:
+                    guide.languages ||
+                    [],
+                  phone:
+                    guide.phone ||
+                    "",
+                  email:
+                    "",
+                  pix_key:
+                    "",
+                };
+              }
 
-            try {
-              const response = await fetch(
-                `/api/guides/${guide.id}`,
-                {
-                  method: "GET",
-                  headers: {
-                    Authorization: `Bearer ${session.access_token}`,
-                  },
-                }
-              );
+              try {
+                const response =
+                  await fetch(
+                    `/api/guides/${guide.id}`,
+                    {
+                      method:
+                        "GET",
+                      headers: {
+                        Authorization:
+                          `Bearer ${session.access_token}`,
+                      },
+                    }
+                  );
 
-              const result = await response.json();
+                const result =
+                  await response.json();
 
-              return {
-                ...guide,
-                languages: guide.languages || [],
-                phone: guide.phone || "",
-                email: result.email || "",
-                pix_key:
-                  result.pix_key ||
-                  result.pix ||
-                  result.pixKey ||
-                  "",
-              };
-            } catch (error) {
-              console.error(
-                `Erro ao buscar detalhes do guia ${guide.id}:`,
+                return {
+                  ...guide,
+                  languages:
+                    guide.languages ||
+                    [],
+                  phone:
+                    guide.phone ||
+                    "",
+                  email:
+                    result.email ||
+                    "",
+                  pix_key:
+                    result.pix_key ||
+                    result.pix ||
+                    result.pixKey ||
+                    "",
+                };
+              } catch (
                 error
-              );
+              ) {
+                console.error(
+                  `Erro ao buscar detalhes do guia ${guide.id}:`,
+                  error
+                );
 
-              return {
-                ...guide,
-                languages: guide.languages || [],
-                phone: guide.phone || "",
-                email: "",
-                pix_key: "",
-              };
+                return {
+                  ...guide,
+                  languages:
+                    guide.languages ||
+                    [],
+                  phone:
+                    guide.phone ||
+                    "",
+                  email:
+                    "",
+                  pix_key:
+                    "",
+                };
+              }
             }
-          }
-        )
-      );
+          )
+        );
 
-      setGuides(guidesWithDetails);
+      setGuides(
+        guidesWithDetails
+      );
     }
 
-    /* ============================================================
+    /* ==========================================================
        AVAILABILITY
-       ============================================================ */
+    ========================================================== */
 
-    if (availabilityResult.error) {
+    if (
+      availabilityResult.error
+    ) {
       console.error(
         "ERRO AO CARREGAR DISPONIBILIDADES:",
         availabilityResult.error
       );
     } else {
       setAvailability(
-        availabilityResult.data || []
+        availabilityResult.data ||
+          []
       );
     }
 
-    /* ============================================================
-       TOUR EVENTS
-       ============================================================ */
+    /* ==========================================================
+       TOURS
+    ========================================================== */
 
-    if (tourEventsResult.error) {
+    if (
+      tourEventsResult.error
+    ) {
       console.error(
         "ERRO AO CARREGAR TOURS:",
         tourEventsResult.error
       );
     } else {
       setTourEvents(
-        tourEventsResult.data || []
+        tourEventsResult.data ||
+          []
       );
     }
 
-    setLoading(false);
+    setLoading(
+      false
+    );
   }
 
   /* ============================================================
-     BUSCA
-     ============================================================ */
+  BUSCA
+  ============================================================ */
 
   const normalizedSearch =
-    guideSearch.trim().toLowerCase();
+    guideSearch
+      .trim()
+      .toLowerCase();
 
-  const filteredGuides = useMemo(() => {
-    if (!normalizedSearch) {
-      return guides;
-    }
+  const filteredGuides =
+    useMemo(() => {
+      if (
+        !normalizedSearch
+      ) {
+        return guides;
+      }
 
-    return guides.filter((guide) =>
-      guide.name
-        .toLowerCase()
-        .includes(normalizedSearch)
-    );
-  }, [guides, normalizedSearch]);
-
-  /* ============================================================
-     MAPA DE GUIAS
-     ============================================================ */
-
-  const guideMap = useMemo(() => {
-    return new Map(
-      guides.map((guide) => [
-        guide.id,
-        guide,
-      ])
-    );
-  }, [guides]);
+      return guides.filter(
+        (guide) =>
+          guide.name
+            .toLowerCase()
+            .includes(
+              normalizedSearch
+            )
+      );
+    }, [
+      guides,
+      normalizedSearch,
+    ]);
 
   /* ============================================================
-     AVAILABILITY FILTRADA
-     ============================================================ */
+  MAPA
+  ============================================================ */
 
-  const filteredAvailability = useMemo(() => {
-    if (!normalizedSearch) {
-      return availability;
-    }
-
-    const matchingGuideIds = new Set(
-      filteredGuides.map(
-        (guide) => guide.id
-      )
+  const guideMap =
+    useMemo(
+      () =>
+        new Map(
+          guides.map(
+            (guide) => [
+              guide.id,
+              guide,
+            ]
+          )
+        ),
+      [guides]
     );
-
-    return availability.filter((item) =>
-      matchingGuideIds.has(
-        item.guide_id
-      )
-    );
-  }, [
-    availability,
-    filteredGuides,
-    normalizedSearch,
-  ]);
 
   /* ============================================================
-     EVENTOS FILTRADOS
-     ============================================================ */
+  AVAILABILITY FILTRADA
+  ============================================================ */
 
-  const filteredTourEvents = useMemo(() => {
-    if (!normalizedSearch) {
-      return tourEvents;
-    }
+  const filteredAvailability =
+    useMemo(() => {
+      if (
+        !normalizedSearch
+      ) {
+        return availability;
+      }
 
-    const matchingGuideIds = new Set(
-      filteredGuides.map(
-        (guide) => guide.id
-      )
-    );
+      const matchingGuideIds =
+        new Set(
+          filteredGuides.map(
+            (guide) =>
+              guide.id
+          )
+        );
 
-    return tourEvents.filter((event) =>
-      matchingGuideIds.has(
-        event.guide_id
-      )
-    );
-  }, [
-    tourEvents,
-    filteredGuides,
-    normalizedSearch,
-  ]);
-
-  /* ============================================================
-     CALENDÁRIO
-     ============================================================ */
-
-  const calendarStart = startOfWeek(
-    startOfMonth(currentMonth),
-    {
-      weekStartsOn: 1,
-    }
-  );
-
-  const calendarEnd = endOfWeek(
-    endOfMonth(currentMonth),
-    {
-      weekStartsOn: 1,
-    }
-  );
-
-  const days = eachDayOfInterval({
-    start: calendarStart,
-    end: calendarEnd,
-  });
-
-  /* ============================================================
-     DIA SELECIONADO
-     ============================================================ */
-
-  const selectedDayData = selectedDate
-    ? filteredAvailability.filter(
+      return availability.filter(
         (item) =>
-          item.date === selectedDate
-      )
-    : [];
+          matchingGuideIds.has(
+            item.guide_id
+          )
+      );
+    }, [
+      availability,
+      filteredGuides,
+      normalizedSearch,
+    ]);
+
+  /* ============================================================
+  TOURS FILTRADOS
+  ============================================================ */
+
+  const filteredTourEvents =
+    useMemo(() => {
+      if (
+        !normalizedSearch
+      ) {
+        return tourEvents;
+      }
+
+      const matchingGuideIds =
+        new Set(
+          filteredGuides.map(
+            (guide) =>
+              guide.id
+          )
+        );
+
+      return tourEvents.filter(
+        (event) =>
+          matchingGuideIds.has(
+            event.guide_id
+          )
+      );
+    }, [
+      tourEvents,
+      filteredGuides,
+      normalizedSearch,
+    ]);
+
+  /* ============================================================
+  CALENDÁRIO
+  ============================================================ */
+
+  const calendarStart =
+    startOfWeek(
+      startOfMonth(
+        currentMonth
+      ),
+      {
+        weekStartsOn: 1,
+      }
+    );
+
+  const calendarEnd =
+    endOfWeek(
+      endOfMonth(
+        currentMonth
+      ),
+      {
+        weekStartsOn: 1,
+      }
+    );
+
+  const days =
+    eachDayOfInterval({
+      start:
+        calendarStart,
+      end:
+        calendarEnd,
+    });
+
+  /* ============================================================
+  DIA
+  ============================================================ */
+
+  const selectedDayData =
+    selectedDate
+      ? filteredAvailability.filter(
+          (item) =>
+            item.date ===
+            selectedDate
+        )
+      : [];
 
   const selectedAvailable =
     selectedDayData.filter(
       (item) =>
-        item.status === "available"
+        item.status ===
+        "available"
     );
 
   const selectedUnavailable =
     selectedDayData.filter(
       (item) =>
-        item.status === "unavailable"
+        item.status ===
+        "unavailable"
     );
 
   const selectedEscalated =
     selectedDayData.filter(
       (item) =>
-        item.status === "escalated"
+        item.status ===
+        "escalated"
     );
 
-  const selectedDayEvents = selectedDate
-    ? filteredTourEvents.filter(
-        (event) =>
-          event.date === selectedDate
-      )
-    : [];
+  const selectedDayEvents =
+    selectedDate
+      ? filteredTourEvents.filter(
+          (event) =>
+            event.date ===
+              selectedDate &&
+            event.status ===
+              "scheduled"
+        )
+      : [];
 
   /* ============================================================
-     DATA DO DIA
-     ============================================================ */
+  FUNÇÕES CALENDÁRIO
+  ============================================================ */
 
-  function getDayAvailability(date: string) {
+  function getDayAvailability(
+    date: string
+  ) {
     return filteredAvailability.filter(
       (item) =>
-        item.date === date
+        item.date ===
+        date
     );
   }
 
-  function getDayTourEvents(date: string) {
+  function getDayTourEvents(
+    date: string
+  ) {
     return filteredTourEvents.filter(
       (event) =>
-        event.date === date &&
-        event.status === "scheduled"
+        event.date ===
+          date &&
+        event.status ===
+          "scheduled"
     );
   }
 
   /* ============================================================
-     NOME DO GUIA
-     ============================================================ */
+  NOME GUIA
+  ============================================================ */
 
-  function getGuideName(guideId: string) {
+  function getGuideName(
+    guideId: string
+  ) {
     return (
-      guideMap.get(guideId)?.name ||
+      guideMap.get(
+        guideId
+      )?.name ||
       "Guia"
     );
   }
 
   /* ============================================================
-     BANDEIRAS
-     ============================================================ */
+  BANDEIRAS
+  ============================================================ */
 
-  function getGuideFlags(guideId: string) {
-    const guide = guideMap.get(guideId);
+  function getGuideFlags(
+    guideId: string
+  ) {
+    const guide =
+      guideMap.get(
+        guideId
+      );
 
     if (
       !guide?.languages ||
-      guide.languages.length === 0
+      guide.languages.length ===
+        0
     ) {
       return null;
     }
 
     return (
       <span className="inline-flex items-center gap-0.5 align-middle">
-        {guide.languages.map((language) => {
-          const flag = LANGUAGE_FLAGS[language];
+        {guide.languages.map(
+          (language) => {
+            const flag =
+              LANGUAGE_FLAGS[
+                language
+              ];
 
-          if (!flag) {
-            return null;
+            if (!flag) {
+              return null;
+            }
+
+            return (
+              <img
+                key={`${guideId}-${language}`}
+                src={
+                  flag
+                }
+                alt={
+                  language
+                }
+                title={
+                  language
+                }
+                className="inline-block h-3.5 w-5 rounded-sm object-cover sm:h-4 sm:w-6"
+              />
+            );
           }
-
-          return (
-            <img
-              key={`${guideId}-${language}`}
-              src={flag}
-              alt={language}
-              title={language}
-              className="inline-block h-3.5 w-5 rounded-sm object-cover sm:h-4 sm:w-6"
-            />
-          );
-        })}
+        )}
       </span>
     );
   }
 
   /* ============================================================
-     TELEFONE
-     ============================================================ */
+  TELEFONE
+  ============================================================ */
 
-  function formatGuidePhone(value: string) {
-    const numbers = value.replace(/\D/g, "");
+  function formatGuidePhone(
+    value: string
+  ) {
+    const numbers =
+      value.replace(
+        /\D/g,
+        ""
+      );
 
-    if (numbers.length === 11) {
+    if (
+      numbers.length ===
+      11
+    ) {
       return `(${numbers.slice(
         0,
         2
       )}) ${numbers.slice(
         2,
         7
-      )}-${numbers.slice(7)}`;
+      )}-${numbers.slice(
+        7
+      )}`;
     }
 
-    if (numbers.length === 10) {
+    if (
+      numbers.length ===
+      10
+    ) {
       return `(${numbers.slice(
         0,
         2
       )}) ${numbers.slice(
         2,
         6
-      )}-${numbers.slice(6)}`;
+      )}-${numbers.slice(
+        6
+      )}`;
     }
 
     return value;
   }
 
   /* ============================================================
-     ESCALAR GUIA
-     ============================================================ */
+  GOOGLE CALENDAR
+  ============================================================ */
 
-  function openEscalationForm() {
-    if (!selectedGuideAvailability) {
-      return;
+  async function callGoogleCalendar(
+    payload: {
+      action:
+        | "create"
+        | "update"
+        | "delete";
+      eventId?: string | null;
+      date?: string;
+      title?: string;
+      description?: string | null;
+      address?: string | null;
+      allDay?: boolean;
+      guideEmail?: string | null;
+      additionalEmail?: string | null;
+    }
+  ) {
+    const {
+      data: {
+        session,
+      },
+      error:
+        sessionError,
+    } =
+      await supabase.auth.getSession();
+
+    if (
+      sessionError ||
+      !session?.access_token
+    ) {
+      throw new Error(
+        "Sua sessão expirou. Faça login novamente."
+      );
     }
 
-    const guide = guideMap.get(
-      selectedGuideAvailability.guide_id
-    );
+    const response =
+      await fetch(
+        "/api/google/calendar",
+        {
+          method:
+            "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+            Authorization:
+              `Bearer ${session.access_token}`,
+          },
+          body:
+            JSON.stringify(
+              payload
+            ),
+        }
+      );
 
-    if (!guide) {
-      alert("Guia não encontrado.");
-      return;
+    const result =
+      await response
+        .json()
+        .catch(
+          () => null
+        );
+
+    if (
+      !response.ok ||
+      result?.success !==
+        true
+    ) {
+      throw new Error(
+        result?.error ||
+          "Não foi possível sincronizar com o Google Calendar."
+      );
     }
 
-    setTourGuideId(guide.id);
-    setTourTitle(
-      `Tour - ${guide.name}`
-    );
-    setTourDescription("");
-    setTourAllDay(true);
-    setTourAdditionalEmail("");
-
-    setSelectedGuideDetails(null);
-    setShowTourForm(true);
+    return result;
   }
 
   /* ============================================================
-     CRIAR TOUR + ESCALAR
-     ============================================================ */
+  ESCALAR GUIA
+  ============================================================ */
+
+  function openEscalationForm() {
+    if (
+      !selectedGuideAvailability
+    ) {
+      return;
+    }
+
+    const guide =
+      guideMap.get(
+        selectedGuideAvailability.guide_id
+      );
+
+    if (!guide) {
+      alert(
+        "Guia não encontrado."
+      );
+
+      return;
+    }
+
+    setTourGuideId(
+      guide.id
+    );
+
+    setTourTitle(
+      ""
+    );
+
+    setTourDescription(
+      ""
+    );
+
+    setTourAddress(
+      ""
+    );
+
+    setTourAllDay(
+      true
+    );
+
+    setTourAdditionalEmail(
+      ""
+    );
+
+    setSelectedGuideDetails(
+      null
+    );
+
+    setShowTourForm(
+      true
+    );
+  }
+
+  /* ============================================================
+  CRIAR TOUR
+  ============================================================ */
 
   async function createTourAndEscalate() {
     if (
@@ -807,176 +2409,435 @@ export default function AdminCalendar() {
       return;
     }
 
-    const guide = guideMap.get(
-      tourGuideId
-    );
+    const guide =
+      guideMap.get(
+        tourGuideId
+      );
 
     if (!guide) {
-      alert("Selecione um guia válido.");
+      alert(
+        "Selecione um guia válido."
+      );
+
       return;
     }
 
-    if (!tourTitle.trim()) {
-      alert("Informe o título do tour.");
+    if (
+      !tourTitle.trim()
+    ) {
+      alert(
+        "Informe o título do tour."
+      );
+
       return;
     }
 
-    if (!guide.email) {
+    if (
+      !guide.email
+    ) {
       alert(
         "Este guia não possui e-mail cadastrado."
       );
+
       return;
     }
 
-    setUpdating(true);
+    setUpdating(
+      true
+    );
+
+    let createdDatabaseEvent:
+      | TourEvent
+      | null =
+      null;
+
+    let googleEventId:
+      | string
+      | null =
+      null;
 
     try {
-      /* ========================================================
-         CRIA O EVENTO
-         ======================================================== */
+      const normalizedDescription =
+        sanitizeDescriptionHtml(
+          tourDescription
+        );
 
-      const { data: newEvent, error: eventError } =
+      const plainDescription =
+        htmlToPlainText(
+          normalizedDescription
+        );
+
+      /* ========================================================
+         SUPABASE
+      ======================================================== */
+
+      const {
+        data:
+          newEvent,
+        error:
+          eventError,
+      } =
         await supabase
-          .from("tour_events")
+          .from(
+            "tour_events"
+          )
           .insert({
-            date: selectedDate,
-            title: tourTitle.trim(),
+            date:
+              selectedDate,
+
+            title:
+              tourTitle.trim(),
+
             description:
-              tourDescription.trim() || null,
-            all_day: tourAllDay,
-            guide_id: guide.id,
-            guide_email: guide.email,
+              plainDescription
+                ? normalizedDescription
+                : null,
+
+            address:
+              tourAddress.trim() ||
+              null,
+
+            all_day:
+              tourAllDay,
+
+            guide_id:
+              guide.id,
+
+            guide_email:
+              guide.email,
+
             additional_email:
-              tourAdditionalEmail.trim() || null,
-            calendar_event_id: null,
-            status: "scheduled",
+              tourAdditionalEmail.trim() ||
+              null,
+
+            calendar_event_id:
+              null,
+
+            status:
+              "scheduled",
           })
           .select(
-            "id, date, title, description, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
           )
           .single();
 
-      if (eventError) {
+      if (
+        eventError ||
+        !newEvent
+      ) {
         console.error(
           "ERRO AO CRIAR TOUR:",
           eventError
         );
 
-        alert(
-          "Não foi possível criar o tour."
+        throw new Error(
+          "Não foi possível criar o tour no banco de dados."
+        );
+      }
+
+      createdDatabaseEvent =
+        newEvent as TourEvent;
+
+      /* ========================================================
+         GOOGLE
+      ======================================================== */
+
+      const googleResult =
+        await callGoogleCalendar(
+          {
+            action:
+              "create",
+
+            date:
+              selectedDate,
+
+            title:
+              tourTitle.trim(),
+
+            /*
+             * HTML formatado.
+             */
+            description:
+              normalizedDescription
+                ? normalizedDescription
+                : null,
+
+            address:
+              tourAddress.trim() ||
+              null,
+
+            allDay:
+              tourAllDay,
+
+            guideEmail:
+              guide.email,
+
+            additionalEmail:
+              tourAdditionalEmail.trim() ||
+              null,
+          }
         );
 
-        setUpdating(false);
-        return;
+      googleEventId =
+        googleResult.eventId ||
+        null;
+
+      if (
+        !googleEventId
+      ) {
+        throw new Error(
+          "O Google criou o evento, mas não retornou o ID."
+        );
       }
 
       /* ========================================================
-         MARCA O GUIA COMO ESCALADO
-         ======================================================== */
+         SALVAR ID GOOGLE
+      ======================================================== */
 
       const {
-        error: availabilityError,
-      } = await supabase
-        .from("availability")
-        .update({
-          status: "escalated",
-        })
-        .eq(
-          "id",
-          selectedGuideAvailability.id
-        );
+        data:
+          eventWithGoogleId,
+        error:
+          calendarIdError,
+      } =
+        await supabase
+          .from(
+            "tour_events"
+          )
+          .update({
+            calendar_event_id:
+              googleEventId,
+          })
+          .eq(
+            "id",
+            newEvent.id
+          )
+          .select(
+            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+          )
+          .single();
 
-      if (availabilityError) {
+      if (
+        calendarIdError ||
+        !eventWithGoogleId
+      ) {
         console.error(
-          "ERRO AO ESCALAR GUIA:",
-          availabilityError
+          "ERRO AO SALVAR CALENDAR EVENT ID:",
+          calendarIdError
         );
 
-        /*
-         * Se o evento foi criado mas a escala falhou,
-         * removemos o evento para evitar inconsistência.
-         */
+        try {
+          await callGoogleCalendar(
+            {
+              action:
+                "delete",
+
+              eventId:
+                googleEventId,
+            }
+          );
+        } catch (
+          cleanupError
+        ) {
+          console.error(
+            "ERRO AO DESFAZER EVENTO GOOGLE:",
+            cleanupError
+          );
+        }
 
         await supabase
-          .from("tour_events")
+          .from(
+            "tour_events"
+          )
           .delete()
           .eq(
             "id",
             newEvent.id
           );
 
-        alert(
-          "O tour não pôde ser associado à escala do guia."
+        throw new Error(
+          "O evento foi criado no Google, mas não foi possível salvar o vínculo no sistema."
+        );
+      }
+
+      createdDatabaseEvent =
+        eventWithGoogleId as TourEvent;
+
+      /* ========================================================
+         ESCALAR GUIA
+      ======================================================== */
+
+      const {
+        error:
+          availabilityError,
+      } =
+        await supabase
+          .from(
+            "availability"
+          )
+          .update({
+            status:
+              "escalated",
+          })
+          .eq(
+            "id",
+            selectedGuideAvailability.id
+          );
+
+      if (
+        availabilityError
+      ) {
+        console.error(
+          "ERRO AO ESCALAR GUIA:",
+          availabilityError
         );
 
-        setUpdating(false);
-        return;
+        try {
+          await callGoogleCalendar(
+            {
+              action:
+                "delete",
+
+              eventId:
+                googleEventId,
+            }
+          );
+        } catch (
+          cleanupError
+        ) {
+          console.error(
+            "ERRO AO REMOVER EVENTO GOOGLE:",
+            cleanupError
+          );
+        }
+
+        await supabase
+          .from(
+            "tour_events"
+          )
+          .delete()
+          .eq(
+            "id",
+            newEvent.id
+          );
+
+        throw new Error(
+          "O tour foi criado, mas não foi possível escalar o guia. A operação foi desfeita."
+        );
       }
 
       /* ========================================================
-         ATUALIZA ESTADO LOCAL
-         ======================================================== */
+         ESTADO LOCAL
+      ======================================================== */
 
-      setTourEvents((current) => [
-        ...current,
-        newEvent,
-      ]);
+      setTourEvents(
+        (current) => {
+          const exists =
+            current.some(
+              (event) =>
+                event.id ===
+                createdDatabaseEvent!
+                  .id
+            );
 
-      setAvailability((current) =>
-        current.map((item) =>
-          item.id ===
-          selectedGuideAvailability.id
-            ? {
-                ...item,
-                status: "escalated",
-              }
-            : item
-        )
+          if (
+            exists
+          ) {
+            return current.map(
+              (event) =>
+                event.id ===
+                createdDatabaseEvent!
+                  .id
+                  ? createdDatabaseEvent!
+                  : event
+            );
+          }
+
+          return [
+            ...current,
+            createdDatabaseEvent!,
+          ];
+        }
       );
 
-      setShowTourForm(false);
-      setSelectedGuideAvailability(null);
+      setAvailability(
+        (current) =>
+          current.map(
+            (item) =>
+              item.id ===
+              selectedGuideAvailability.id
+                ? {
+                    ...item,
+                    status:
+                      "escalated",
+                  }
+                : item
+          )
+      );
+
+      setShowTourForm(
+        false
+      );
+
+      setSelectedGuideAvailability(
+        null
+      );
 
       alert(
-        "Tour criado e guia escalado com sucesso!"
+        "✅ Tour criado, guia escalado e evento enviado para o Google Calendar."
       );
-    } catch (error) {
+    } catch (
+      error: any
+    ) {
       console.error(
-        "ERRO AO CRIAR TOUR:",
+        "❌ ERRO AO CRIAR TOUR:",
         error
       );
 
       alert(
-        "Ocorreu um erro ao criar o tour."
+        error?.message ||
+          "Ocorreu um erro ao criar o tour."
       );
     } finally {
-      setUpdating(false);
+      setUpdating(
+        false
+      );
     }
   }
 
   /* ============================================================
-     REMOVER ESCALA SEM TOUR
-     ============================================================ */
+  REMOVER ESCALA
+  ============================================================ */
 
   async function unEscalateGuide() {
-    if (!selectedGuideAvailability) {
+    if (
+      !selectedGuideAvailability
+    ) {
       return;
     }
 
-    setUpdating(true);
+    setUpdating(
+      true
+    );
 
     const availabilityId =
       selectedGuideAvailability.id;
 
-    const { error } = await supabase
-      .from("availability")
-      .update({
-        status: "available",
-      })
-      .eq(
-        "id",
-        availabilityId
-      );
+    const {
+      error,
+    } =
+      await supabase
+        .from(
+          "availability"
+        )
+        .update({
+          status:
+            "available",
+        })
+        .eq(
+          "id",
+          availabilityId
+        );
 
     if (error) {
       console.error(
@@ -988,256 +2849,683 @@ export default function AdminCalendar() {
         "Não foi possível remover a escala."
       );
 
-      setUpdating(false);
+      setUpdating(
+        false
+      );
+
       return;
     }
 
-    setSelectedGuideDetails(null);
-    setSelectedGuideAvailability(null);
-
-    setAvailability((current) =>
-      current.map((item) =>
-        item.id === availabilityId
-          ? {
-              ...item,
-              status: "available",
-            }
-          : item
-      )
+    setSelectedGuideDetails(
+      null
     );
 
-    setUpdating(false);
+    setSelectedGuideAvailability(
+      null
+    );
+
+    setAvailability(
+      (current) =>
+        current.map(
+          (item) =>
+            item.id ===
+            availabilityId
+              ? {
+                  ...item,
+                  status:
+                    "available",
+                }
+              : item
+        )
+    );
+
+    setUpdating(
+      false
+    );
   }
 
   /* ============================================================
-     ABRIR EDIÇÃO DO TOUR
-     ============================================================ */
+  ABRIR EDIÇÃO
+  ============================================================ */
 
-  function openTourEdit(event: TourEvent) {
-    setEditTourTitle(event.title);
+  function openTourEdit(
+    event: TourEvent
+  ) {
+    setEditTourTitle(
+      event.title
+    );
+
     setEditTourDescription(
-      event.description || ""
-    );
-    setEditTourAllDay(event.all_day);
-    setEditTourGuideId(event.guide_id);
-    setEditTourAdditionalEmail(
-      event.additional_email || ""
+      event.description ||
+        ""
     );
 
-    setShowTourEdit(true);
+    setEditTourAddress(
+      event.address ||
+        ""
+    );
+
+    setEditTourAllDay(
+      event.all_day
+    );
+
+    setEditTourGuideId(
+      event.guide_id
+    );
+
+    setEditTourAdditionalEmail(
+      event.additional_email ||
+        ""
+    );
+
+    setShowTourEdit(
+      true
+    );
   }
 
   /* ============================================================
-     SALVAR EDIÇÃO DO TOUR
-     ============================================================ */
+  SALVAR EDIÇÃO
+  ============================================================ */
 
   async function saveTourEdit() {
-    if (!selectedTourEvent) {
+    if (
+      !selectedTourEvent
+    ) {
       return;
     }
 
-    const guide = guideMap.get(
-      editTourGuideId
-    );
+    const newGuide =
+      guideMap.get(
+        editTourGuideId
+      );
 
-    if (!guide) {
-      alert("Selecione um guia válido.");
+    if (!newGuide) {
+      alert(
+        "Selecione um guia válido."
+      );
+
       return;
     }
 
-    if (!editTourTitle.trim()) {
-      alert("Informe o título do tour.");
+    if (
+      !editTourTitle.trim()
+    ) {
+      alert(
+        "Informe o título do tour."
+      );
+
       return;
     }
 
-    if (!guide.email) {
+    if (
+      !newGuide.email
+    ) {
       alert(
         "O guia selecionado não possui e-mail cadastrado."
       );
+
       return;
     }
 
-    setUpdating(true);
+    const guideChanged =
+      selectedTourEvent.guide_id !==
+      newGuide.id;
 
-    const { data, error } = await supabase
-      .from("tour_events")
-      .update({
-        title: editTourTitle.trim(),
-        description:
-          editTourDescription.trim() || null,
-        all_day: editTourAllDay,
-        guide_id: guide.id,
-        guide_email: guide.email,
-        additional_email:
-          editTourAdditionalEmail.trim() || null,
-      })
-      .eq(
-        "id",
-        selectedTourEvent.id
-      )
-      .select(
-        "id, date, title, description, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
-      )
-      .single();
-
-    if (error) {
-      console.error(
-        "ERRO AO EDITAR TOUR:",
-        error
-      );
-
-      alert(
-        "Não foi possível atualizar o tour."
-      );
-
-      setUpdating(false);
-      return;
-    }
-
-    setTourEvents((current) =>
-      current.map((event) =>
-        event.id === data.id
-          ? data
-          : event
-      )
+    setUpdating(
+      true
     );
 
-    setSelectedTourEvent(data);
-    setShowTourEdit(false);
+    try {
+      let oldAvailability:
+        | Availability
+        | null =
+        null;
 
-    setUpdating(false);
-  }
+      let newAvailability:
+        | Availability
+        | null =
+        null;
 
-  /* ============================================================
-     CANCELAR TOUR
-     ============================================================ */
+      /* ========================================================
+         DISPONIBILIDADES
+      ======================================================== */
 
-  async function cancelTour(event: TourEvent) {
-    const confirmed = window.confirm(
-      `Deseja realmente cancelar o tour "${event.title}"?`
-    );
+      if (
+        guideChanged
+      ) {
+        const {
+          data:
+            newGuideAvailability,
+          error:
+            newGuideAvailabilityError,
+        } =
+          await supabase
+            .from(
+              "availability"
+            )
+            .select(
+              "id, guide_id, date, status"
+            )
+            .eq(
+              "guide_id",
+              newGuide.id
+            )
+            .eq(
+              "date",
+              selectedTourEvent.date
+            )
+            .maybeSingle();
 
-    if (!confirmed) {
-      return;
-    }
+        if (
+          newGuideAvailabilityError
+        ) {
+          throw new Error(
+            "Não foi possível verificar a disponibilidade do novo guia."
+          );
+        }
 
-    setUpdating(true);
+        if (
+          !newGuideAvailability
+        ) {
+          throw new Error(
+            "O novo guia não possui disponibilidade registrada para este dia."
+          );
+        }
 
-    /* ========================================================
-       CANCELA EVENTO
-       ======================================================== */
+        if (
+          newGuideAvailability.status !==
+          "available"
+        ) {
+          throw new Error(
+            "O novo guia não está disponível para este dia."
+          );
+        }
 
-    const { data, error } = await supabase
-      .from("tour_events")
-      .update({
-        status: "cancelled",
-      })
-      .eq(
-        "id",
-        event.id
-      )
-      .select(
-        "id, date, title, description, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
-      )
-      .single();
+        newAvailability =
+          newGuideAvailability as Availability;
 
-    if (error) {
-      console.error(
-        "ERRO AO CANCELAR TOUR:",
-        error
-      );
+        const {
+          data:
+            oldGuideAvailability,
+          error:
+            oldAvailabilityError,
+        } =
+          await supabase
+            .from(
+              "availability"
+            )
+            .select(
+              "id, guide_id, date, status"
+            )
+            .eq(
+              "guide_id",
+              selectedTourEvent.guide_id
+            )
+            .eq(
+              "date",
+              selectedTourEvent.date
+            )
+            .maybeSingle();
 
-      alert(
-        "Não foi possível cancelar o tour."
-      );
+        if (
+          oldAvailabilityError
+        ) {
+          throw new Error(
+            "Não foi possível localizar a disponibilidade do guia anterior."
+          );
+        }
 
-      setUpdating(false);
-      return;
-    }
+        oldAvailability =
+          oldGuideAvailability as
+            | Availability
+            | null;
+      }
 
-    /* ========================================================
-       PROCURA AVAILABILITY DO GUIA NO DIA
-       ======================================================== */
+      /* ========================================================
+         DESCRIÇÃO
+      ======================================================== */
 
-    const { data: availabilityItem } =
-      await supabase
-        .from("availability")
-        .select(
-          "id, guide_id, date, status"
-        )
-        .eq(
-          "guide_id",
-          event.guide_id
-        )
-        .eq(
-          "date",
-          event.date
-        )
-        .maybeSingle();
-
-    if (availabilityItem) {
-      await supabase
-        .from("availability")
-        .update({
-          status: "available",
-        })
-        .eq(
-          "id",
-          availabilityItem.id
+      const normalizedDescription =
+        sanitizeDescriptionHtml(
+          editTourDescription
         );
 
-      setAvailability((current) =>
-        current.map((item) =>
-          item.id ===
-          availabilityItem.id
-            ? {
-                ...item,
-                status: "available",
-              }
-            : item
-        )
+      const plainDescription =
+        htmlToPlainText(
+          normalizedDescription
+        );
+
+      /* ========================================================
+         GOOGLE
+      ======================================================== */
+
+      if (
+        selectedTourEvent.calendar_event_id
+      ) {
+        await callGoogleCalendar(
+          {
+            action:
+              "update",
+
+            eventId:
+              selectedTourEvent.calendar_event_id,
+
+            date:
+              selectedTourEvent.date,
+
+            title:
+              editTourTitle.trim(),
+
+            description:
+              normalizedDescription
+                ? normalizedDescription
+                : null,
+
+            address:
+              editTourAddress.trim() ||
+              null,
+
+            allDay:
+              editTourAllDay,
+
+            guideEmail:
+              newGuide.email,
+
+            additionalEmail:
+              editTourAdditionalEmail.trim() ||
+              null,
+          }
+        );
+      }
+
+      /* ========================================================
+         SUPABASE
+      ======================================================== */
+
+      const {
+        data,
+        error,
+      } =
+        await supabase
+          .from(
+            "tour_events"
+          )
+          .update({
+            title:
+              editTourTitle.trim(),
+
+            description:
+              plainDescription
+                ? normalizedDescription
+                : null,
+
+            address:
+              editTourAddress.trim() ||
+              null,
+
+            all_day:
+              editTourAllDay,
+
+            guide_id:
+              newGuide.id,
+
+            guide_email:
+              newGuide.email,
+
+            additional_email:
+              editTourAdditionalEmail.trim() ||
+              null,
+          })
+          .eq(
+            "id",
+            selectedTourEvent.id
+          )
+          .select(
+            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+          )
+          .single();
+
+      if (
+        error ||
+        !data
+      ) {
+        throw new Error(
+          "Não foi possível atualizar o tour no sistema."
+        );
+      }
+
+      /* ========================================================
+         TROCAR GUIA
+      ======================================================== */
+
+      if (
+        guideChanged
+      ) {
+        if (
+          oldAvailability
+        ) {
+          const {
+            error:
+              oldAvailabilityUpdateError,
+          } =
+            await supabase
+              .from(
+                "availability"
+              )
+              .update({
+                status:
+                  "available",
+              })
+              .eq(
+                "id",
+                oldAvailability.id
+              );
+
+          if (
+            oldAvailabilityUpdateError
+          ) {
+            throw new Error(
+              "O tour foi atualizado, mas não foi possível liberar o guia anterior."
+            );
+          }
+
+          setAvailability(
+            (current) =>
+              current.map(
+                (item) =>
+                  item.id ===
+                  oldAvailability!.id
+                    ? {
+                        ...item,
+                        status:
+                          "available",
+                      }
+                    : item
+              )
+          );
+        }
+
+        if (
+          newAvailability
+        ) {
+          const {
+            error:
+              newAvailabilityUpdateError,
+          } =
+            await supabase
+              .from(
+                "availability"
+              )
+              .update({
+                status:
+                  "escalated",
+              })
+              .eq(
+                "id",
+                newAvailability.id
+              );
+
+          if (
+            newAvailabilityUpdateError
+          ) {
+            throw new Error(
+              "O tour foi atualizado, mas não foi possível escalar o novo guia."
+            );
+          }
+
+          setAvailability(
+            (current) =>
+              current.map(
+                (item) =>
+                  item.id ===
+                  newAvailability!.id
+                    ? {
+                        ...item,
+                        status:
+                          "escalated",
+                      }
+                    : item
+              )
+          );
+        }
+      }
+
+      /* ========================================================
+         ESTADO
+      ======================================================== */
+
+      setTourEvents(
+        (current) =>
+          current.map(
+            (event) =>
+              event.id ===
+              data.id
+                ? data
+                : event
+          )
+      );
+
+      setSelectedTourEvent(
+        data
+      );
+
+      setShowTourEdit(
+        false
+      );
+
+      alert(
+        guideChanged
+          ? "✅ Tour atualizado e guia trocado com sucesso."
+          : "✅ Tour atualizado e sincronizado com o Google Calendar."
+      );
+    } catch (
+      error: any
+    ) {
+      console.error(
+        "❌ ERRO AO EDITAR TOUR:",
+        error
+      );
+
+      alert(
+        error?.message ||
+          "Não foi possível atualizar o tour."
+      );
+    } finally {
+      setUpdating(
+        false
       );
     }
-
-    setTourEvents((current) =>
-      current.map((item) =>
-        item.id === data.id
-          ? data
-          : item
-      )
-    );
-
-    setSelectedTourEvent(null);
-
-    alert(
-      "Tour cancelado e guia liberado."
-    );
-
-    setUpdating(false);
   }
 
   /* ============================================================
-     MÊS
-     ============================================================ */
+  CANCELAR TOUR
+  ============================================================ */
 
-  const monthName = format(
-    currentMonth,
-    "MMMM yyyy",
-    {
-      locale: ptBR,
+  async function cancelTour(
+    event: TourEvent
+  ) {
+    const confirmed =
+      window.confirm(
+        `Deseja realmente cancelar o tour "${event.title}"? Ele será removido da agenda do Google e do sistema.`
+      );
+
+    if (
+      !confirmed
+    ) {
+      return;
     }
-  );
+
+    setUpdating(
+      true
+    );
+
+    try {
+      /* GOOGLE */
+
+      if (
+        event.calendar_event_id
+      ) {
+        await callGoogleCalendar(
+          {
+            action:
+              "delete",
+
+            eventId:
+              event.calendar_event_id,
+          }
+        );
+      }
+
+      /* LIBERAR GUIA */
+
+      const {
+        data:
+          availabilityItem,
+      } =
+        await supabase
+          .from(
+            "availability"
+          )
+          .select(
+            "id, guide_id, date, status"
+          )
+          .eq(
+            "guide_id",
+            event.guide_id
+          )
+          .eq(
+            "date",
+            event.date
+          )
+          .maybeSingle();
+
+      if (
+        availabilityItem
+      ) {
+        const {
+          error:
+            availabilityError,
+        } =
+          await supabase
+            .from(
+              "availability"
+            )
+            .update({
+              status:
+                "available",
+            })
+            .eq(
+              "id",
+              availabilityItem.id
+            );
+
+        if (
+          availabilityError
+        ) {
+          throw new Error(
+            "O evento foi removido do Google, mas não foi possível liberar o guia."
+          );
+        }
+
+        setAvailability(
+          (current) =>
+            current.map(
+              (item) =>
+                item.id ===
+                availabilityItem.id
+                  ? {
+                      ...item,
+                      status:
+                        "available",
+                    }
+                  : item
+            )
+        );
+      }
+
+      /* EXCLUIR TOUR */
+
+      const {
+        error:
+          deleteError,
+      } =
+        await supabase
+          .from(
+            "tour_events"
+          )
+          .delete()
+          .eq(
+            "id",
+            event.id
+          );
+
+      if (
+        deleteError
+      ) {
+        throw new Error(
+          "O evento foi removido do Google, mas não foi possível removê-lo do sistema."
+        );
+      }
+
+      setTourEvents(
+        (current) =>
+          current.filter(
+            (item) =>
+              item.id !==
+              event.id
+          )
+      );
+
+      setSelectedTourEvent(
+        null
+      );
+
+      alert(
+        "✅ Tour cancelado, removido do Google Calendar e guia liberado."
+      );
+    } catch (
+      error: any
+    ) {
+      console.error(
+        "❌ ERRO AO CANCELAR TOUR:",
+        error
+      );
+
+      alert(
+        error?.message ||
+          "Não foi possível cancelar o tour."
+      );
+    } finally {
+      setUpdating(
+        false
+      );
+    }
+  }
 
   /* ============================================================
-     RENDER
-     ============================================================ */
+  MÊS
+  ============================================================ */
+
+  const monthName =
+    format(
+      currentMonth,
+      "MMMM yyyy",
+      {
+        locale:
+          ptBR,
+      }
+    );
+
+  /* ============================================================
+  RENDER
+  ============================================================ */
 
   return (
     <div className="mt-4 rounded-2xl bg-white p-3 shadow-sm sm:mt-6 sm:rounded-3xl sm:p-6">
 
-      {/* ====================================================== */}
-      {/* CABEÇALHO */}
-      {/* ====================================================== */}
+      {/* ======================================================
+         CABEÇALHO
+      ====================================================== */}
 
       <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:gap-5 md:flex-row md:items-center md:justify-between">
 
@@ -1251,16 +3539,16 @@ export default function AdminCalendar() {
           </p>
         </div>
 
-        {/* ================================================== */}
-        {/* BUSCA */}
-        {/* ================================================== */}
-
         <div className="relative w-full md:w-80">
 
           <input
             type="text"
-            value={guideSearch}
-            onChange={(event) =>
+            value={
+              guideSearch
+            }
+            onChange={(
+              event
+            ) =>
               setGuideSearch(
                 event.target.value
               )
@@ -1273,7 +3561,9 @@ export default function AdminCalendar() {
             <button
               type="button"
               onClick={() =>
-                setGuideSearch("")
+                setGuideSearch(
+                  ""
+                )
               }
               className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 hover:text-gray-700"
             >
@@ -1282,17 +3572,12 @@ export default function AdminCalendar() {
           )}
 
         </div>
-
       </div>
-
-      {/* ====================================================== */}
-      {/* RESULTADO BUSCA */}
-      {/* ====================================================== */}
 
       {guideSearch.trim() && (
         <div className="mb-4 rounded-xl bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-800 sm:mb-6 sm:text-sm">
-
-          {filteredGuides.length === 0 ? (
+          {filteredGuides.length ===
+          0 ? (
             <>
               Nenhum guia encontrado para "
               {guideSearch}".
@@ -1301,25 +3586,28 @@ export default function AdminCalendar() {
             <>
               Mostrando a agenda de{" "}
               <strong>
-                {filteredGuides.length}
+                {
+                  filteredGuides.length
+                }
               </strong>{" "}
               guia
-              {filteredGuides.length !== 1
+              {filteredGuides.length !==
+              1
                 ? "s"
                 : ""}{" "}
               encontrado
-              {filteredGuides.length !== 1
+              {filteredGuides.length !==
+              1
                 ? "s"
                 : ""}.
             </>
           )}
-
         </div>
       )}
 
-      {/* ====================================================== */}
-      {/* NAVEGAÇÃO */}
-      {/* ====================================================== */}
+      {/* ======================================================
+         NAVEGAÇÃO
+      ====================================================== */}
 
       <div className="mb-4 flex items-center justify-between rounded-xl bg-gray-50 p-2 sm:mb-6 sm:rounded-2xl sm:p-3">
 
@@ -1339,7 +3627,9 @@ export default function AdminCalendar() {
         </button>
 
         <h4 className="px-2 text-base font-extrabold capitalize text-gray-900 sm:text-2xl">
-          {monthName}
+          {
+            monthName
+          }
         </h4>
 
         <button
@@ -1356,12 +3646,11 @@ export default function AdminCalendar() {
         >
           →
         </button>
-
       </div>
 
-      {/* ====================================================== */}
-      {/* LOADING */}
-      {/* ====================================================== */}
+      {/* ======================================================
+         LOADING
+      ====================================================== */}
 
       {loading ? (
         <div className="py-10 text-center sm:py-12">
@@ -1376,10 +3665,6 @@ export default function AdminCalendar() {
       ) : (
         <>
 
-          {/* ================================================== */}
-          {/* DIAS DA SEMANA */}
-          {/* ================================================== */}
-
           <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[9px] font-extrabold uppercase tracking-wide text-gray-800 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
 
             <div>Seg</div>
@@ -1392,235 +3677,273 @@ export default function AdminCalendar() {
 
           </div>
 
-          {/* ================================================== */}
-          {/* CALENDÁRIO */}
-          {/* ================================================== */}
+          {/* ====================================================
+             CALENDÁRIO
+          ==================================================== */}
 
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
 
-            {days.map((day) => {
-              const date =
-                format(
-                  day,
-                  "yyyy-MM-dd"
-                );
+            {days.map(
+              (day) => {
+                const date =
+                  format(
+                    day,
+                    "yyyy-MM-dd"
+                  );
 
-              const sameMonth =
-                isSameMonth(
-                  day,
-                  currentMonth
-                );
+                const sameMonth =
+                  isSameMonth(
+                    day,
+                    currentMonth
+                  );
 
-              const dayItems =
-                getDayAvailability(
-                  date
-                );
+                const dayItems =
+                  getDayAvailability(
+                    date
+                  );
 
-              const available =
-                dayItems.filter(
-                  (item) =>
-                    item.status ===
-                    "available"
-                );
+                const available =
+                  dayItems.filter(
+                    (item) =>
+                      item.status ===
+                      "available"
+                  );
 
-              const unavailable =
-                dayItems.filter(
-                  (item) =>
-                    item.status ===
-                    "unavailable"
-                );
+                const unavailable =
+                  dayItems.filter(
+                    (item) =>
+                      item.status ===
+                      "unavailable"
+                  );
 
-              const escalated =
-                dayItems.filter(
-                  (item) =>
-                    item.status ===
-                    "escalated"
-                );
+                const escalated =
+                  dayItems.filter(
+                    (item) =>
+                      item.status ===
+                      "escalated"
+                  );
 
-              const dayEvents =
-                getDayTourEvents(
-                  date
-                );
+                const dayEvents =
+                  getDayTourEvents(
+                    date
+                  );
 
-              return (
-                <button
-                  key={date}
-                  type="button"
-                  onClick={() =>
-                    sameMonth &&
-                    setSelectedDate(
+                return (
+                  <button
+                    key={
                       date
-                    )
-                  }
-                  disabled={!sameMonth}
-                  className={[
-                    "min-h-[88px] rounded-lg border p-1 text-left transition",
-                    "sm:min-h-32 sm:rounded-xl sm:p-2",
-                    !sameMonth
-                      ? "cursor-default border-transparent bg-gray-100 text-gray-400"
-                      : "border-gray-200 bg-white hover:border-[#1687d9] hover:shadow-md",
-                  ].join(" ")}
-                >
-
-                  <div
+                    }
+                    type="button"
+                    onClick={() =>
+                      sameMonth &&
+                      setSelectedDate(
+                        date
+                      )
+                    }
+                    disabled={
+                      !sameMonth
+                    }
                     className={[
-                      "mb-1 text-right text-[10px] font-extrabold sm:mb-2 sm:text-sm",
-                      sameMonth
-                        ? "text-gray-900"
-                        : "text-gray-400",
-                    ].join(" ")}
+                      "min-h-[88px] rounded-lg border p-1 text-left transition",
+                      "sm:min-h-32 sm:rounded-xl sm:p-2",
+                      !sameMonth
+                        ? "cursor-default border-transparent bg-gray-100 text-gray-400"
+                        : "border-gray-200 bg-white hover:border-[#1687d9] hover:shadow-md",
+                    ].join(
+                      " "
+                    )}
                   >
-                    {format(
-                      day,
-                      "d"
-                    )}
-                  </div>
 
-                  <div className="space-y-0.5 sm:space-y-1">
-
-                    {/* ==================================================
-                         TOURS
-                       ================================================== */}
-
-                    {dayEvents
-                      .slice(0, 2)
-                      .map(
-                        (event) => (
-                          <div
-                            key={`event-${event.id}`}
-                            className="truncate rounded bg-blue-100 px-0.5 py-0.5 text-[8px] font-extrabold leading-tight text-blue-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                            title={event.title}
-                          >
-                            📅{" "}
-                            {event.title}
-                          </div>
+                    <div
+                      className={[
+                        "mb-1 text-right text-[10px] font-extrabold sm:mb-2 sm:text-sm",
+                        sameMonth
+                          ? "text-gray-900"
+                          : "text-gray-400",
+                      ].join(
+                        " "
+                      )}
+                    >
+                      {
+                        format(
+                          day,
+                          "d"
                         )
+                      }
+                    </div>
+
+                    <div className="space-y-0.5 sm:space-y-1">
+
+                      {dayEvents
+                        .slice(
+                          0,
+                          2
+                        )
+                        .map(
+                          (
+                            event
+                          ) => (
+                            <div
+                              key={`event-${event.id}`}
+                              className="truncate rounded bg-blue-100 px-0.5 py-0.5 text-[8px] font-extrabold leading-tight text-blue-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                              title={
+                                event.title
+                              }
+                            >
+                              📅{" "}
+                              {
+                                event.title
+                              }
+                            </div>
+                          )
+                        )}
+
+                      {dayEvents.length >
+                        2 && (
+                        <div className="px-0.5 text-[8px] font-bold text-blue-700 sm:text-xs">
+                          +
+                          {
+                            dayEvents.length -
+                              2
+                          }{" "}
+                          tours
+                        </div>
                       )}
 
-                    {dayEvents.length >
-                      2 && (
-                      <div className="px-0.5 text-[8px] font-bold text-blue-700 sm:text-xs">
-                        +
-                        {dayEvents.length -
-                          2}{" "}
-                        tours
-                      </div>
-                    )}
-
-                    {/* ==================================================
-                         ESCALADOS
-                       ================================================== */}
-
-                    {escalated
-                      .slice(0, 2)
-                      .map(
-                        (item) => (
-                          <div
-                            key={`escalated-${item.id}`}
-                            className="truncate rounded bg-[#f3e5a5] px-0.5 py-0.5 text-[8px] font-bold leading-tight text-[#806600] sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                            title={getGuideName(
-                              item.guide_id
-                            )}
-                          >
-                            {getGuideFlags(
-                              item.guide_id
-                            )}{" "}
-                            {getGuideName(
-                              item.guide_id
-                            )}
-                          </div>
+                      {escalated
+                        .slice(
+                          0,
+                          2
                         )
+                        .map(
+                          (
+                            item
+                          ) => (
+                            <div
+                              key={`escalated-${item.id}`}
+                              className="truncate rounded bg-[#f3e5a5] px-0.5 py-0.5 text-[8px] font-bold leading-tight text-[#806600] sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                              title={getGuideName(
+                                item.guide_id
+                              )}
+                            >
+                              {
+                                getGuideFlags(
+                                  item.guide_id
+                                )
+                              }{" "}
+                              {
+                                getGuideName(
+                                  item.guide_id
+                                )
+                              }
+                            </div>
+                          )
+                        )}
+
+                      {escalated.length >
+                        2 && (
+                        <div className="px-0.5 text-[8px] font-bold text-[#806600] sm:text-xs">
+                          +
+                          {
+                            escalated.length -
+                              2
+                          }{" "}
+                          escalados
+                        </div>
                       )}
 
-                    {escalated.length >
-                      2 && (
-                      <div className="px-0.5 text-[8px] font-bold text-[#806600] sm:text-xs">
-                        +
-                        {escalated.length -
-                          2}{" "}
-                        escalados
-                      </div>
-                    )}
-
-                    {/* ==================================================
-                         DISPONÍVEIS
-                       ================================================== */}
-
-                    {available
-                      .slice(0, 2)
-                      .map(
-                        (item) => (
-                          <div
-                            key={`available-${item.id}`}
-                            className="truncate rounded bg-green-100 px-0.5 py-0.5 text-[8px] font-semibold leading-tight text-green-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                            title={getGuideName(
-                              item.guide_id
-                            )}
-                          >
-                            {getGuideFlags(
-                              item.guide_id
-                            )}{" "}
-                            {getGuideName(
-                              item.guide_id
-                            )}
-                          </div>
+                      {available
+                        .slice(
+                          0,
+                          2
                         )
+                        .map(
+                          (
+                            item
+                          ) => (
+                            <div
+                              key={`available-${item.id}`}
+                              className="truncate rounded bg-green-100 px-0.5 py-0.5 text-[8px] font-semibold leading-tight text-green-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                              title={getGuideName(
+                                item.guide_id
+                              )}
+                            >
+                              {
+                                getGuideFlags(
+                                  item.guide_id
+                                )
+                              }{" "}
+                              {
+                                getGuideName(
+                                  item.guide_id
+                                )
+                              }
+                            </div>
+                          )
+                        )}
+
+                      {available.length >
+                        2 && (
+                        <div className="px-0.5 text-[8px] font-semibold text-green-700">
+                          +
+                          {
+                            available.length -
+                              2
+                          }
+                        </div>
                       )}
 
-                    {available.length >
-                      2 && (
-                      <div className="px-0.5 text-[8px] font-semibold text-green-700">
-                        +
-                        {available.length -
-                          2}
-                      </div>
-                    )}
-
-                    {/* ==================================================
-                         INDISPONÍVEIS
-                       ================================================== */}
-
-                    {unavailable
-                      .slice(0, 1)
-                      .map(
-                        (item) => (
-                          <div
-                            key={`unavailable-${item.id}`}
-                            className="truncate rounded bg-red-100 px-0.5 py-0.5 text-[8px] font-semibold leading-tight text-red-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                            title={getGuideName(
-                              item.guide_id
-                            )}
-                          >
-                            {getGuideFlags(
-                              item.guide_id
-                            )}{" "}
-                            {getGuideName(
-                              item.guide_id
-                            )}
-                          </div>
+                      {unavailable
+                        .slice(
+                          0,
+                          1
                         )
+                        .map(
+                          (
+                            item
+                          ) => (
+                            <div
+                              key={`unavailable-${item.id}`}
+                              className="truncate rounded bg-red-100 px-0.5 py-0.5 text-[8px] font-semibold leading-tight text-red-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                              title={getGuideName(
+                                item.guide_id
+                              )}
+                            >
+                              {
+                                getGuideFlags(
+                                  item.guide_id
+                                )
+                              }{" "}
+                              {
+                                getGuideName(
+                                  item.guide_id
+                                )
+                              }
+                            </div>
+                          )
+                        )}
+
+                      {unavailable.length >
+                        1 && (
+                        <div className="px-0.5 text-[8px] font-semibold text-red-700">
+                          +
+                          {
+                            unavailable.length -
+                              1
+                          }
+                        </div>
                       )}
 
-                    {unavailable.length >
-                      1 && (
-                      <div className="px-0.5 text-[8px] font-semibold text-red-700">
-                        +
-                        {unavailable.length -
-                          1}
-                      </div>
-                    )}
+                    </div>
 
-                  </div>
-
-                </button>
-              );
-            })}
+                  </button>
+                );
+              }
+            )}
 
           </div>
 
-          {/* ================================================== */}
           {/* LEGENDA */}
-          {/* ================================================== */}
 
           <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
 
@@ -1630,7 +3953,7 @@ export default function AdminCalendar() {
             </div>
 
             <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded bg-[#f3e5a5] ring-1 ring-[#d6c36a] sm:h-4 sm:w-4" />
+              <span className="h-3 w-3 rounded bg-[#f3e5a5] ring-1 ring-[#d6c36c] sm:h-4 sm:w-4" />
               Escalado
             </div>
 
@@ -1649,21 +3972,25 @@ export default function AdminCalendar() {
         </>
       )}
 
-      {/* ====================================================== */}
-      {/* MODAL DO DIA */}
-      {/* ====================================================== */}
+      {/* ======================================================
+         MODAL DO DIA
+      ====================================================== */}
 
       {selectedDate && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 backdrop-blur-sm sm:p-4"
           onClick={() =>
-            setSelectedDate(null)
+            setSelectedDate(
+              null
+            )
           }
         >
 
           <div
             className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:rounded-3xl sm:p-6"
-            onClick={(event) =>
+            onClick={(
+              event
+            ) =>
               event.stopPropagation()
             }
           >
@@ -1673,16 +4000,18 @@ export default function AdminCalendar() {
               <div>
 
                 <h3 className="text-lg font-extrabold capitalize text-gray-900 sm:text-xl">
-                  {format(
-                    new Date(
-                      `${selectedDate}T12:00:00`
-                    ),
-                    "dd 'de' MMMM",
-                    {
-                      locale:
-                        ptBR,
-                    }
-                  )}
+                  {
+                    format(
+                      new Date(
+                        `${selectedDate}T12:00:00`
+                      ),
+                      "dd 'de' MMMM",
+                      {
+                        locale:
+                          ptBR,
+                      }
+                    )
+                  }
                 </h3>
 
                 <p className="mt-1 text-xs font-medium text-gray-500 sm:text-sm">
@@ -1694,7 +4023,9 @@ export default function AdminCalendar() {
               <button
                 type="button"
                 onClick={() =>
-                  setSelectedDate(null)
+                  setSelectedDate(
+                    null
+                  )
                 }
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-base font-bold text-gray-700 transition hover:bg-gray-100 sm:h-9 sm:w-9 sm:rounded-xl sm:text-lg"
               >
@@ -1703,9 +4034,7 @@ export default function AdminCalendar() {
 
             </div>
 
-            {/* ==================================================
-                 TOURS
-               ================================================== */}
+            {/* TOURS */}
 
             <div className="mt-5 sm:mt-6">
 
@@ -1722,14 +4051,19 @@ export default function AdminCalendar() {
                   </p>
                 ) : (
                   selectedDayEvents.map(
-                    (event) => (
+                    (
+                      event
+                    ) => (
                       <button
-                        key={event.id}
+                        key={
+                          event.id
+                        }
                         type="button"
                         onClick={() => {
                           setSelectedTourEvent(
                             event
                           );
+
                           setSelectedDate(
                             null
                           );
@@ -1740,13 +4074,17 @@ export default function AdminCalendar() {
                         <span className="min-w-0">
 
                           <span className="block truncate">
-                            {event.title}
+                            {
+                              event.title
+                            }
                           </span>
 
                           <span className="mt-0.5 block text-xs font-semibold text-blue-600">
-                            {getGuideName(
-                              event.guide_id
-                            )}
+                            {
+                              getGuideName(
+                                event.guide_id
+                              )
+                            }
                           </span>
 
                         </span>
@@ -1764,9 +4102,7 @@ export default function AdminCalendar() {
 
             </div>
 
-            {/* ==================================================
-                 ESCALADOS
-               ================================================== */}
+            {/* ESCALADOS */}
 
             <div className="mt-5 sm:mt-6">
 
@@ -1783,7 +4119,9 @@ export default function AdminCalendar() {
                   </p>
                 ) : (
                   selectedEscalated.map(
-                    (item) => {
+                    (
+                      item
+                    ) => {
                       const guide =
                         guideMap.get(
                           item.guide_id
@@ -1791,10 +4129,14 @@ export default function AdminCalendar() {
 
                       return (
                         <button
-                          key={item.id}
+                          key={
+                            item.id
+                          }
                           type="button"
                           onClick={() => {
-                            if (guide) {
+                            if (
+                              guide
+                            ) {
                               setSelectedGuideDetails(
                                 guide
                               );
@@ -1809,14 +4151,18 @@ export default function AdminCalendar() {
 
                           <span className="flex min-w-0 items-center gap-2">
 
-                            {getGuideFlags(
-                              item.guide_id
-                            )}
+                            {
+                              getGuideFlags(
+                                item.guide_id
+                              )
+                            }
 
                             <span className="truncate">
-                              {getGuideName(
-                                item.guide_id
-                              )}
+                              {
+                                getGuideName(
+                                  item.guide_id
+                                )
+                              }
                             </span>
 
                           </span>
@@ -1835,9 +4181,7 @@ export default function AdminCalendar() {
 
             </div>
 
-            {/* ==================================================
-                 DISPONÍVEIS
-               ================================================== */}
+            {/* DISPONÍVEIS */}
 
             <div className="mt-5 sm:mt-6">
 
@@ -1854,7 +4198,9 @@ export default function AdminCalendar() {
                   </p>
                 ) : (
                   selectedAvailable.map(
-                    (item) => {
+                    (
+                      item
+                    ) => {
                       const guide =
                         guideMap.get(
                           item.guide_id
@@ -1862,10 +4208,14 @@ export default function AdminCalendar() {
 
                       return (
                         <button
-                          key={item.id}
+                          key={
+                            item.id
+                          }
                           type="button"
                           onClick={() => {
-                            if (guide) {
+                            if (
+                              guide
+                            ) {
                               setSelectedGuideDetails(
                                 guide
                               );
@@ -1880,14 +4230,18 @@ export default function AdminCalendar() {
 
                           <span className="flex min-w-0 items-center gap-2">
 
-                            {getGuideFlags(
-                              item.guide_id
-                            )}
+                            {
+                              getGuideFlags(
+                                item.guide_id
+                              )
+                            }
 
                             <span className="truncate">
-                              {getGuideName(
-                                item.guide_id
-                              )}
+                              {
+                                getGuideName(
+                                  item.guide_id
+                                )
+                              }
                             </span>
 
                           </span>
@@ -1906,9 +4260,7 @@ export default function AdminCalendar() {
 
             </div>
 
-            {/* ==================================================
-                 INDISPONÍVEIS
-               ================================================== */}
+            {/* INDISPONÍVEIS */}
 
             <div className="mt-5 sm:mt-6">
 
@@ -1925,7 +4277,9 @@ export default function AdminCalendar() {
                   </p>
                 ) : (
                   selectedUnavailable.map(
-                    (item) => {
+                    (
+                      item
+                    ) => {
                       const guide =
                         guideMap.get(
                           item.guide_id
@@ -1933,10 +4287,14 @@ export default function AdminCalendar() {
 
                       return (
                         <button
-                          key={item.id}
+                          key={
+                            item.id
+                          }
                           type="button"
                           onClick={() => {
-                            if (guide) {
+                            if (
+                              guide
+                            ) {
                               setSelectedGuideDetails(
                                 guide
                               );
@@ -1951,14 +4309,18 @@ export default function AdminCalendar() {
 
                           <span className="flex min-w-0 items-center gap-2">
 
-                            {getGuideFlags(
-                              item.guide_id
-                            )}
+                            {
+                              getGuideFlags(
+                                item.guide_id
+                              )
+                            }
 
                             <span className="truncate">
-                              {getGuideName(
-                                item.guide_id
-                              )}
+                              {
+                                getGuideName(
+                                  item.guide_id
+                                )
+                              }
                             </span>
 
                           </span>
@@ -1980,7 +4342,9 @@ export default function AdminCalendar() {
             <button
               type="button"
               onClick={() =>
-                setSelectedDate(null)
+                setSelectedDate(
+                  null
+                )
               }
               className="mt-5 w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#0f75bd] sm:mt-6"
             >
@@ -1992,24 +4356,33 @@ export default function AdminCalendar() {
         </div>
       )}
 
-      {/* ====================================================== */}
-      {/* MODAL DO GUIA */}
-      {/* ====================================================== */}
+      {/* ======================================================
+         MODAL GUIA
+      ====================================================== */}
 
       {selectedGuideDetails && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
           onClick={() => {
-            if (!updating) {
-              setSelectedGuideDetails(null);
-              setSelectedGuideAvailability(null);
+            if (
+              !updating
+            ) {
+              setSelectedGuideDetails(
+                null
+              );
+
+              setSelectedGuideAvailability(
+                null
+              );
             }
           }}
         >
 
           <div
             className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
-            onClick={(event) =>
+            onClick={(
+              event
+            ) =>
               event.stopPropagation()
             }
           >
@@ -2020,12 +4393,16 @@ export default function AdminCalendar() {
 
                 <h3 className="flex flex-wrap items-center gap-2 text-xl font-extrabold text-gray-900">
 
-                  {getGuideFlags(
-                    selectedGuideDetails.id
-                  )}
+                  {
+                    getGuideFlags(
+                      selectedGuideDetails.id
+                    )
+                  }
 
                   <span>
-                    {selectedGuideDetails.name}
+                    {
+                      selectedGuideDetails.name
+                    }
                   </span>
 
                 </h3>
@@ -2038,10 +4415,17 @@ export default function AdminCalendar() {
 
               <button
                 type="button"
-                disabled={updating}
+                disabled={
+                  updating
+                }
                 onClick={() => {
-                  setSelectedGuideDetails(null);
-                  setSelectedGuideAvailability(null);
+                  setSelectedGuideDetails(
+                    null
+                  );
+
+                  setSelectedGuideAvailability(
+                    null
+                  );
                 }}
                 className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 disabled:opacity-50"
               >
@@ -2052,40 +4436,34 @@ export default function AdminCalendar() {
 
             <div className="space-y-4 p-6">
 
-              {/* EMAIL */}
-
               <div className="rounded-2xl bg-gray-50 p-4">
-
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
                   E-mail
                 </p>
 
                 <p className="mt-1 break-all text-sm font-bold text-gray-800">
-                  {selectedGuideDetails.email ||
-                    "Não informado"}
+                  {
+                    selectedGuideDetails.email ||
+                    "Não informado"
+                  }
                 </p>
-
               </div>
 
-              {/* TELEFONE */}
-
               <div className="rounded-2xl bg-gray-50 p-4">
-
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
                   Telefone
                 </p>
 
                 <p className="mt-1 text-sm font-bold text-gray-800">
-                  {selectedGuideDetails.phone
-                    ? formatGuidePhone(
-                        selectedGuideDetails.phone
-                      )
-                    : "Não informado"}
+                  {
+                    selectedGuideDetails.phone
+                      ? formatGuidePhone(
+                          selectedGuideDetails.phone
+                        )
+                      : "Não informado"
+                  }
                 </p>
-
               </div>
-
-              {/* PIX */}
 
               <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-100">
 
@@ -2096,74 +4474,91 @@ export default function AdminCalendar() {
                 <div className="mt-1 flex items-center justify-between gap-3">
 
                   <p className="break-all text-sm font-bold text-gray-800">
-                    {selectedGuideDetails.pix_key ||
-                      "Não informado"}
+                    {
+                      selectedGuideDetails.pix_key ||
+                      "Não informado"
+                    }
                   </p>
 
-                  {selectedGuideDetails.pix_key && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(
-                          selectedGuideDetails.pix_key
-                        );
+                  {
+                    selectedGuideDetails.pix_key && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            selectedGuideDetails.pix_key
+                          );
 
-                        alert(
-                          "Chave PIX copiada!"
-                        );
-                      }}
-                      className="shrink-0 rounded-lg bg-white px-3 py-2 text-xs font-extrabold text-green-700 shadow-sm ring-1 ring-green-200 transition hover:bg-green-100"
-                    >
-                      Copiar
-                    </button>
-                  )}
+                          alert(
+                            "Chave PIX copiada!"
+                          );
+                        }}
+                        className="shrink-0 rounded-lg bg-white px-3 py-2 text-xs font-extrabold text-green-700 shadow-sm ring-1 ring-green-200 transition hover:bg-green-100"
+                      >
+                        Copiar
+                      </button>
+                    )
+                  }
 
                 </div>
 
               </div>
 
-              {/* ==================================================
-                   ESCALAR
-                 ================================================== */}
+              {
+                selectedGuideAvailability?.status ===
+                  "available" && (
+                  <button
+                    type="button"
+                    disabled={
+                      updating
+                    }
+                    onClick={
+                      openEscalationForm
+                    }
+                    className="w-full rounded-xl bg-[#c9aa00] px-4 py-3 font-extrabold text-white shadow-md transition hover:bg-[#b59600] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    🟡 Escalar para este dia
+                  </button>
+                )
+              }
 
-              {selectedGuideAvailability?.status ===
-                "available" && (
-                <button
-                  type="button"
-                  disabled={updating}
-                  onClick={openEscalationForm}
-                  className="w-full rounded-xl bg-[#c9aa00] px-4 py-3 font-extrabold text-white shadow-md transition hover:bg-[#b59600] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  🟡 Escalar para este dia
-                </button>
-              )}
-
-              {/* ==================================================
-                   REMOVER ESCALA
-                 ================================================== */}
-
-              {selectedGuideAvailability?.status ===
-                "escalated" && (
-                <button
-                  type="button"
-                  disabled={updating}
-                  onClick={unEscalateGuide}
-                  className="w-full rounded-xl bg-[#f3e5a5] px-4 py-3 font-extrabold text-[#806600] transition hover:bg-[#ead98c] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {updating
-                    ? "Atualizando..."
-                    : "↩️ Remover escala"}
-                </button>
-              )}
+              {
+                selectedGuideAvailability?.status ===
+                  "escalated" && (
+                  <button
+                    type="button"
+                    disabled={
+                      updating
+                    }
+                    onClick={
+                      unEscalateGuide
+                    }
+                    className="w-full rounded-xl bg-[#f3e5a5] px-4 py-3 font-extrabold text-[#806600] transition hover:bg-[#ead98c] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {
+                      updating
+                        ? "Atualizando..."
+                        : "↩️ Remover escala"
+                    }
+                  </button>
+                )
+              }
 
               <button
                 type="button"
-                disabled={updating}
+                disabled={
+                  updating
+                }
                 onClick={() => {
-                  setSelectedGuideDetails(null);
-                  setSelectedGuideAvailability(null);
+                  setSelectedGuideDetails(
+                    null
+                  );
+
+                  setSelectedGuideAvailability(
+                    null
+                  );
                 }}
-                className="w-full rounded-xl bg-[#1687d9] px-4 py-3 font-extrabold text-white shadow-md shadow-blue-200 transition hover:bg-[#0f75bd] disabled:opacity-60"
+                className="w-full rounded-xl bg-[#1687d9] px-4 py-3 font-extrabold text-white shadow-md transition hover:bg-[#0f75bd] disabled:opacity-60"
               >
                 Fechar
               </button>
@@ -2175,23 +4570,29 @@ export default function AdminCalendar() {
         </div>
       )}
 
-      {/* ====================================================== */}
-      {/* MODAL CRIAR TOUR */}
-      {/* ====================================================== */}
+      {/* ======================================================
+         MODAL CRIAR TOUR
+      ====================================================== */}
 
       {showTourForm && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
           onClick={() => {
-            if (!updating) {
-              setShowTourForm(false);
+            if (
+              !updating
+            ) {
+              setShowTourForm(
+                false
+              );
             }
           }}
         >
 
           <div
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white shadow-2xl"
-            onClick={(event) =>
+            className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+            onClick={(
+              event
+            ) =>
               event.stopPropagation()
             }
           >
@@ -2207,16 +4608,20 @@ export default function AdminCalendar() {
                   </h3>
 
                   <p className="mt-1 text-sm font-medium text-gray-500">
-                    Crie o tour que ficará na agenda.
+                    Crie o tour que ficará na agenda e no Google Calendar.
                   </p>
 
                 </div>
 
                 <button
                   type="button"
-                  disabled={updating}
+                  disabled={
+                    updating
+                  }
                   onClick={() =>
-                    setShowTourForm(false)
+                    setShowTourForm(
+                      false
+                    )
                   }
                   className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 transition hover:bg-gray-100"
                 >
@@ -2238,7 +4643,8 @@ export default function AdminCalendar() {
                 </p>
 
                 <p className="mt-1 text-sm font-extrabold capitalize text-blue-900">
-                  {selectedDate &&
+                  {
+                    selectedDate &&
                     format(
                       new Date(
                         `${selectedDate}T12:00:00`
@@ -2248,7 +4654,8 @@ export default function AdminCalendar() {
                         locale:
                           ptBR,
                       }
-                    )}
+                    )
+                  }
                 </p>
 
               </div>
@@ -2262,39 +4669,57 @@ export default function AdminCalendar() {
                 </label>
 
                 <select
-                  value={tourGuideId}
-                  onChange={(event) =>
+                  value={
+                    tourGuideId
+                  }
+                  onChange={(
+                    event
+                  ) =>
                     setTourGuideId(
                       event.target.value
                     )
                   }
-                  disabled={updating}
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 outline-none focus:border-[#1687d9]"
+                  disabled={
+                    updating
+                  }
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
                 >
 
                   <option value="">
                     Selecione o guia
                   </option>
 
-                  {guides.map(
-                    (guide) => (
-                      <option
-                        key={guide.id}
-                        value={guide.id}
-                      >
-                        {guide.name}
-                        {guide.email
-                          ? ` — ${guide.email}`
-                          : ""}
-                      </option>
+                  {
+                    guides.map(
+                      (
+                        guide
+                      ) => (
+                        <option
+                          key={
+                            guide.id
+                          }
+                          value={
+                            guide.id
+                          }
+                        >
+                          {
+                            guide.name
+                          }
+                          {
+                            guide.email
+                              ? ` — ${guide.email}`
+                              : ""
+                          }
+                        </option>
+                      )
                     )
-                  )}
+                  }
 
                 </select>
 
               </div>
 
-              {/* TÍTULO */}
+              {/* TITULO */}
 
               <div>
 
@@ -2304,15 +4729,21 @@ export default function AdminCalendar() {
 
                 <input
                   type="text"
-                  value={tourTitle}
-                  onChange={(event) =>
+                  value={
+                    tourTitle
+                  }
+                  onChange={(
+                    event
+                  ) =>
                     setTourTitle(
                       event.target.value
                     )
                   }
-                  disabled={updating}
+                  disabled={
+                    updating
+                  }
                   placeholder="Ex.: City Tour Rio"
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-semibold outline-none focus:border-[#1687d9]"
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] placeholder:text-gray-400"
                 />
 
               </div>
@@ -2321,21 +4752,61 @@ export default function AdminCalendar() {
 
               <div>
 
+                <div className="mb-2 flex items-center justify-between gap-3">
+
+                  <label className="text-sm font-extrabold text-gray-800">
+                    Descrição
+                  </label>
+
+                  <span className="text-xs font-medium text-gray-400">
+                    Negrito, itálico, sublinhado e listas
+                  </span>
+
+                </div>
+
+                <RichTextEditor
+                  value={
+                    tourDescription
+                  }
+                  onChange={
+                    setTourDescription
+                  }
+                  disabled={
+                    updating
+                  }
+                  minHeight="320px"
+                />
+
+              </div>
+
+              {/* ENDEREÇO */}
+
+              <div>
+
                 <label className="text-sm font-extrabold text-gray-800">
-                  Descrição
+                  Endereço
+                  <span className="ml-1 font-medium text-gray-400">
+                    (opcional)
+                  </span>
                 </label>
 
-                <textarea
-                  value={tourDescription}
-                  onChange={(event) =>
-                    setTourDescription(
+                <input
+                  type="text"
+                  value={
+                    tourAddress
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setTourAddress(
                       event.target.value
                     )
                   }
-                  disabled={updating}
-                  rows={4}
-                  placeholder="Informações adicionais do tour..."
-                  className="mt-2 w-full resize-none rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-medium outline-none focus:border-[#1687d9]"
+                  disabled={
+                    updating
+                  }
+                  placeholder="Ex.: Av. Atlântica, 1702 - Copacabana"
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] placeholder:text-gray-400"
                 />
 
               </div>
@@ -2346,13 +4817,19 @@ export default function AdminCalendar() {
 
                 <input
                   type="checkbox"
-                  checked={tourAllDay}
-                  onChange={(event) =>
+                  checked={
+                    tourAllDay
+                  }
+                  onChange={(
+                    event
+                  ) =>
                     setTourAllDay(
                       event.target.checked
                     )
                   }
-                  disabled={updating}
+                  disabled={
+                    updating
+                  }
                   className="h-5 w-5 rounded"
                 />
 
@@ -2370,7 +4847,7 @@ export default function AdminCalendar() {
 
               </label>
 
-              {/* EMAIL ADICIONAL */}
+              {/* EMAIL */}
 
               <div>
 
@@ -2383,37 +4860,58 @@ export default function AdminCalendar() {
 
                 <input
                   type="email"
-                  value={tourAdditionalEmail}
-                  onChange={(event) =>
+                  value={
+                    tourAdditionalEmail
+                  }
+                  onChange={(
+                    event
+                  ) =>
                     setTourAdditionalEmail(
                       event.target.value
                     )
                   }
-                  disabled={updating}
+                  disabled={
+                    updating
+                  }
                   placeholder="cliente@email.com"
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-semibold outline-none focus:border-[#1687d9]"
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] placeholder:text-gray-400"
                 />
 
               </div>
 
-              {/* EMAIL DO GUIA */}
+              {/* EMAIL GUIA */}
 
-              {tourGuideId && (
-                <div className="rounded-xl bg-green-50 p-4">
+              {
+                tourGuideId && (
+                  <div className="rounded-xl bg-green-50 p-4">
 
-                  <p className="text-xs font-bold uppercase tracking-wide text-green-600">
-                    E-mail cadastrado do guia
-                  </p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-green-600">
+                      E-mail que receberá o convite
+                    </p>
 
-                  <p className="mt-1 break-all text-sm font-bold text-green-900">
-                    {guideMap.get(
-                      tourGuideId
-                    )?.email ||
-                      "Não informado"}
-                  </p>
+                    <p className="mt-1 break-all text-sm font-bold text-green-900">
+                      {
+                        guideMap.get(
+                          tourGuideId
+                        )?.email ||
+                        "Não informado"
+                      }
+                    </p>
 
-                </div>
-              )}
+                    {
+                      tourAdditionalEmail.trim() && (
+                        <p className="mt-1 break-all text-xs font-semibold text-green-700">
+                          +{" "}
+                          {
+                            tourAdditionalEmail
+                          }
+                        </p>
+                      )
+                    }
+
+                  </div>
+                )
+              }
 
               {/* BOTÕES */}
 
@@ -2421,9 +4919,13 @@ export default function AdminCalendar() {
 
                 <button
                   type="button"
-                  disabled={updating}
+                  disabled={
+                    updating
+                  }
                   onClick={() =>
-                    setShowTourForm(false)
+                    setShowTourForm(
+                      false
+                    )
                   }
                   className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-extrabold text-gray-700 transition hover:bg-gray-50"
                 >
@@ -2432,15 +4934,19 @@ export default function AdminCalendar() {
 
                 <button
                   type="button"
-                  disabled={updating}
+                  disabled={
+                    updating
+                  }
                   onClick={
                     createTourAndEscalate
                   }
                   className="w-full rounded-xl bg-[#c9aa00] px-4 py-3 text-sm font-extrabold text-white shadow-md transition hover:bg-[#b59600] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {updating
-                    ? "Criando..."
-                    : "Criar tour e escalar"}
+                  {
+                    updating
+                      ? "Sincronizando..."
+                      : "Criar tour e escalar"
+                  }
                 </button>
 
               </div>
@@ -2452,30 +4958,32 @@ export default function AdminCalendar() {
         </div>
       )}
 
-      {/* ====================================================== */}
-      {/* MODAL DO TOUR */}
-      {/* ====================================================== */}
+      {/* ======================================================
+         MODAL TOUR
+      ====================================================== */}
 
       {selectedTourEvent && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
           onClick={() => {
-            if (!updating) {
-              setSelectedTourEvent(null);
+            if (
+              !updating
+            ) {
+              setSelectedTourEvent(
+                null
+              );
             }
           }}
         >
 
           <div
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white shadow-2xl"
-            onClick={(event) =>
+            className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white shadow-2xl"
+            onClick={(
+              event
+            ) =>
               event.stopPropagation()
             }
           >
-
-            {/* ==================================================
-                 CABEÇALHO
-               ================================================== */}
 
             <div className="border-b border-gray-100 p-6">
 
@@ -2484,23 +4992,26 @@ export default function AdminCalendar() {
                 <div className="min-w-0">
 
                   <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-extrabold text-blue-700">
-                    {selectedTourEvent.status ===
-                    "scheduled"
-                      ? "Tour agendado"
-                      : "Tour cancelado"}
+                    Tour agendado
                   </span>
 
                   <h3 className="mt-2 break-words text-xl font-extrabold text-gray-900">
-                    {selectedTourEvent.title}
+                    {
+                      selectedTourEvent.title
+                    }
                   </h3>
 
                 </div>
 
                 <button
                   type="button"
-                  disabled={updating}
+                  disabled={
+                    updating
+                  }
                   onClick={() =>
-                    setSelectedTourEvent(null)
+                    setSelectedTourEvent(
+                      null
+                    )
                   }
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-gray-500 transition hover:bg-gray-100"
                 >
@@ -2522,16 +5033,18 @@ export default function AdminCalendar() {
                 </p>
 
                 <p className="mt-1 text-sm font-extrabold capitalize text-gray-800">
-                  {format(
-                    new Date(
-                      `${selectedTourEvent.date}T12:00:00`
-                    ),
-                    "dd 'de' MMMM 'de' yyyy",
-                    {
-                      locale:
-                        ptBR,
-                    }
-                  )}
+                  {
+                    format(
+                      new Date(
+                        `${selectedTourEvent.date}T12:00:00`
+                      ),
+                      "dd 'de' MMMM 'de' yyyy",
+                      {
+                        locale:
+                          ptBR,
+                      }
+                    )
+                  }
                 </p>
 
               </div>
@@ -2540,25 +5053,54 @@ export default function AdminCalendar() {
 
               <div className="rounded-2xl bg-yellow-50 p-4">
 
-                <p className="text-xs font-bold uppercase tracking-wide text-yellow-600">
-                  Guia
-                </p>
+                <div className="flex items-start justify-between gap-3">
 
-                <p className="mt-1 flex items-center gap-2 text-sm font-extrabold text-gray-800">
+                  <div className="min-w-0">
 
-                  {getGuideFlags(
-                    selectedTourEvent.guide_id
-                  )}
+                    <p className="text-xs font-bold uppercase tracking-wide text-yellow-600">
+                      Guia escalado
+                    </p>
 
-                  {getGuideName(
-                    selectedTourEvent.guide_id
-                  )}
+                    <p className="mt-1 flex items-center gap-2 text-sm font-extrabold text-gray-800">
 
-                </p>
+                      {
+                        getGuideFlags(
+                          selectedTourEvent.guide_id
+                        )
+                      }
 
-                <p className="mt-1 break-all text-xs font-semibold text-gray-500">
-                  {selectedTourEvent.guide_email}
-                </p>
+                      {
+                        getGuideName(
+                          selectedTourEvent.guide_id
+                        )
+                      }
+
+                    </p>
+
+                    <p className="mt-1 break-all text-xs font-semibold text-gray-500">
+                      {
+                        selectedTourEvent.guide_email
+                      }
+                    </p>
+
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={
+                      updating
+                    }
+                    onClick={() =>
+                      openTourEdit(
+                        selectedTourEvent
+                      )
+                    }
+                    className="shrink-0 rounded-xl border-2 border-yellow-200 bg-white px-3 py-2 text-xs font-extrabold text-yellow-800 transition hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    🔄 Trocar guia
+                  </button>
+
+                </div>
 
               </div>
 
@@ -2570,14 +5112,38 @@ export default function AdminCalendar() {
                   Descrição
                 </p>
 
-                <p className="mt-1 whitespace-pre-wrap text-sm font-medium text-gray-800">
-                  {selectedTourEvent.description ||
-                    "Nenhuma descrição informada."}
+                <div
+                  className="mt-2 break-words text-sm font-medium leading-7 text-gray-800 [&_b]:font-black [&_strong]:font-black [&_i]:italic [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      selectedTourEvent.description
+                        ? sanitizeDescriptionHtml(
+                            selectedTourEvent.description
+                          )
+                        : "<span class='text-gray-500'>Nenhuma descrição informada.</span>",
+                  }}
+                />
+
+              </div>
+
+              {/* ENDEREÇO */}
+
+              <div className="rounded-2xl bg-gray-50 p-4">
+
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                  Endereço
+                </p>
+
+                <p className="mt-1 whitespace-pre-wrap break-words text-sm font-bold text-gray-800">
+                  {
+                    selectedTourEvent.address ||
+                    "Nenhum endereço informado."
+                  }
                 </p>
 
               </div>
 
-              {/* EMAIL ADICIONAL */}
+              {/* EMAIL */}
 
               <div className="rounded-2xl bg-gray-50 p-4">
 
@@ -2586,58 +5152,83 @@ export default function AdminCalendar() {
                 </p>
 
                 <p className="mt-1 break-all text-sm font-bold text-gray-800">
-                  {selectedTourEvent.additional_email ||
-                    "Nenhum e-mail adicional."}
+                  {
+                    selectedTourEvent.additional_email ||
+                    "Nenhum e-mail adicional."
+                  }
                 </p>
 
               </div>
 
-              {/* ==================================================
-                   AÇÕES
-                 ================================================== */}
+              {/* GOOGLE */}
 
-              {selectedTourEvent.status ===
-                "scheduled" && (
-                <>
+              <div className="rounded-2xl bg-green-50 p-4">
 
-                  <button
-                    type="button"
-                    disabled={updating}
-                    onClick={() =>
-                      openTourEdit(
-                        selectedTourEvent
-                      )
-                    }
-                    className="w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-extrabold text-white shadow-md transition hover:bg-[#0f75bd]"
-                  >
-                    ✏️ Editar tour
-                  </button>
+                <p className="text-xs font-bold uppercase tracking-wide text-green-600">
+                  Google Calendar
+                </p>
 
-                  <button
-                    type="button"
-                    disabled={updating}
-                    onClick={() =>
-                      cancelTour(
-                        selectedTourEvent
-                      )
-                    }
-                    className="w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-extrabold text-white shadow-md transition hover:bg-red-700"
-                  >
-                    {updating
-                      ? "Cancelando..."
-                      : "❌ Cancelar tour"}
-                  </button>
+                <p className="mt-1 break-all text-xs font-bold text-green-800">
+                  {
+                    selectedTourEvent.calendar_event_id
+                      ? "Evento sincronizado com o Google Calendar."
+                      : "Evento ainda não sincronizado."
+                  }
+                </p>
 
-                </>
-              )}
+              </div>
+
+              {/* EDITAR */}
 
               <button
                 type="button"
-                disabled={updating}
-                onClick={() =>
-                  setSelectedTourEvent(null)
+                disabled={
+                  updating
                 }
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-extrabold text-gray-700 transition hover:bg-gray-50"
+                onClick={() =>
+                  openTourEdit(
+                    selectedTourEvent
+                  )
+                }
+                className="w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-extrabold text-white shadow-md transition hover:bg-[#0f75bd]"
+              >
+                ✏️ Editar tour
+              </button>
+
+              {/* CANCELAR */}
+
+              <button
+                type="button"
+                disabled={
+                  updating
+                }
+                onClick={() =>
+                  cancelTour(
+                    selectedTourEvent
+                  )
+                }
+                className="w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-extrabold text-white shadow-md transition hover:bg-red-700"
+              >
+                {
+                  updating
+                    ? "Cancelando..."
+                    : "❌ Cancelar tour"
+                }
+              </button>
+
+              {/* FECHAR */}
+
+              <button
+                type="button"
+                disabled={
+                  updating
+                }
+                onClick={() =>
+                  setSelectedTourEvent(
+                    null
+                  )
+                }
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-extrabold text-gray-700 hover:bg-gray-50"
               >
                 Fechar
               </button>
@@ -2649,24 +5240,31 @@ export default function AdminCalendar() {
         </div>
       )}
 
-      {/* ====================================================== */}
-      {/* MODAL EDITAR TOUR */}
-      {/* ====================================================== */}
+      {/* ======================================================
+         MODAL EDITAR
+      ====================================================== */}
 
-      {showTourEdit &&
+      {
+        showTourEdit &&
         selectedTourEvent && (
           <div
-            className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4"
             onClick={() => {
-              if (!updating) {
-                setShowTourEdit(false);
+              if (
+                !updating
+              ) {
+                setShowTourEdit(
+                  false
+                );
               }
             }}
           >
 
             <div
-              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white shadow-2xl"
-              onClick={(event) =>
+              className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+              onClick={(
+                event
+              ) =>
                 event.stopPropagation()
               }
             >
@@ -2682,14 +5280,16 @@ export default function AdminCalendar() {
                     </h3>
 
                     <p className="mt-1 text-sm font-medium text-gray-500">
-                      Altere as informações do evento.
+                      Altere as informações e, se necessário, troque o guia.
                     </p>
 
                   </div>
 
                   <button
                     type="button"
-                    disabled={updating}
+                    disabled={
+                      updating
+                    }
                     onClick={() =>
                       setShowTourEdit(
                         false
@@ -2708,35 +5308,85 @@ export default function AdminCalendar() {
 
                 {/* GUIA */}
 
-                <div>
+                <div className="rounded-2xl border-2 border-yellow-100 bg-yellow-50 p-4">
 
-                  <label className="text-sm font-extrabold text-gray-800">
-                    Guia
+                  <label className="text-sm font-extrabold text-yellow-900">
+                    Guia escalado
                   </label>
 
                   <select
-                    value={editTourGuideId}
-                    onChange={(event) =>
+                    value={
+                      editTourGuideId
+                    }
+                    onChange={(
+                      event
+                    ) =>
                       setEditTourGuideId(
                         event.target.value
                       )
                     }
-                    disabled={updating}
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-[#1687d9]"
+                    disabled={
+                      updating
+                    }
+                    className="mt-2 w-full rounded-xl border-2 border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#c9aa00]"
                   >
 
-                    {guides.map(
-                      (guide) => (
-                        <option
-                          key={guide.id}
-                          value={guide.id}
-                        >
-                          {guide.name}
-                        </option>
+                    <option value="">
+                      Selecione o novo guia
+                    </option>
+
+                    {
+                      guides.map(
+                        (
+                          guide
+                        ) => (
+                          <option
+                            key={
+                              guide.id
+                            }
+                            value={
+                              guide.id
+                            }
+                          >
+                            {
+                              guide.name
+                            }
+                            {
+                              guide.email
+                                ? ` — ${guide.email}`
+                                : ""
+                            }
+                          </option>
+                        )
                       )
-                    )}
+                    }
 
                   </select>
+
+                  <p className="mt-2 text-xs font-medium text-yellow-800">
+                    O guia atual será liberado e o novo guia será escalado somente se estiver disponível neste dia.
+                  </p>
+
+                  {
+                    editTourGuideId && (
+                      <div className="mt-3 rounded-xl bg-white p-3 ring-1 ring-yellow-200">
+
+                        <p className="text-xs font-bold uppercase tracking-wide text-yellow-600">
+                          E-mail do guia selecionado
+                        </p>
+
+                        <p className="mt-1 break-all text-sm font-bold text-yellow-900">
+                          {
+                            guideMap.get(
+                              editTourGuideId
+                            )?.email ||
+                            "Não informado"
+                          }
+                        </p>
+
+                      </div>
+                    )
+                  }
 
                 </div>
 
@@ -2750,14 +5400,20 @@ export default function AdminCalendar() {
 
                   <input
                     type="text"
-                    value={editTourTitle}
-                    onChange={(event) =>
+                    value={
+                      editTourTitle
+                    }
+                    onChange={(
+                      event
+                    ) =>
                       setEditTourTitle(
                         event.target.value
                       )
                     }
-                    disabled={updating}
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-semibold outline-none focus:border-[#1687d9]"
+                    disabled={
+                      updating
+                    }
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] placeholder:text-gray-400"
                   />
 
                 </div>
@@ -2766,20 +5422,61 @@ export default function AdminCalendar() {
 
                 <div>
 
+                  <div className="mb-2 flex items-center justify-between gap-3">
+
+                    <label className="text-sm font-extrabold text-gray-800">
+                      Descrição
+                    </label>
+
+                    <span className="text-xs font-medium text-gray-400">
+                      Negrito, itálico, sublinhado e listas
+                    </span>
+
+                  </div>
+
+                  <RichTextEditor
+                    value={
+                      editTourDescription
+                    }
+                    onChange={
+                      setEditTourDescription
+                    }
+                    disabled={
+                      updating
+                    }
+                    minHeight="320px"
+                  />
+
+                </div>
+
+                {/* ENDEREÇO */}
+
+                <div>
+
                   <label className="text-sm font-extrabold text-gray-800">
-                    Descrição
+                    Endereço
+                    <span className="ml-1 font-medium text-gray-400">
+                      (opcional)
+                    </span>
                   </label>
 
-                  <textarea
-                    value={editTourDescription}
-                    onChange={(event) =>
-                      setEditTourDescription(
+                  <input
+                    type="text"
+                    value={
+                      editTourAddress
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setEditTourAddress(
                         event.target.value
                       )
                     }
-                    disabled={updating}
-                    rows={4}
-                    className="mt-2 w-full resize-none rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-medium outline-none focus:border-[#1687d9]"
+                    disabled={
+                      updating
+                    }
+                    placeholder="Ex.: Av. Atlântica, 1702 - Copacabana"
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] placeholder:text-gray-400"
                   />
 
                 </div>
@@ -2790,22 +5487,26 @@ export default function AdminCalendar() {
 
                   <input
                     type="checkbox"
-                    checked={editTourAllDay}
-                    onChange={(event) =>
+                    checked={
+                      editTourAllDay
+                    }
+                    onChange={(
+                      event
+                    ) =>
                       setEditTourAllDay(
                         event.target.checked
                       )
                     }
-                    disabled={updating}
+                    disabled={
+                      updating
+                    }
                     className="h-5 w-5 rounded"
                   />
 
                   <span>
-
                     <span className="block text-sm font-extrabold text-gray-800">
                       Dia inteiro
                     </span>
-
                   </span>
 
                 </label>
@@ -2823,15 +5524,47 @@ export default function AdminCalendar() {
                     value={
                       editTourAdditionalEmail
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event
+                    ) =>
                       setEditTourAdditionalEmail(
                         event.target.value
                       )
                     }
-                    disabled={updating}
+                    disabled={
+                      updating
+                    }
                     placeholder="cliente@email.com"
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-semibold outline-none focus:border-[#1687d9]"
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] placeholder:text-gray-400"
                   />
+
+                </div>
+
+                {/* GOOGLE */}
+
+                <div className="rounded-xl bg-green-50 p-4">
+
+                  <p className="text-xs font-bold uppercase tracking-wide text-green-600">
+                    Sincronização Google
+                  </p>
+
+                  <p className="mt-1 text-sm font-semibold text-green-900">
+                    {
+                      selectedTourEvent.calendar_event_id
+                        ? "Este tour está vinculado ao evento do Google Calendar."
+                        : "Este tour ainda não possui vínculo com o Google Calendar."
+                    }
+                  </p>
+
+                  <p className="mt-2 break-all text-xs font-medium text-green-700">
+                    Guia:{" "}
+                    {
+                      guideMap.get(
+                        editTourGuideId
+                      )?.email ||
+                      "Não informado"
+                    }
+                  </p>
 
                 </div>
 
@@ -2841,7 +5574,9 @@ export default function AdminCalendar() {
 
                   <button
                     type="button"
-                    disabled={updating}
+                    disabled={
+                      updating
+                    }
                     onClick={() =>
                       setShowTourEdit(
                         false
@@ -2854,13 +5589,20 @@ export default function AdminCalendar() {
 
                   <button
                     type="button"
-                    disabled={updating}
-                    onClick={saveTourEdit}
-                    className="w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-extrabold text-white shadow-md hover:bg-[#0f75bd] disabled:opacity-60"
+                    disabled={
+                      updating ||
+                      !editTourGuideId
+                    }
+                    onClick={
+                      saveTourEdit
+                    }
+                    className="w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-extrabold text-white shadow-md hover:bg-[#0f75bd] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {updating
-                      ? "Salvando..."
-                      : "Salvar alterações"}
+                    {
+                      updating
+                        ? "Sincronizando..."
+                        : "Salvar alterações"
+                    }
                   </button>
 
                 </div>
@@ -2870,7 +5612,8 @@ export default function AdminCalendar() {
             </div>
 
           </div>
-        )}
+        )
+      }
 
     </div>
   );
