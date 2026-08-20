@@ -121,10 +121,6 @@ export default function Calendar() {
           "guide-availability-calendar"
         )
 
-        /* ======================================================
-           AVAILABILITY
-        ====================================================== */
-
         .on(
           "postgres_changes",
           {
@@ -138,10 +134,6 @@ export default function Calendar() {
             );
           }
         )
-
-        /* ======================================================
-           TOURS INSERT
-        ====================================================== */
 
         .on(
           "postgres_changes",
@@ -157,10 +149,6 @@ export default function Calendar() {
           }
         )
 
-        /* ======================================================
-           TOURS UPDATE
-        ====================================================== */
-
         .on(
           "postgres_changes",
           {
@@ -174,10 +162,6 @@ export default function Calendar() {
             );
           }
         )
-
-        /* ======================================================
-           TOURS DELETE
-        ====================================================== */
 
         .on(
           "postgres_changes",
@@ -266,10 +250,6 @@ export default function Calendar() {
         ),
         "yyyy-MM-dd"
       );
-
-    /* ==========================================================
-       BUSCAR DISPONIBILIDADE + TOURS
-    ========================================================== */
 
     const [
       availabilityResult,
@@ -441,10 +421,6 @@ export default function Calendar() {
           item.date ===
           date
       );
-
-    /* ==========================================================
-       ESCALADO
-    ========================================================== */
 
     if (
       existing?.status ===
@@ -958,8 +934,6 @@ export default function Calendar() {
 
         <div className="mb-4 flex items-center justify-between rounded-xl bg-gray-50 p-2 sm:mb-6 sm:rounded-2xl sm:p-3">
 
-          {/* MÊS ANTERIOR */}
-
           <button
             type="button"
             onClick={() =>
@@ -976,15 +950,11 @@ export default function Calendar() {
             ←
           </button>
 
-          {/* MÊS */}
-
           <h4 className="text-base font-extrabold capitalize text-gray-900 sm:text-xl md:text-2xl">
             {
               monthName
             }
           </h4>
-
-          {/* PRÓXIMO MÊS */}
 
           <button
             type="button"
@@ -1087,7 +1057,9 @@ export default function Calendar() {
                         "escalated";
 
                       let dayClass =
-                        "bg-gray-100 text-gray-800 hover:bg-gray-200";
+                        sameMonth
+                          ? "border-gray-200 bg-white text-gray-900 hover:border-gray-300 hover:bg-gray-50"
+                          : "border-transparent bg-gray-100 text-gray-400";
 
                       /* ==================================================
                          DISPONÍVEL
@@ -1099,7 +1071,7 @@ export default function Calendar() {
                           "available"
                       ) {
                         dayClass =
-                          "bg-green-500 text-white hover:bg-green-600";
+                          "border-green-500 bg-green-500 text-white hover:bg-green-600";
                       }
 
                       /* ==================================================
@@ -1112,7 +1084,7 @@ export default function Calendar() {
                           "unavailable"
                       ) {
                         dayClass =
-                          "bg-red-500 text-white hover:bg-red-600";
+                          "border-red-500 bg-red-500 text-white hover:bg-red-600";
                       }
 
                       /* ==================================================
@@ -1124,7 +1096,7 @@ export default function Calendar() {
                         isEscalated
                       ) {
                         dayClass =
-                          "cursor-pointer bg-[#c9aa00] text-white shadow-inner hover:bg-[#b59600]";
+                          "border-[#b59600] bg-[#c9aa00] text-white shadow-inner hover:bg-[#b59600]";
                       }
 
                       return (
@@ -1166,11 +1138,9 @@ export default function Calendar() {
                               : undefined
                           }
                           className={[
-                            "aspect-square rounded-lg text-xs font-extrabold transition sm:rounded-xl sm:text-sm md:text-base",
+                            "aspect-square rounded-lg border text-xs font-extrabold transition sm:rounded-xl sm:text-sm md:text-base",
 
-                            !sameMonth
-                              ? "cursor-default bg-gray-100 text-gray-400"
-                              : dayClass,
+                            dayClass,
 
                             isEscalated &&
                             sameMonth
@@ -1232,7 +1202,7 @@ export default function Calendar() {
 
                 <div className="flex items-center gap-1.5 sm:gap-2">
 
-                  <span className="h-3 w-3 rounded-md border border-gray-300 bg-gray-100 sm:h-4 sm:w-4" />
+                  <span className="h-3 w-3 rounded-md border border-gray-300 bg-white sm:h-4 sm:w-4" />
 
                   <span>
                     Não marcado
@@ -1267,10 +1237,6 @@ export default function Calendar() {
         }
 
       </div>
-
-      {/* ==========================================================
-          MODAL PORTAL
-      ========================================================== */}
 
       {
         tourModal
