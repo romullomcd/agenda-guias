@@ -1246,6 +1246,13 @@ const [
     setEditTourAdditionalEmail,
   ] = useState("");
 
+
+const [
+  editTourAdditionalEmail2,
+  setEditTourAdditionalEmail2,
+] = useState("");
+
+
   /* ============================================================
   CARREGAMENTO
   ============================================================ */
@@ -3190,10 +3197,25 @@ if (
         ""
     );
 
-    setEditTourAdditionalEmail(
-      event.additional_email ||
-        ""
-    );
+const additionalEmails =
+  (event.additional_email ||
+    "")
+    .split(",")
+    .map(
+      (email) =>
+        email.trim()
+    )
+    .filter(Boolean);
+
+setEditTourAdditionalEmail(
+  additionalEmails[0] ||
+    ""
+);
+
+setEditTourAdditionalEmail2(
+  additionalEmails[1] ||
+    ""
+);
 
     setShowTourEdit(
       true
@@ -3442,8 +3464,13 @@ if (
             null,
 
           additionalEmail:
-            editTourAdditionalEmail.trim() ||
-            null,
+  [
+    editTourAdditionalEmail.trim(),
+    editTourAdditionalEmail2.trim(),
+  ]
+    .filter(Boolean)
+    .join(",") ||
+  null,
         });
       }
 
@@ -3491,9 +3518,13 @@ if (
               newGuide?.email ||
               null,
 
-            additional_email:
-              editTourAdditionalEmail.trim() ||
-              null,
+            additionalEmail:
+  editTourAdditionalEmail.trim() ||
+  null,
+
+additionalEmail2:
+  editTourAdditionalEmail2.trim() ||
+  null,
           })
           .eq(
             "id",
@@ -6832,6 +6863,33 @@ if (
                   />
 
                 </div>
+
+<div className="mt-4">
+
+  <label className="text-sm font-extrabold text-gray-800">
+    E-mail adicional 2
+  </label>
+
+  <input
+    type="email"
+    value={
+      editTourAdditionalEmail2
+    }
+    onChange={(
+      event
+    ) =>
+      setEditTourAdditionalEmail2(
+        event.target.value
+      )
+    }
+    disabled={
+      updating
+    }
+    placeholder="cliente2@email.com"
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+  />
+
+</div>
 
                 {/* GOOGLE */}
 
