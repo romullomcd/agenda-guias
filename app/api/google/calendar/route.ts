@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { createClient } from "@supabase/supabase-js";
 
 /* ============================================================
-   TIPOS
+TIPOS
 ============================================================ */
 
 type CalendarAction =
@@ -21,36 +21,27 @@ type CalendarRequest = {
   title?: string;
   description?: string | null;
   address?: string | null;
+
   allDay?: boolean;
+
+  startTime?: string | null;
+  endTime?: string | null;
 
   guideEmail?: string | null;
   additionalEmail?: string | null;
 
-  /*
-   * ID da cor do evento no Google Calendar.
-   *
-   * Exemplos:
-   * 1  = lavanda
-   * 2  = verde
-   * 3  = roxo
-   * 4  = vermelho
-   * 5  = amarelo
-   * 6  = laranja
-   * 7  = ciano
-   * 8  = cinza
-   * 9  = azul
-   * 10 = verde
-   * 11 = vermelho
-   */
   colorId?: string | null;
 };
 
 /* ============================================================
-   SANITIZAR HTML DA DESCRIÇÃO
+SANITIZAR HTML
 ============================================================ */
 
 function sanitizeDescriptionHtml(
-  html: string | null | undefined
+  html:
+    | string
+    | null
+    | undefined
 ) {
   if (!html) {
     return "";
@@ -85,7 +76,7 @@ function sanitizeDescriptionHtml(
 }
 
 /* ============================================================
-   AUTENTICAR USUÁRIO SUPABASE
+AUTENTICAR USUÁRIO
 ============================================================ */
 
 async function getAuthenticatedUser(
@@ -152,7 +143,7 @@ async function getAuthenticatedUser(
 }
 
 /* ============================================================
-   CLIENT GOOGLE
+CLIENT GOOGLE
 ============================================================ */
 
 async function getGoogleCalendarClient(
@@ -242,7 +233,7 @@ async function getGoogleCalendarClient(
 }
 
 /* ============================================================
-   VALIDAR COLOR ID
+VALIDAR COR
 ============================================================ */
 
 function normalizeColorId(
@@ -278,7 +269,36 @@ function normalizeColorId(
 }
 
 /* ============================================================
-   MONTAR EVENTO GOOGLE
+VALIDAR HORÁRIO
+============================================================ */
+
+function isValidTime(
+  time:
+    | string
+    | null
+    | undefined
+) {
+  if (!time) {
+    return false;
+  }
+
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(
+    time
+  );
+}
+
+function isEndAfterStart(
+  startTime: string,
+  endTime: string
+) {
+  return (
+    startTime <
+    endTime
+  );
+}
+
+/* ============================================================
+MONTAR EVENTO GOOGLE
 ============================================================ */
 
 function buildGoogleEvent(
@@ -320,15 +340,12 @@ function buildGoogleEvent(
       data.address?.trim() ||
       undefined,
 
-    /*
-     * Cor individual do evento.
-     */
     colorId:
       normalizedColorId,
   };
 
   /* ==========================================================
-     CONVIDADOS
+  CONVIDADOS
   ========================================================== */
 
   const emails = [
@@ -345,22 +362,15 @@ function buildGoogleEvent(
     ...new Set(emails),
   ];
 
-  if (
-    uniqueEmails.length >
-    0
-  ) {
-    event.attendees =
-      uniqueEmails.map(
-        (email) => ({
-          email,
-        })
-      );
-  } else {
-    event.attendees = [];
-  }
+  event.attendees =
+    uniqueEmails.map(
+      (email) => ({
+        email,
+      })
+    );
 
   /* ==========================================================
-     DIA INTEIRO
+  DIA INTEIRO
   ========================================================== */
 
   if (
@@ -382,22 +392,54 @@ function buildGoogleEvent(
         .split("T")[0];
 
     event.start = {
-      date: data.date,
+      date:
+        data.date,
     };
 
     event.end = {
-      date: endDate,
+      date:
+        endDate,
     };
   }
 
   /* ==========================================================
-     EVENTO COM HORÁRIO
+  EVENTO COM HORÁRIO
   ========================================================== */
 
   else {
+    if (
+      !isValidTime(
+        data.startTime
+      ) ||
+      !isValidTime(
+        data.endTime
+      )
+    ) {
+      throw new Error(
+        "Informe um horário de início e término válidos."
+      );
+    }
+
+    const startTime =
+      data.startTime!;
+
+    const endTime =
+      data.endTime!;
+
+    if (
+      !isEndAfterStart(
+        startTime,
+        endTime
+      )
+    ) {
+      throw new Error(
+        "O horário de término precisa ser maior que o horário de início."
+      );
+    }
+
     event.start = {
       dateTime:
-        `${data.date}T09:00:00`,
+        `${data.date}T${startTime}:00`,
 
       timeZone:
         "America/Sao_Paulo",
@@ -405,7 +447,7 @@ function buildGoogleEvent(
 
     event.end = {
       dateTime:
-        `${data.date}T10:00:00`,
+        `${data.date}T${endTime}:00`,
 
       timeZone:
         "America/Sao_Paulo",
@@ -413,22 +455,41 @@ function buildGoogleEvent(
   }
 
   console.log(
-    "📝 DESCRIÇÃO HTML ENVIADA AO GOOGLE:",
+    "📝 DESCRIÇÃO:",
     event.description ||
       "(sem descrição)"
   );
 
   console.log(
-    "🎨 COLOR ID ENVIADO AO GOOGLE:",
+    "🎨 COLOR ID:",
     normalizedColorId ||
-      "(cor padrão)"
+      "(padrão)"
   );
+
+  console.log(
+    "📅 DIA TODO:",
+    data.allDay !== false
+  );
+
+  if (
+    data.allDay === false
+  ) {
+    console.log(
+      "⏰ INÍCIO:",
+      data.startTime
+    );
+
+    console.log(
+      "⏰ FIM:",
+      data.endTime
+    );
+  }
 
   return event;
 }
 
 /* ============================================================
-   CRIAR
+CRIAR
 ============================================================ */
 
 async function createGoogleEvent(
@@ -474,7 +535,7 @@ async function createGoogleEvent(
 }
 
 /* ============================================================
-   ATUALIZAR
+ATUALIZAR
 ============================================================ */
 
 async function updateGoogleEvent(
@@ -518,30 +579,13 @@ async function updateGoogleEvent(
 }
 
 /* ============================================================
-   EXCLUIR
+EXCLUIR
 ============================================================ */
 
 async function deleteGoogleEvent(
   calendar: any,
   eventId: string
 ) {
-  console.log(
-    "=========================================="
-  );
-
-  console.log(
-    "🔎 VERIFICANDO EVENTO ANTES DE EXCLUIR"
-  );
-
-  console.log(
-    "🆔 EVENT ID:",
-    eventId
-  );
-
-  console.log(
-    "📅 CALENDAR ID: primary"
-  );
-
   try {
     const existingEvent =
       await calendar.events.get(
@@ -555,35 +599,20 @@ async function deleteGoogleEvent(
       );
 
     console.log(
-      "✅ EVENTO ENCONTRADO NO GOOGLE:"
-    );
-
-    console.log(
+      "✅ EVENTO ENCONTRADO:",
       {
         id:
           existingEvent.data.id,
 
         summary:
-          existingEvent
-            .data.summary,
+          existingEvent.data.summary,
 
         status:
-          existingEvent
-            .data.status,
+          existingEvent.data.status,
 
         htmlLink:
-          existingEvent
-            .data.htmlLink,
-
-        organizer:
-          existingEvent
-            .data.organizer
-            ?.email,
+          existingEvent.data.htmlLink,
       }
-    );
-
-    console.log(
-      "🗑️ EXCLUINDO EVENTO DO GOOGLE CALENDAR..."
     );
 
     await calendar.events.delete(
@@ -600,11 +629,7 @@ async function deleteGoogleEvent(
     );
 
     console.log(
-      "✅ EVENTO REMOVIDO DO GOOGLE CALENDAR"
-    );
-
-    console.log(
-      "=========================================="
+      "✅ EVENTO REMOVIDO DO GOOGLE"
     );
 
     return true;
@@ -612,41 +637,10 @@ async function deleteGoogleEvent(
     error: any
   ) {
     console.error(
-      "=========================================="
-    );
-
-    console.error(
-      "❌ ERRO AO EXCLUIR EVENTO DO GOOGLE"
-    );
-
-    console.error(
-      "🆔 EVENT ID:",
-      eventId
-    );
-
-    console.error(
-      "📛 STATUS:",
-      error?.response
-        ?.status ||
-        error?.code ||
-        null
-    );
-
-    console.error(
-      "📛 MENSAGEM:",
-      error?.message ||
-        null
-    );
-
-    console.error(
-      "📛 RESPOSTA GOOGLE:",
-      error?.response
-        ?.data ||
-        null
-    );
-
-    console.error(
-      "=========================================="
+      "❌ ERRO AO EXCLUIR EVENTO GOOGLE:",
+      error?.response?.data ||
+        error?.message ||
+        error
     );
 
     throw error;
@@ -654,29 +648,13 @@ async function deleteGoogleEvent(
 }
 
 /* ============================================================
-   POST
+POST
 ============================================================ */
 
 export async function POST(
   request: Request
 ) {
   try {
-    console.log(
-      "=========================================="
-    );
-
-    console.log(
-      "📅 GOOGLE CALENDAR API"
-    );
-
-    console.log(
-      "=========================================="
-    );
-
-    /* ========================================================
-       AUTENTICAÇÃO
-    ======================================================== */
-
     const {
       user,
       error: authError,
@@ -702,17 +680,17 @@ export async function POST(
       );
     }
 
-    console.log(
-      "👤 USUÁRIO AUTENTICADO:",
-      user.id
-    );
-
-    /* ========================================================
-       BODY
-    ======================================================== */
-
     const body =
       (await request.json()) as CalendarRequest;
+
+    console.log(
+      "📅 GOOGLE CALENDAR API"
+    );
+
+    console.log(
+      "👤 USUÁRIO:",
+      user.id
+    );
 
     console.log(
       "🔎 AÇÃO:",
@@ -720,14 +698,27 @@ export async function POST(
     );
 
     console.log(
-      "🎨 COLOR ID RECEBIDO:",
+      "🎨 COLOR:",
       body.colorId ||
-        "(não informado)"
+        "(padrão)"
     );
 
-    /* ========================================================
-       VALIDAR AÇÃO
-    ======================================================== */
+    console.log(
+      "📅 DIA TODO:",
+      body.allDay
+    );
+
+    console.log(
+      "⏰ INÍCIO:",
+      body.startTime ||
+        null
+    );
+
+    console.log(
+      "⏰ FIM:",
+      body.endTime ||
+        null
+    );
 
     if (
       ![
@@ -753,10 +744,6 @@ export async function POST(
       );
     }
 
-    /* ========================================================
-       GOOGLE CLIENT
-    ======================================================== */
-
     const auth =
       await getGoogleCalendarClient(
         user.id
@@ -772,9 +759,7 @@ export async function POST(
         }
       );
 
-    /* ========================================================
-       CREATE
-    ======================================================== */
+    /* CREATE */
 
     if (
       body.action ===
@@ -785,17 +770,6 @@ export async function POST(
           calendar,
           body
         );
-
-      console.log(
-        "✅ EVENTO CRIADO NO GOOGLE:",
-        event.id
-      );
-
-      console.log(
-        "🎨 COR APLICADA:",
-        event.colorId ||
-          "(padrão)"
-      );
 
       return NextResponse.json(
         {
@@ -814,9 +788,7 @@ export async function POST(
       );
     }
 
-    /* ========================================================
-       UPDATE
-    ======================================================== */
+    /* UPDATE */
 
     if (
       body.action ===
@@ -827,17 +799,6 @@ export async function POST(
           calendar,
           body
         );
-
-      console.log(
-        "✅ EVENTO ATUALIZADO NO GOOGLE:",
-        event.id
-      );
-
-      console.log(
-        "🎨 COR APLICADA:",
-        event.colorId ||
-          "(padrão)"
-      );
 
       return NextResponse.json(
         {
@@ -856,9 +817,7 @@ export async function POST(
       );
     }
 
-    /* ========================================================
-       DELETE
-    ======================================================== */
+    /* DELETE */
 
     if (
       body.action ===
@@ -883,10 +842,6 @@ export async function POST(
       await deleteGoogleEvent(
         calendar,
         body.eventId
-      );
-
-      console.log(
-        "✅ EVENTO REMOVIDO DO GOOGLE"
       );
 
       return NextResponse.json(
@@ -920,19 +875,8 @@ export async function POST(
     error: any
   ) {
     console.error(
-      "=========================================="
-    );
-
-    console.error(
-      "❌ ERRO GOOGLE CALENDAR API"
-    );
-
-    console.error(
+      "❌ ERRO GOOGLE CALENDAR API:",
       error
-    );
-
-    console.error(
-      "=========================================="
     );
 
     const googleMessage =

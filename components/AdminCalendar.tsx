@@ -57,12 +57,20 @@ type TourEvent = {
   description: string | null;
   address: string | null;
   all_day: boolean;
+
+  start_time: string | null;
+  end_time: string | null;
+
   guide_id: string;
   guide_email: string;
   additional_email: string | null;
   calendar_event_id: string | null;
   google_color_id: string | null;
-  status: "scheduled" | "cancelled";
+
+  status:
+    | "scheduled"
+    | "cancelled";
+
   created_at: string;
   updated_at: string;
 };
@@ -291,7 +299,7 @@ function descriptionToHtml(
 }
 
 /* ============================================================
-HTML → TEXTO PURO
+HTML → TEXTO
 ============================================================ */
 
 function htmlToPlainText(
@@ -421,10 +429,6 @@ function RichTextEditor({
     setIsFocused,
   ] = useState(false);
 
-  /* ==========================================================
-  SALVAR SELEÇÃO
-  ========================================================== */
-
   function saveSelection() {
     const editor =
       editorRef.current;
@@ -458,10 +462,6 @@ function RichTextEditor({
     savedRangeRef.current =
       range.cloneRange();
   }
-
-  /* ==========================================================
-  RESTAURAR SELEÇÃO
-  ========================================================== */
 
   function restoreSelection() {
     const editor =
@@ -497,7 +497,6 @@ function RichTextEditor({
 
     try {
       selection.removeAllRanges();
-
       selection.addRange(
         range
       );
@@ -515,10 +514,6 @@ function RichTextEditor({
     }
   }
 
-  /* ==========================================================
-  SINCRONIZAR VALOR
-  ========================================================== */
-
   function syncValue() {
     const editor =
       editorRef.current;
@@ -534,10 +529,6 @@ function RichTextEditor({
       editor.innerHTML
     );
   }
-
-  /* ==========================================================
-  CARREGAR VALOR EXTERNO
-  ========================================================== */
 
   useEffect(() => {
     const editor =
@@ -590,10 +581,6 @@ function RichTextEditor({
         html;
     }
   }, [value]);
-
-  /* ==========================================================
-  VERIFICAR BOLD
-  ========================================================== */
 
   function fragmentIsCompletelyBold(
     fragment: DocumentFragment
@@ -662,10 +649,6 @@ function RichTextEditor({
     return foundText;
   }
 
-  /* ==========================================================
-  REMOVER BOLD
-  ========================================================== */
-
   function unwrapBoldFromFragment(
     fragment: DocumentFragment
   ) {
@@ -700,10 +683,6 @@ function RichTextEditor({
       }
     );
   }
-
-  /* ==========================================================
-  BOLD MANUAL
-  ========================================================== */
 
   function toggleBold() {
     if (disabled) {
@@ -816,7 +795,6 @@ function RichTextEditor({
           );
 
           selection.removeAllRanges();
-
           selection.addRange(
             newRange
           );
@@ -863,7 +841,6 @@ function RichTextEditor({
         );
 
         selection.removeAllRanges();
-
         selection.addRange(
           newRange
         );
@@ -882,10 +859,6 @@ function RichTextEditor({
     }
   }
 
-  /* ==========================================================
-  OUTROS COMANDOS
-  ========================================================== */
-
   function executeCommand(
     command: string
   ) {
@@ -898,7 +871,6 @@ function RichTextEditor({
       "bold"
     ) {
       toggleBold();
-
       return;
     }
 
@@ -918,7 +890,6 @@ function RichTextEditor({
       );
 
       syncValue();
-
       saveSelection();
     } catch (
       error
@@ -929,10 +900,6 @@ function RichTextEditor({
       );
     }
   }
-
-  /* ==========================================================
-  TOOLBAR
-  ========================================================== */
 
   function handleToolbarMouseDown(
     event: ReactMouseEvent<HTMLButtonElement>,
@@ -950,10 +917,6 @@ function RichTextEditor({
       command
     );
   }
-
-  /* ==========================================================
-  LIMPAR FORMATAÇÃO
-  ========================================================== */
 
   function clearFormatting() {
     if (disabled) {
@@ -974,7 +937,6 @@ function RichTextEditor({
       );
 
       syncValue();
-
       saveSelection();
     } catch (
       error
@@ -985,10 +947,6 @@ function RichTextEditor({
       );
     }
   }
-
-  /* ==========================================================
-  RENDER EDITOR
-  ========================================================== */
 
   return (
     <div
@@ -1002,10 +960,7 @@ function RichTextEditor({
           : "",
       ].join(" ")}
     >
-
       <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-2">
-
-        {/* BOLD */}
 
         <button
           type="button"
@@ -1026,8 +981,6 @@ function RichTextEditor({
           </strong>
         </button>
 
-        {/* ITÁLICO */}
-
         <button
           type="button"
           disabled={
@@ -1046,8 +999,6 @@ function RichTextEditor({
             I
           </em>
         </button>
-
-        {/* SUBLINHADO */}
 
         <button
           type="button"
@@ -1070,8 +1021,6 @@ function RichTextEditor({
 
         <div className="mx-1 h-6 w-px bg-gray-300" />
 
-        {/* LISTA */}
-
         <button
           type="button"
           disabled={
@@ -1088,8 +1037,6 @@ function RichTextEditor({
         >
           ☷
         </button>
-
-        {/* LISTA NUMERADA */}
 
         <button
           type="button"
@@ -1110,8 +1057,6 @@ function RichTextEditor({
 
         <div className="mx-1 h-6 w-px bg-gray-300" />
 
-        {/* LIMPAR */}
-
         <button
           type="button"
           disabled={
@@ -1121,7 +1066,6 @@ function RichTextEditor({
             event.preventDefault();
 
             saveSelection();
-
             clearFormatting();
           }}
           title="Limpar formatação"
@@ -1129,7 +1073,6 @@ function RichTextEditor({
         >
           Limpar
         </button>
-
       </div>
 
       <div
@@ -1143,7 +1086,6 @@ function RichTextEditor({
         spellCheck
         onInput={() => {
           syncValue();
-
           saveSelection();
         }}
         onKeyUp={() => {
@@ -1296,7 +1238,7 @@ export default function AdminCalendar() {
   );
 
   /* ============================================================
-  FORMULÁRIO
+  CRIAR
   ============================================================ */
 
   const [
@@ -1329,6 +1271,20 @@ export default function AdminCalendar() {
   );
 
   const [
+    tourStartTime,
+    setTourStartTime,
+  ] = useState(
+    "09:00"
+  );
+
+  const [
+    tourEndTime,
+    setTourEndTime,
+  ] = useState(
+    "10:00"
+  );
+
+  const [
     tourGuideId,
     setTourGuideId,
   ] = useState("");
@@ -1341,7 +1297,9 @@ export default function AdminCalendar() {
   const [
     tourColorId,
     setTourColorId,
-  ] = useState("9");
+  ] = useState(
+    "9"
+  );
 
   /* ============================================================
   EDIÇÃO
@@ -1377,6 +1335,20 @@ export default function AdminCalendar() {
   );
 
   const [
+    editTourStartTime,
+    setEditTourStartTime,
+  ] = useState(
+    "09:00"
+  );
+
+  const [
+    editTourEndTime,
+    setEditTourEndTime,
+  ] = useState(
+    "10:00"
+  );
+
+  const [
     editTourGuideId,
     setEditTourGuideId,
   ] = useState("");
@@ -1389,7 +1361,9 @@ export default function AdminCalendar() {
   const [
     editTourColorId,
     setEditTourColorId,
-  ] = useState("9");
+  ] = useState(
+    "9"
+  );
 
   /* ============================================================
   CARREGAMENTO
@@ -1415,12 +1389,9 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event:
-              "INSERT",
-            schema:
-              "public",
-            table:
-              "availability",
+            event: "INSERT",
+            schema: "public",
+            table: "availability",
           },
           (payload) => {
             const newItem =
@@ -1483,12 +1454,9 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event:
-              "UPDATE",
-            schema:
-              "public",
-            table:
-              "availability",
+            event: "UPDATE",
+            schema: "public",
+            table: "availability",
           },
           (payload) => {
             const updatedItem =
@@ -1519,12 +1487,9 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event:
-              "DELETE",
-            schema:
-              "public",
-            table:
-              "availability",
+            event: "DELETE",
+            schema: "public",
+            table: "availability",
           },
           (payload) => {
             const deletedItem =
@@ -1553,12 +1518,9 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event:
-              "INSERT",
-            schema:
-              "public",
-            table:
-              "tour_events",
+            event: "INSERT",
+            schema: "public",
+            table: "tour_events",
           },
           (payload) => {
             const newEvent =
@@ -1621,12 +1583,9 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event:
-              "UPDATE",
-            schema:
-              "public",
-            table:
-              "tour_events",
+            event: "UPDATE",
+            schema: "public",
+            table: "tour_events",
           },
           (payload) => {
             const updatedEvent =
@@ -1657,12 +1616,9 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event:
-              "DELETE",
-            schema:
-              "public",
-            table:
-              "tour_events",
+            event: "DELETE",
+            schema: "public",
+            table: "tour_events",
           },
           (payload) => {
             const deletedEvent =
@@ -1707,7 +1663,7 @@ export default function AdminCalendar() {
   ]);
 
   /* ============================================================
-  CARREGAR DADOS
+  CARREGAR
   ============================================================ */
 
   async function loadData() {
@@ -1732,7 +1688,7 @@ export default function AdminCalendar() {
       );
 
     const tourSelect =
-      "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at";
+      "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at";
 
     const [
       guidesResult,
@@ -1791,8 +1747,6 @@ export default function AdminCalendar() {
             "date"
           ),
       ]);
-
-    /* GUIAS */
 
     if (
       guidesResult.error
@@ -1901,8 +1855,6 @@ export default function AdminCalendar() {
       );
     }
 
-    /* AVAILABILITY */
-
     if (
       availabilityResult.error
     ) {
@@ -1916,8 +1868,6 @@ export default function AdminCalendar() {
           []
       );
     }
-
-    /* TOURS */
 
     if (
       tourEventsResult.error
@@ -1968,10 +1918,6 @@ export default function AdminCalendar() {
       normalizedSearch,
     ]);
 
-  /* ============================================================
-  MAPA
-  ============================================================ */
-
   const guideMap =
     useMemo(
       () =>
@@ -1985,10 +1931,6 @@ export default function AdminCalendar() {
         ),
       [guides]
     );
-
-  /* ============================================================
-  AVAILABILITY FILTRADA
-  ============================================================ */
 
   const filteredAvailability =
     useMemo(() => {
@@ -2017,10 +1959,6 @@ export default function AdminCalendar() {
       filteredGuides,
       normalizedSearch,
     ]);
-
-  /* ============================================================
-  TOURS FILTRADOS
-  ============================================================ */
 
   const filteredTourEvents =
     useMemo(() => {
@@ -2083,7 +2021,7 @@ export default function AdminCalendar() {
     });
 
   /* ============================================================
-  DIA
+  SELEÇÃO DIA
   ============================================================ */
 
   const selectedDayData =
@@ -2128,7 +2066,7 @@ export default function AdminCalendar() {
       : [];
 
   /* ============================================================
-  FUNÇÕES
+  FUNÇÕES AUXILIARES
   ============================================================ */
 
   function getDayAvailability(
@@ -2288,6 +2226,23 @@ export default function AdminCalendar() {
     );
   }
 
+  function validateTimes(
+    startTime: string,
+    endTime: string
+  ) {
+    if (
+      !startTime ||
+      !endTime
+    ) {
+      return false;
+    }
+
+    return (
+      startTime <
+      endTime
+    );
+  }
+
   /* ============================================================
   GOOGLE CALENDAR
   ============================================================ */
@@ -2305,7 +2260,11 @@ export default function AdminCalendar() {
       title?: string;
       description?: string | null;
       address?: string | null;
+
       allDay?: boolean;
+
+      startTime?: string | null;
+      endTime?: string | null;
 
       guideEmail?: string | null;
       additionalEmail?: string | null;
@@ -2415,6 +2374,14 @@ export default function AdminCalendar() {
       true
     );
 
+    setTourStartTime(
+      "09:00"
+    );
+
+    setTourEndTime(
+      "10:00"
+    );
+
     setTourAdditionalEmail(
       ""
     );
@@ -2477,6 +2444,20 @@ export default function AdminCalendar() {
       return;
     }
 
+    if (
+      !tourAllDay &&
+      !validateTimes(
+        tourStartTime,
+        tourEndTime
+      )
+    ) {
+      alert(
+        "O horário de término precisa ser maior que o horário de início."
+      );
+
+      return;
+    }
+
     setUpdating(
       true
     );
@@ -2502,7 +2483,9 @@ export default function AdminCalendar() {
           normalizedDescription
         );
 
-      /* SUPABASE */
+      /* ========================================================
+      SUPABASE
+      ======================================================== */
 
       const {
         data:
@@ -2533,6 +2516,12 @@ export default function AdminCalendar() {
             all_day:
               tourAllDay,
 
+            start_time:
+              tourStartTime,
+
+            end_time:
+              tourEndTime,
+
             guide_id:
               guide.id,
 
@@ -2553,7 +2542,7 @@ export default function AdminCalendar() {
               "scheduled",
           })
           .select(
-            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at"
+            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at"
           )
           .single();
 
@@ -2574,7 +2563,9 @@ export default function AdminCalendar() {
       createdDatabaseEvent =
         newEvent as TourEvent;
 
-      /* GOOGLE */
+      /* ========================================================
+      GOOGLE
+      ======================================================== */
 
       const googleResult =
         await callGoogleCalendar(
@@ -2600,6 +2591,12 @@ export default function AdminCalendar() {
             allDay:
               tourAllDay,
 
+            startTime:
+              tourStartTime,
+
+            endTime:
+              tourEndTime,
+
             guideEmail:
               guide.email,
 
@@ -2624,7 +2621,9 @@ export default function AdminCalendar() {
         );
       }
 
-      /* SALVAR ID */
+      /* ========================================================
+      SALVAR ID GOOGLE
+      ======================================================== */
 
       const {
         data:
@@ -2645,7 +2644,7 @@ export default function AdminCalendar() {
             newEvent.id
           )
           .select(
-            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at"
+            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at"
           )
           .single();
 
@@ -2695,7 +2694,9 @@ export default function AdminCalendar() {
       createdDatabaseEvent =
         eventWithGoogleId as TourEvent;
 
-      /* ESCALAR GUIA */
+      /* ========================================================
+      ESCALAR GUIA
+      ======================================================== */
 
       const {
         error:
@@ -2937,6 +2938,16 @@ export default function AdminCalendar() {
       event.all_day
     );
 
+    setEditTourStartTime(
+      event.start_time ||
+        "09:00"
+    );
+
+    setEditTourEndTime(
+      event.end_time ||
+        "10:00"
+    );
+
     setEditTourGuideId(
       event.guide_id
     );
@@ -3000,6 +3011,20 @@ export default function AdminCalendar() {
       return;
     }
 
+    if (
+      !editTourAllDay &&
+      !validateTimes(
+        editTourStartTime,
+        editTourEndTime
+      )
+    ) {
+      alert(
+        "O horário de término precisa ser maior que o horário de início."
+      );
+
+      return;
+    }
+
     const guideChanged =
       selectedTourEvent.guide_id !==
       newGuide.id;
@@ -3018,6 +3043,8 @@ export default function AdminCalendar() {
         | Availability
         | null =
         null;
+
+      /* DISPONIBILIDADES */
 
       if (
         guideChanged
@@ -3151,6 +3178,12 @@ export default function AdminCalendar() {
             allDay:
               editTourAllDay,
 
+            startTime:
+              editTourStartTime,
+
+            endTime:
+              editTourEndTime,
+
             guideEmail:
               newGuide.email,
 
@@ -3190,6 +3223,12 @@ export default function AdminCalendar() {
             all_day:
               editTourAllDay,
 
+            start_time:
+              editTourStartTime,
+
+            end_time:
+              editTourEndTime,
+
             guide_id:
               newGuide.id,
 
@@ -3208,7 +3247,7 @@ export default function AdminCalendar() {
             selectedTourEvent.id
           )
           .select(
-            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at"
+            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at"
           )
           .single();
 
@@ -3221,7 +3260,7 @@ export default function AdminCalendar() {
         );
       }
 
-      /* TROCA GUIA */
+      /* TROCAR GUIA */
 
       if (
         guideChanged
@@ -3359,7 +3398,7 @@ export default function AdminCalendar() {
   }
 
   /* ============================================================
-  CANCELAR TOUR
+  CANCELAR
   ============================================================ */
 
   async function cancelTour(
@@ -3585,6 +3624,7 @@ export default function AdminCalendar() {
           )}
 
         </div>
+
       </div>
 
       {guideSearch.trim() && (
@@ -3676,6 +3716,7 @@ export default function AdminCalendar() {
         <>
 
           <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[9px] font-extrabold uppercase tracking-wide text-gray-800 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
+
             <div>Seg</div>
             <div>Ter</div>
             <div>Qua</div>
@@ -3683,9 +3724,8 @@ export default function AdminCalendar() {
             <div>Sex</div>
             <div>Sáb</div>
             <div>Dom</div>
-          </div>
 
-          {/* CALENDÁRIO */}
+          </div>
 
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
 
@@ -3800,14 +3840,25 @@ export default function AdminCalendar() {
                               ].join(
                                 " "
                               )}
-                              title={`${event.title} — ${getColorName(
-                                event.google_color_id
-                              )}`}
+                              title={
+                                event.title
+                              }
                             >
                               📅{" "}
                               {
                                 event.title
                               }
+
+                              {!event.all_day &&
+                                event.start_time && (
+                                  <>
+                                    {" "}
+                                    ·{" "}
+                                    {
+                                      event.start_time
+                                    }
+                                  </>
+                                )}
                             </div>
                           )
                         )}
@@ -3957,8 +4008,6 @@ export default function AdminCalendar() {
 
           </div>
 
-          {/* LEGENDA */}
-
           <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
 
             <div className="flex items-center gap-1.5">
@@ -3987,7 +4036,7 @@ export default function AdminCalendar() {
       )}
 
       {/* ======================================================
-         MODAL DO DIA
+      MODAL DIA
       ====================================================== */}
 
       {selectedDate && (
@@ -4107,6 +4156,21 @@ export default function AdminCalendar() {
                                 event.guide_id
                               )
                             }
+
+                            {!event.all_day &&
+                              event.start_time &&
+                              event.end_time && (
+                                <>
+                                  {" · "}
+                                  {
+                                    event.start_time
+                                  }{" "}
+                                  às{" "}
+                                  {
+                                    event.end_time
+                                  }
+                                </>
+                              )}
                           </span>
 
                         </span>
@@ -4170,7 +4234,6 @@ export default function AdminCalendar() {
                           }}
                           className="flex w-full items-center justify-between rounded-xl bg-[#f3e5a5] px-4 py-3 text-left text-sm font-bold text-[#806600] transition hover:bg-[#ead98c]"
                         >
-
                           <span className="flex min-w-0 items-center gap-2">
 
                             {
@@ -4203,7 +4266,7 @@ export default function AdminCalendar() {
 
             </div>
 
-            {/* DISPONÍVEIS */}
+            {/* DISPONIVEIS */}
 
             <div className="mt-5 sm:mt-6">
 
@@ -4282,7 +4345,7 @@ export default function AdminCalendar() {
 
             </div>
 
-            {/* INDISPONÍVEIS */}
+            {/* INDISPONIVEIS */}
 
             <div className="mt-5 sm:mt-6">
 
@@ -4379,7 +4442,7 @@ export default function AdminCalendar() {
       )}
 
       {/* ======================================================
-         MODAL GUIA
+      MODAL GUIA
       ====================================================== */}
 
       {selectedGuideDetails && (
@@ -4459,6 +4522,7 @@ export default function AdminCalendar() {
             <div className="space-y-4 p-6">
 
               <div className="rounded-2xl bg-gray-50 p-4">
+
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
                   E-mail
                 </p>
@@ -4469,9 +4533,11 @@ export default function AdminCalendar() {
                     "Não informado"
                   }
                 </p>
+
               </div>
 
               <div className="rounded-2xl bg-gray-50 p-4">
+
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
                   Telefone
                 </p>
@@ -4485,6 +4551,7 @@ export default function AdminCalendar() {
                       : "Não informado"
                   }
                 </p>
+
               </div>
 
               <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-100">
@@ -4593,7 +4660,7 @@ export default function AdminCalendar() {
       )}
 
       {/* ======================================================
-         MODAL CRIAR TOUR
+      MODAL CRIAR
       ====================================================== */}
 
       {showTourForm && (
@@ -4741,7 +4808,7 @@ export default function AdminCalendar() {
 
               </div>
 
-              {/* TÍTULO */}
+              {/* TITULO */}
 
               <div>
 
@@ -4833,6 +4900,98 @@ export default function AdminCalendar() {
 
               </div>
 
+              {/* DIA INTEIRO */}
+
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 p-4">
+
+                <input
+                  type="checkbox"
+                  checked={
+                    tourAllDay
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setTourAllDay(
+                      event.target.checked
+                    )
+                  }
+                  disabled={
+                    updating
+                  }
+                  className="h-5 w-5 rounded"
+                />
+
+                <span>
+
+                  <span className="block text-sm font-extrabold text-gray-800">
+                    Dia inteiro
+                  </span>
+
+                  <span className="block text-xs font-medium text-gray-500">
+                    O evento ocupará o dia inteiro na agenda.
+                  </span>
+
+                </span>
+
+              </label>
+
+              {/* HORÁRIOS */}
+
+              {!tourAllDay && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                  <div>
+                    <label className="text-sm font-extrabold text-gray-800">
+                      Horário de início
+                    </label>
+
+                    <input
+                      type="time"
+                      value={
+                        tourStartTime
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setTourStartTime(
+                          event.target.value
+                        )
+                      }
+                      disabled={
+                        updating
+                      }
+                      className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-extrabold text-gray-800">
+                      Horário de término
+                    </label>
+
+                    <input
+                      type="time"
+                      value={
+                        tourEndTime
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setTourEndTime(
+                          event.target.value
+                        )
+                      }
+                      disabled={
+                        updating
+                      }
+                      className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                    />
+                  </div>
+
+                </div>
+              )}
+
               {/* COR */}
 
               <div>
@@ -4898,42 +5057,6 @@ export default function AdminCalendar() {
                 </p>
 
               </div>
-
-              {/* DIA TODO */}
-
-              <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 p-4">
-
-                <input
-                  type="checkbox"
-                  checked={
-                    tourAllDay
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setTourAllDay(
-                      event.target.checked
-                    )
-                  }
-                  disabled={
-                    updating
-                  }
-                  className="h-5 w-5 rounded"
-                />
-
-                <span>
-
-                  <span className="block text-sm font-extrabold text-gray-800">
-                    Dia inteiro
-                  </span>
-
-                  <span className="block text-xs font-medium text-gray-500">
-                    O evento ocupará o dia inteiro na agenda.
-                  </span>
-
-                </span>
-
-              </label>
 
               {/* EMAIL */}
 
@@ -5047,7 +5170,7 @@ export default function AdminCalendar() {
       )}
 
       {/* ======================================================
-         MODAL TOUR
+      MODAL TOUR
       ====================================================== */}
 
       {selectedTourEvent && (
@@ -5143,6 +5266,27 @@ export default function AdminCalendar() {
                       }
                     )
                   }
+                </p>
+
+              </div>
+
+              {/* HORÁRIO */}
+
+              <div className="rounded-2xl bg-gray-50 p-4">
+
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                  Horário
+                </p>
+
+                <p className="mt-1 text-sm font-extrabold text-gray-800">
+
+                  {selectedTourEvent.all_day
+                    ? "Dia inteiro"
+                    : selectedTourEvent.start_time &&
+                      selectedTourEvent.end_time
+                      ? `${selectedTourEvent.start_time} às ${selectedTourEvent.end_time}`
+                      : "Horário não informado"}
+
                 </p>
 
               </div>
@@ -5310,8 +5454,6 @@ export default function AdminCalendar() {
 
               </div>
 
-              {/* EDITAR */}
-
               <button
                 type="button"
                 disabled={
@@ -5326,8 +5468,6 @@ export default function AdminCalendar() {
               >
                 ✏️ Editar tour
               </button>
-
-              {/* CANCELAR */}
 
               <button
                 type="button"
@@ -5347,8 +5487,6 @@ export default function AdminCalendar() {
                     : "❌ Cancelar tour"
                 }
               </button>
-
-              {/* FECHAR */}
 
               <button
                 type="button"
@@ -5373,7 +5511,7 @@ export default function AdminCalendar() {
       )}
 
       {/* ======================================================
-         MODAL EDITAR
+      MODAL EDITAR
       ====================================================== */}
 
       {
@@ -5613,6 +5751,98 @@ export default function AdminCalendar() {
 
                 </div>
 
+                {/* DIA INTEIRO */}
+
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 p-4">
+
+                  <input
+                    type="checkbox"
+                    checked={
+                      editTourAllDay
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setEditTourAllDay(
+                        event.target.checked
+                      )
+                    }
+                    disabled={
+                      updating
+                    }
+                    className="h-5 w-5 rounded"
+                  />
+
+                  <span>
+
+                    <span className="block text-sm font-extrabold text-gray-800">
+                      Dia inteiro
+                    </span>
+
+                    <span className="block text-xs font-medium text-gray-500">
+                      O evento ocupará o dia inteiro na agenda.
+                    </span>
+
+                  </span>
+
+                </label>
+
+                {/* HORÁRIOS */}
+
+                {!editTourAllDay && (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                    <div>
+                      <label className="text-sm font-extrabold text-gray-800">
+                        Horário de início
+                      </label>
+
+                      <input
+                        type="time"
+                        value={
+                          editTourStartTime
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditTourStartTime(
+                            event.target.value
+                          )
+                        }
+                        disabled={
+                          updating
+                        }
+                        className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-extrabold text-gray-800">
+                        Horário de término
+                      </label>
+
+                      <input
+                        type="time"
+                        value={
+                          editTourEndTime
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditTourEndTime(
+                            event.target.value
+                          )
+                        }
+                        disabled={
+                          updating
+                        }
+                        className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                      />
+                    </div>
+
+                  </div>
+                )}
+
                 {/* COR */}
 
                 <div>
@@ -5678,38 +5908,6 @@ export default function AdminCalendar() {
                   </p>
 
                 </div>
-
-                {/* DIA TODO */}
-
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 p-4">
-
-                  <input
-                    type="checkbox"
-                    checked={
-                      editTourAllDay
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setEditTourAllDay(
-                        event.target.checked
-                      )
-                    }
-                    disabled={
-                      updating
-                    }
-                    className="h-5 w-5 rounded"
-                  />
-
-                  <span>
-
-                    <span className="block text-sm font-extrabold text-gray-800">
-                      Dia inteiro
-                    </span>
-
-                  </span>
-
-                </label>
 
                 {/* EMAIL */}
 
