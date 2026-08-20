@@ -59,13 +59,8 @@ type TourEvent = {
   description: string | null;
   address: string | null;
   all_day: boolean;
-
-  /*
-   * Agora o tour pode ficar sem guia.
-   */
   guide_id: string | null;
   guide_email: string | null;
-
   additional_email: string | null;
   calendar_event_id: string | null;
   status: "scheduled" | "cancelled";
@@ -942,6 +937,7 @@ function RichTextEditor({
         >
           Limpar
         </button>
+
       </div>
 
       <div
@@ -1808,10 +1804,6 @@ export default function AdminCalendar() {
 
       return tourEvents.filter(
         (event) =>
-          /*
-           * Tour sem guia também deve aparecer
-           * mesmo quando existe busca.
-           */
           event.guide_id ===
             null ||
           matchingGuideIds.has(
@@ -1857,7 +1849,7 @@ export default function AdminCalendar() {
     });
 
   /* ============================================================
-  DIA SELECIONADO
+  DIA SELECIONADO NO MODAL DO MÊS
   ============================================================ */
 
   const selectedDayData =
@@ -1964,7 +1956,6 @@ export default function AdminCalendar() {
 
     return (
       <span className="inline-flex items-center gap-0.5 align-middle">
-
         {guide.languages.map(
           (language) => {
             const flag =
@@ -1993,7 +1984,6 @@ export default function AdminCalendar() {
             );
           }
         )}
-
       </span>
     );
   }
@@ -2041,7 +2031,7 @@ export default function AdminCalendar() {
   }
 
   /* ============================================================
-  GOOGLE CALENDAR
+  GOOGLE
   ============================================================ */
 
   async function callGoogleCalendar(
@@ -2049,7 +2039,8 @@ export default function AdminCalendar() {
       action:
         | "create"
         | "update"
-        | "delete";
+        | "delete"
+        | "removeGuide";
       eventId?: string | null;
       date?: string;
       title?: string;
@@ -2154,25 +2145,11 @@ export default function AdminCalendar() {
       guide.id
     );
 
-    setTourTitle(
-      ""
-    );
-
-    setTourDescription(
-      ""
-    );
-
-    setTourAddress(
-      ""
-    );
-
-    setTourAllDay(
-      true
-    );
-
-    setTourAdditionalEmail(
-      ""
-    );
+    setTourTitle("");
+    setTourDescription("");
+    setTourAddress("");
+    setTourAllDay(true);
+    setTourAdditionalEmail("");
 
     setSelectedGuideDetails(
       null
@@ -2396,6 +2373,7 @@ export default function AdminCalendar() {
             {
               action:
                 "delete",
+
               eventId:
                 googleEventId,
             }
@@ -2451,6 +2429,7 @@ export default function AdminCalendar() {
             {
               action:
                 "delete",
+
               eventId:
                 googleEventId,
             }
@@ -2578,15 +2557,9 @@ export default function AdminCalendar() {
       selectedGuideAvailability.date;
 
     try {
-      /* ========================================================
-         1. LOCALIZAR O TOUR
-      ======================================================== */
-
       const {
-        data:
-          tourEvent,
-        error:
-          tourSearchError,
+        data: tourEvent,
+        error: tourSearchError,
       } =
         await supabase
           .from(
@@ -2618,23 +2591,15 @@ export default function AdminCalendar() {
         );
 
         throw new Error(
-          "Não foi possível localizar o tour vinculado a esta escala."
+          "Não foi possível localizar o tour dessa escala."
         );
       }
 
       /* ========================================================
-         2. REMOVER SOMENTE O GUIA DO GOOGLE
+         GOOGLE
          
-         NÃO DELETAMOS O EVENTO.
-         Fazemos UPDATE mantendo:
-         - título
-         - data
-         - descrição
-         - endereço
-         - e-mail adicional
-         
-         E removendo somente:
-         - guideEmail
+         SOMENTE REMOVE O GUIA.
+         O EVENTO CONTINUA EXISTINDO.
       ======================================================== */
 
       if (
@@ -2643,57 +2608,30 @@ export default function AdminCalendar() {
         await callGoogleCalendar(
           {
             action:
-              "update",
+              "removeGuide",
 
             eventId:
               tourEvent.calendar_event_id,
 
-            date:
-              tourEvent.date,
-
-            title:
-              tourEvent.title,
-
-            description:
-              tourEvent.description,
-
-            address:
-              tourEvent.address,
-
-            allDay:
-              tourEvent.all_day,
-
-            /*
-             * IMPORTANTE:
-             * null = não enviar mais o guia
-             */
             guideEmail:
-              null,
-
-            /*
-             * Mantém eventual cliente/e-mail adicional.
-             */
-            additionalEmail:
-              tourEvent.additional_email,
+              tourEvent.guide_email,
           }
         );
       }
 
       /* ========================================================
-         3. MANTER O TOUR, MAS SEM GUIA
+         SUPABASE
+         
+         TOUR CONTINUA.
+         APENAS FICA SEM GUIA.
       ======================================================== */
-
-      let updatedTour:
-        | TourEvent
-        | null =
-        null;
 
       if (
         tourEvent
       ) {
         const {
           data:
-            tourWithoutGuide,
+            updatedTour,
           error:
             updateTourError,
         } =
@@ -2719,10 +2657,10 @@ export default function AdminCalendar() {
 
         if (
           updateTourError ||
-          !tourWithoutGuide
+          !updatedTour
         ) {
           console.error(
-            "❌ ERRO AO RETIRAR GUIA DO TOUR:",
+            "❌ ERRO AO DEIXAR TOUR SEM GUIA:",
             updateTourError
           );
 
@@ -2731,39 +2669,29 @@ export default function AdminCalendar() {
           );
         }
 
-        updatedTour =
-          tourWithoutGuide as TourEvent;
-
-        /*
-         * Atualiza imediatamente a lista.
-         */
         setTourEvents(
           (current) =>
             current.map(
               (event) =>
                 event.id ===
-                updatedTour!.id
-                  ? updatedTour!
+                updatedTour.id
+                  ? updatedTour as TourEvent
                   : event
             )
         );
 
-        /*
-         * Caso esse tour esteja aberto,
-         * atualiza o modal também.
-         */
         setSelectedTourEvent(
           (current) =>
             current &&
             current.id ===
-              updatedTour!.id
-              ? updatedTour!
+              updatedTour.id
+              ? updatedTour as TourEvent
               : current
         );
       }
 
       /* ========================================================
-         4. LIBERAR O GUIA
+         LIBERAR GUIA
       ======================================================== */
 
       const {
@@ -2793,13 +2721,8 @@ export default function AdminCalendar() {
         availabilityError ||
         !updatedAvailability
       ) {
-        console.error(
-          "❌ ERRO AO LIBERAR GUIA:",
-          availabilityError
-        );
-
         throw new Error(
-          "Não foi possível liberar a disponibilidade do guia."
+          "Não foi possível liberar o guia."
         );
       }
 
@@ -2815,7 +2738,7 @@ export default function AdminCalendar() {
       );
 
       /* ========================================================
-         5. FECHAR MODAL DO GUIA
+         FECHAR MODAL DO GUIA
       ======================================================== */
 
       setSelectedGuideDetails(
@@ -2828,7 +2751,7 @@ export default function AdminCalendar() {
 
       alert(
         tourEvent
-          ? "✅ Guia removido da escala. O tour foi mantido sem guia e continua no Google Calendar."
+          ? "✅ Guia removido da escala. O tour continua no sistema e no Google Calendar sem guia."
           : "✅ Escala removida e guia liberado."
       );
     } catch (
@@ -2875,10 +2798,6 @@ export default function AdminCalendar() {
       event.all_day
     );
 
-    /*
-     * Pode ser vazio quando o tour
-     * está sem guia.
-     */
     setEditTourGuideId(
       event.guide_id ||
         ""
@@ -2905,9 +2824,6 @@ export default function AdminCalendar() {
       return;
     }
 
-    /*
-     * Agora o guia pode estar vazio.
-     */
     const newGuide =
       editTourGuideId
         ? guideMap.get(
@@ -2967,9 +2883,7 @@ export default function AdminCalendar() {
         | null =
         null;
 
-      /* ========================================================
-         NOVO GUIA
-      ======================================================== */
+      /* GUIA NOVO */
 
       if (
         guideChanged &&
@@ -3027,12 +2941,7 @@ export default function AdminCalendar() {
           newGuideAvailability as Availability;
       }
 
-      /* ========================================================
-         GUIA ANTERIOR
-         
-         Só procuramos se realmente existia
-         um guia anterior.
-      ======================================================== */
+      /* GUIA ANTIGO */
 
       if (
         guideChanged &&
@@ -3075,9 +2984,7 @@ export default function AdminCalendar() {
             | null;
       }
 
-      /* ========================================================
-         DESCRIÇÃO
-      ======================================================== */
+      /* DESCRIÇÃO */
 
       const normalizedDescription =
         sanitizeDescriptionHtml(
@@ -3089,9 +2996,7 @@ export default function AdminCalendar() {
           normalizedDescription
         );
 
-      /* ========================================================
-         GOOGLE
-      ======================================================== */
+      /* GOOGLE */
 
       if (
         selectedTourEvent.calendar_event_id
@@ -3133,9 +3038,7 @@ export default function AdminCalendar() {
         );
       }
 
-      /* ========================================================
-         SUPABASE
-      ======================================================== */
+      /* SUPABASE */
 
       const {
         data,
@@ -3191,16 +3094,11 @@ export default function AdminCalendar() {
         );
       }
 
-      /* ========================================================
-         TROCA DE GUIA
-      ======================================================== */
+      /* TROCAR GUIA */
 
       if (
         guideChanged
       ) {
-        /*
-         * Libera o antigo somente se existia antigo.
-         */
         if (
           oldAvailability
         ) {
@@ -3245,9 +3143,6 @@ export default function AdminCalendar() {
           );
         }
 
-        /*
-         * Escala o novo somente quando foi selecionado.
-         */
         if (
           newAvailability
         ) {
@@ -3293,23 +3188,19 @@ export default function AdminCalendar() {
         }
       }
 
-      /* ========================================================
-         ESTADO LOCAL
-      ======================================================== */
-
       setTourEvents(
         (current) =>
           current.map(
             (event) =>
               event.id ===
               data.id
-                ? data
+                ? data as TourEvent
                 : event
           )
       );
 
       setSelectedTourEvent(
-        data
+        data as TourEvent
       );
 
       setShowTourEdit(
@@ -3379,10 +3270,6 @@ export default function AdminCalendar() {
         );
       }
 
-      /*
-       * Só existe disponibilidade para liberar
-       * se o tour possuir um guia.
-       */
       if (
         event.guide_id
       ) {
@@ -3452,8 +3339,6 @@ export default function AdminCalendar() {
         }
       }
 
-      /* EXCLUIR TOUR */
-
       const {
         error:
           deleteError,
@@ -3509,6 +3394,95 @@ export default function AdminCalendar() {
         false
       );
     }
+  }
+
+  /* ============================================================
+  TROCAR PARA MÊS
+  ============================================================ */
+
+  function switchToMonthView() {
+    /*
+     * IMPORTANTE:
+     * Ao voltar para mês, nenhuma seleção do modo
+     * dia pode reabrir o modal antigo.
+     */
+
+    setSelectedDate(
+      null
+    );
+
+    setSelectedGuideDetails(
+      null
+    );
+
+    setSelectedGuideAvailability(
+      null
+    );
+
+    setCalendarView(
+      "month"
+    );
+  }
+
+  /* ============================================================
+  TROCAR PARA DIA
+  ============================================================ */
+
+  function enterDayView() {
+    /*
+     * Se estiver vindo de um dia selecionado no calendário
+     * mensal, usamos esse dia.
+     */
+
+    if (
+      selectedDate
+    ) {
+      setCurrentDay(
+        new Date(
+          `${selectedDate}T12:00:00`
+        )
+      );
+
+      /*
+       * Limpa o modal antes de entrar no modo dia.
+       */
+      setSelectedDate(
+        null
+      );
+
+      setSelectedGuideDetails(
+        null
+      );
+
+      setSelectedGuideAvailability(
+        null
+      );
+
+      setCalendarView(
+        "day"
+      );
+
+      return;
+    }
+
+    /*
+     * Sem seleção, apenas entra no modo dia.
+     */
+    setSelectedDate(
+      null
+    );
+
+    setSelectedGuideDetails(
+      null
+    );
+
+    setSelectedGuideAvailability(
+      null
+    );
+
+    setCalendarView(
+      "day"
+    );
   }
 
   /* ============================================================
@@ -3580,36 +3554,22 @@ export default function AdminCalendar() {
     setCurrentMonth(
       today
     );
-  }
 
-  /* ============================================================
-  ENTRAR MODO DIA
-  ============================================================ */
+    setSelectedDate(
+      null
+    );
 
-  function enterDayView() {
-    if (
-      selectedDate
-    ) {
-      setCurrentDay(
-        new Date(
-          `${selectedDate}T12:00:00`
-        )
-      );
+    setSelectedGuideDetails(
+      null
+    );
 
-      setCalendarView(
-        "day"
-      );
-
-      return;
-    }
-
-    setCalendarView(
-      "day"
+    setSelectedGuideAvailability(
+      null
     );
   }
 
   /* ============================================================
-  DADOS MODO DIA
+  DADOS DO DIA
   ============================================================ */
 
   const currentDayString =
@@ -3767,10 +3727,8 @@ export default function AdminCalendar() {
 
           <button
             type="button"
-            onClick={() =>
-              setCalendarView(
-                "month"
-              )
+            onClick={
+              switchToMonthView
             }
             className={[
               "flex-1 rounded-lg px-4 py-2 text-sm font-extrabold transition sm:flex-none",
@@ -4327,9 +4285,12 @@ export default function AdminCalendar() {
                               if (
                                 guide
                               ) {
-                                setSelectedDate(
-                                  currentDayString
-                                );
+                                /*
+                                 * IMPORTANTE:
+                                 * NÃO usamos setSelectedDate aqui.
+                                 * Assim, ao voltar para o mês,
+                                 * nenhum modal antigo reabre.
+                                 */
 
                                 setSelectedGuideDetails(
                                   guide
@@ -4423,9 +4384,9 @@ export default function AdminCalendar() {
                               if (
                                 guide
                               ) {
-                                setSelectedDate(
-                                  currentDayString
-                                );
+                                /*
+                                 * NÃO usamos selectedDate aqui.
+                                 */
 
                                 setSelectedGuideDetails(
                                   guide
@@ -4519,9 +4480,9 @@ export default function AdminCalendar() {
                               if (
                                 guide
                               ) {
-                                setSelectedDate(
-                                  currentDayString
-                                );
+                                /*
+                                 * NÃO usamos selectedDate aqui.
+                                 */
 
                                 setSelectedGuideDetails(
                                   guide
@@ -4574,7 +4535,7 @@ export default function AdminCalendar() {
       )}
 
       {/* ======================================================
-         MODAL DO DIA
+         MODAL DO DIA — SOMENTE MODO MÊS
       ====================================================== */}
 
       {selectedDate &&
@@ -4955,11 +4916,21 @@ export default function AdminCalendar() {
 
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
+
                   setSelectedDate(
                     null
-                  )
-                }
+                  );
+
+                  setSelectedGuideDetails(
+                    null
+                  );
+
+                  setSelectedGuideAvailability(
+                    null
+                  );
+
+                }}
                 className="mt-5 w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#0f75bd] sm:mt-6"
               >
                 Fechar
