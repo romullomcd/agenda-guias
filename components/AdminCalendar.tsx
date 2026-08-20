@@ -364,6 +364,10 @@ function RichTextEditor({
     setIsFocused,
   ] = useState(false);
 
+  /* ==========================================================
+  SALVAR SELEÇÃO
+  ========================================================== */
+
   function saveSelection() {
     const editor =
       editorRef.current;
@@ -397,6 +401,10 @@ function RichTextEditor({
     savedRangeRef.current =
       range.cloneRange();
   }
+
+  /* ==========================================================
+  RESTAURAR SELEÇÃO
+  ========================================================== */
 
   function restoreSelection() {
     const editor =
@@ -450,6 +458,10 @@ function RichTextEditor({
     }
   }
 
+  /* ==========================================================
+  SINCRONIZAR
+  ========================================================== */
+
   function syncValue() {
     const editor =
       editorRef.current;
@@ -465,6 +477,10 @@ function RichTextEditor({
       editor.innerHTML
     );
   }
+
+  /* ==========================================================
+  CARREGAR VALOR
+  ========================================================== */
 
   useEffect(() => {
     const editor =
@@ -517,6 +533,10 @@ function RichTextEditor({
         html;
     }
   }, [value]);
+
+  /* ==========================================================
+  VERIFICAR BOLD
+  ========================================================== */
 
   function fragmentIsCompletelyBold(
     fragment: DocumentFragment
@@ -585,6 +605,10 @@ function RichTextEditor({
     return foundText;
   }
 
+  /* ==========================================================
+  REMOVER BOLD
+  ========================================================== */
+
   function unwrapBoldFromFragment(
     fragment: DocumentFragment
   ) {
@@ -619,6 +643,10 @@ function RichTextEditor({
       }
     );
   }
+
+  /* ==========================================================
+  BOLD
+  ========================================================== */
 
   function toggleBold() {
     if (disabled) {
@@ -724,6 +752,10 @@ function RichTextEditor({
     }
   }
 
+  /* ==========================================================
+  OUTROS COMANDOS
+  ========================================================== */
+
   function executeCommand(
     command: string
   ) {
@@ -767,6 +799,10 @@ function RichTextEditor({
     }
   }
 
+  /* ==========================================================
+  TOOLBAR
+  ========================================================== */
+
   function handleToolbarMouseDown(
     event: ReactMouseEvent<HTMLButtonElement>,
     command: string
@@ -783,6 +819,10 @@ function RichTextEditor({
       command
     );
   }
+
+  /* ==========================================================
+  LIMPAR
+  ========================================================== */
 
   function clearFormatting() {
     if (disabled) {
@@ -831,7 +871,9 @@ function RichTextEditor({
 
         <button
           type="button"
-          disabled={disabled}
+          disabled={
+            disabled
+          }
           onMouseDown={(event) =>
             handleToolbarMouseDown(
               event,
@@ -841,12 +883,16 @@ function RichTextEditor({
           title="Negrito"
           className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 text-sm font-black text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <strong>B</strong>
+          <strong>
+            B
+          </strong>
         </button>
 
         <button
           type="button"
-          disabled={disabled}
+          disabled={
+            disabled
+          }
           onMouseDown={(event) =>
             handleToolbarMouseDown(
               event,
@@ -856,12 +902,16 @@ function RichTextEditor({
           title="Itálico"
           className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 text-sm font-bold italic text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <em>I</em>
+          <em>
+            I
+          </em>
         </button>
 
         <button
           type="button"
-          disabled={disabled}
+          disabled={
+            disabled
+          }
           onMouseDown={(event) =>
             handleToolbarMouseDown(
               event,
@@ -880,7 +930,9 @@ function RichTextEditor({
 
         <button
           type="button"
-          disabled={disabled}
+          disabled={
+            disabled
+          }
           onMouseDown={(event) =>
             handleToolbarMouseDown(
               event,
@@ -895,7 +947,9 @@ function RichTextEditor({
 
         <button
           type="button"
-          disabled={disabled}
+          disabled={
+            disabled
+          }
           onMouseDown={(event) =>
             handleToolbarMouseDown(
               event,
@@ -912,7 +966,9 @@ function RichTextEditor({
 
         <button
           type="button"
-          disabled={disabled}
+          disabled={
+            disabled
+          }
           onMouseDown={(event) => {
             event.preventDefault();
 
@@ -930,7 +986,9 @@ function RichTextEditor({
 
       <div
         ref={editorRef}
-        contentEditable={!disabled}
+        contentEditable={
+          !disabled
+        }
         suppressContentEditableWarning
         role="textbox"
         aria-multiline="true"
@@ -946,11 +1004,17 @@ function RichTextEditor({
           saveSelection();
         }}
         onFocus={() => {
-          setIsFocused(true);
+          setIsFocused(
+            true
+          );
+
           saveSelection();
         }}
         onBlur={() => {
-          setIsFocused(false);
+          setIsFocused(
+            false
+          );
+
           saveSelection();
         }}
         data-placeholder="Digite aqui as informações detalhadas do tour..."
@@ -1010,87 +1074,131 @@ export default function AdminCalendar() {
   const [
     currentMonth,
     setCurrentMonth,
-  ] = useState(new Date());
+  ] = useState(
+    new Date()
+  );
 
   const [
     currentDay,
     setCurrentDay,
-  ] = useState(new Date());
+  ] = useState(
+    new Date()
+  );
 
   const [
     calendarView,
     setCalendarView,
-  ] = useState<CalendarView>("month");
+  ] = useState<CalendarView>(
+    "month"
+  );
 
   const [
     guides,
     setGuides,
-  ] = useState<Guide[]>([]);
+  ] = useState<Guide[]>(
+    []
+  );
 
   const [
     availability,
     setAvailability,
-  ] = useState<Availability[]>([]);
+  ] = useState<
+    Availability[]
+  >([]);
 
   const [
     tourEvents,
     setTourEvents,
-  ] = useState<TourEvent[]>([]);
+  ] = useState<
+    TourEvent[]
+  >([]);
 
   const [
     guideSearch,
     setGuideSearch,
   ] = useState("");
 
+  /*
+   * Só controla o modal do dia
+   * quando estamos no modo MÊS.
+   */
   const [
     selectedDate,
     setSelectedDate,
-  ] = useState<string | null>(null);
+  ] = useState<
+    string | null
+  >(null);
 
   /*
-   * DATA EXCLUSIVA DO FORMULÁRIO DE ESCALA.
+   * Data do formulário de criação
    *
-   * NÃO usamos selectedDate para isso.
-   * Isso evita o bug de reabrir o modal do mês.
+   * NÃO depende de selectedDate.
    */
   const [
     tourFormDate,
     setTourFormDate,
-  ] = useState<string | null>(null);
+  ] = useState<
+    string | null
+  >(null);
+
+  /*
+   * ID da disponibilidade que será
+   * transformada em "escalated".
+   *
+   * Isso resolve o bug do modo DIA.
+   */
+  const [
+    tourFormAvailabilityId,
+    setTourFormAvailabilityId,
+  ] = useState<
+    number | null
+  >(null);
 
   const [
     selectedGuideDetails,
     setSelectedGuideDetails,
-  ] = useState<Guide | null>(null);
+  ] = useState<
+    Guide | null
+  >(null);
 
   const [
     selectedGuideAvailability,
     setSelectedGuideAvailability,
-  ] = useState<Availability | null>(null);
+  ] = useState<
+    Availability | null
+  >(null);
 
   const [
     selectedTourEvent,
     setSelectedTourEvent,
-  ] = useState<TourEvent | null>(null);
+  ] = useState<
+    TourEvent | null
+  >(null);
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] = useState(
+    true
+  );
 
   const [
     updating,
     setUpdating,
-  ] = useState(false);
+  ] = useState(
+    false
+  );
 
   /* ============================================================
-  FORMULÁRIO CRIAR
+  FORMULÁRIO
   ============================================================ */
 
   const [
     showTourForm,
     setShowTourForm,
-  ] = useState(false);
+  ] = useState(
+    false
+  );
 
   const [
     tourTitle,
@@ -1110,7 +1218,9 @@ export default function AdminCalendar() {
   const [
     tourAllDay,
     setTourAllDay,
-  ] = useState(true);
+  ] = useState(
+    true
+  );
 
   const [
     tourGuideId,
@@ -1129,7 +1239,9 @@ export default function AdminCalendar() {
   const [
     showTourEdit,
     setShowTourEdit,
-  ] = useState(false);
+  ] = useState(
+    false
+  );
 
   const [
     editTourTitle,
@@ -1149,7 +1261,9 @@ export default function AdminCalendar() {
   const [
     editTourAllDay,
     setEditTourAllDay,
-  ] = useState(true);
+  ] = useState(
+    true
+  );
 
   const [
     editTourGuideId,
@@ -1167,7 +1281,9 @@ export default function AdminCalendar() {
 
   useEffect(() => {
     loadData();
-  }, [currentMonth]);
+  }, [
+    currentMonth,
+  ]);
 
   /* ============================================================
   REALTIME
@@ -1183,9 +1299,12 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event: "INSERT",
-            schema: "public",
-            table: "availability",
+            event:
+              "INSERT",
+            schema:
+              "public",
+            table:
+              "availability",
           },
           (payload) => {
             const newItem =
@@ -1248,9 +1367,12 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event: "UPDATE",
-            schema: "public",
-            table: "availability",
+            event:
+              "UPDATE",
+            schema:
+              "public",
+            table:
+              "availability",
           },
           (payload) => {
             const updatedItem =
@@ -1271,7 +1393,7 @@ export default function AdminCalendar() {
               (current) =>
                 current &&
                 current.id ===
-                  updatedItem.id
+                updatedItem.id
                   ? updatedItem
                   : current
             );
@@ -1281,9 +1403,12 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event: "DELETE",
-            schema: "public",
-            table: "availability",
+            event:
+              "DELETE",
+            schema:
+              "public",
+            table:
+              "availability",
           },
           (payload) => {
             const deletedItem =
@@ -1302,7 +1427,7 @@ export default function AdminCalendar() {
               (current) =>
                 current &&
                 current.id ===
-                  deletedItem.id
+                deletedItem.id
                   ? null
                   : current
             );
@@ -1312,9 +1437,12 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event: "INSERT",
-            schema: "public",
-            table: "tour_events",
+            event:
+              "INSERT",
+            schema:
+              "public",
+            table:
+              "tour_events",
           },
           (payload) => {
             const newEvent =
@@ -1377,9 +1505,12 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event: "UPDATE",
-            schema: "public",
-            table: "tour_events",
+            event:
+              "UPDATE",
+            schema:
+              "public",
+            table:
+              "tour_events",
           },
           (payload) => {
             const updatedEvent =
@@ -1400,7 +1531,7 @@ export default function AdminCalendar() {
               (current) =>
                 current &&
                 current.id ===
-                  updatedEvent.id
+                updatedEvent.id
                   ? updatedEvent
                   : current
             );
@@ -1410,9 +1541,12 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event: "DELETE",
-            schema: "public",
-            table: "tour_events",
+            event:
+              "DELETE",
+            schema:
+              "public",
+            table:
+              "tour_events",
           },
           (payload) => {
             const deletedEvent =
@@ -1431,7 +1565,7 @@ export default function AdminCalendar() {
               (current) =>
                 current &&
                 current.id ===
-                  deletedEvent.id
+                deletedEvent.id
                   ? null
                   : current
             );
@@ -1452,14 +1586,18 @@ export default function AdminCalendar() {
         channel
       );
     };
-  }, [currentMonth]);
+  }, [
+    currentMonth,
+  ]);
 
   /* ============================================================
   CARREGAR DADOS
   ============================================================ */
 
   async function loadData() {
-    setLoading(true);
+    setLoading(
+      true
+    );
 
     const firstDay =
       format(
@@ -1484,7 +1622,9 @@ export default function AdminCalendar() {
     ] =
       await Promise.all([
         supabase
-          .from("profiles")
+          .from(
+            "profiles"
+          )
           .select(
             "id, name, active, languages, phone"
           )
@@ -1497,7 +1637,9 @@ export default function AdminCalendar() {
           ),
 
         supabase
-          .from("availability")
+          .from(
+            "availability"
+          )
           .select(
             "id, guide_id, date, status"
           )
@@ -1514,7 +1656,9 @@ export default function AdminCalendar() {
           ),
 
         supabase
-          .from("tour_events")
+          .from(
+            "tour_events"
+          )
           .select(
             "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
           )
@@ -1530,6 +1674,10 @@ export default function AdminCalendar() {
             "date"
           ),
       ]);
+
+    /* ==========================================================
+       GUIAS
+    ========================================================== */
 
     if (
       guidesResult.error
@@ -1555,7 +1703,9 @@ export default function AdminCalendar() {
             async (
               guide
             ) => {
-              if (!session) {
+              if (
+                !session
+              ) {
                 return {
                   ...guide,
                   languages:
@@ -1564,8 +1714,10 @@ export default function AdminCalendar() {
                   phone:
                     guide.phone ||
                     "",
-                  email: "",
-                  pix_key: "",
+                  email:
+                    "",
+                  pix_key:
+                    "",
                 };
               }
 
@@ -1619,8 +1771,10 @@ export default function AdminCalendar() {
                   phone:
                     guide.phone ||
                     "",
-                  email: "",
-                  pix_key: "",
+                  email:
+                    "",
+                  pix_key:
+                    "",
                 };
               }
             }
@@ -1631,6 +1785,10 @@ export default function AdminCalendar() {
         guidesWithDetails
       );
     }
+
+    /* ==========================================================
+       AVAILABILITY
+    ========================================================== */
 
     if (
       availabilityResult.error
@@ -1646,6 +1804,10 @@ export default function AdminCalendar() {
       );
     }
 
+    /* ==========================================================
+       TOURS
+    ========================================================== */
+
     if (
       tourEventsResult.error
     ) {
@@ -1660,7 +1822,9 @@ export default function AdminCalendar() {
       );
     }
 
-    setLoading(false);
+    setLoading(
+      false
+    );
   }
 
   /* ============================================================
@@ -1712,7 +1876,7 @@ export default function AdminCalendar() {
     );
 
   /* ============================================================
-  DISPONIBILIDADE FILTRADA
+  AVAILABILITY FILTRADA
   ============================================================ */
 
   const filteredAvailability =
@@ -1810,7 +1974,7 @@ export default function AdminCalendar() {
     });
 
   /* ============================================================
-  DIA DO MODAL MÊS
+  MODAL DO DIA — MÊS
   ============================================================ */
 
   const selectedDayData =
@@ -1855,7 +2019,7 @@ export default function AdminCalendar() {
       : [];
 
   /* ============================================================
-  FUNÇÕES
+  FUNÇÕES DIA
   ============================================================ */
 
   function getDayAvailability(
@@ -1932,9 +2096,15 @@ export default function AdminCalendar() {
             return (
               <img
                 key={`${guideId}-${language}`}
-                src={flag}
-                alt={language}
-                title={language}
+                src={
+                  flag
+                }
+                alt={
+                  language
+                }
+                title={
+                  language
+                }
                 className="inline-block h-2.5 w-4 rounded-sm object-cover sm:h-4 sm:w-6"
               />
             );
@@ -1998,13 +2168,21 @@ export default function AdminCalendar() {
         | "update"
         | "delete"
         | "removeGuide";
+
       eventId?: string | null;
+
       date?: string;
+
       title?: string;
+
       description?: string | null;
+
       address?: string | null;
+
       allDay?: boolean;
+
       guideEmail?: string | null;
+
       additionalEmail?: string | null;
     }
   ) {
@@ -2032,12 +2210,15 @@ export default function AdminCalendar() {
         {
           method:
             "POST",
+
           headers: {
             "Content-Type":
               "application/json",
+
             Authorization:
               `Bearer ${session.access_token}`,
           },
+
           body:
             JSON.stringify(
               payload
@@ -2067,7 +2248,7 @@ export default function AdminCalendar() {
   }
 
   /* ============================================================
-  ESCALAR
+  ESCALAR GUIA — IMPORTANTE
   ============================================================ */
 
   function openEscalationForm() {
@@ -2091,23 +2272,30 @@ export default function AdminCalendar() {
     }
 
     /*
-     * MODO MÊS:
-     * selectedDate existe.
+     * MODO MÊS
+     * selectedDate
      *
-     * MODO DIA:
-     * selectedDate está vazio.
-     * Nesse caso usamos currentDayString.
+     * MODO DIA
+     * currentDayString
      */
     const escalationDate =
       selectedDate ||
       currentDayString;
 
     /*
-     * Guardamos a data do formulário
-     * separadamente.
+     * GUARDA A DATA DO FORMULÁRIO
      */
     setTourFormDate(
       escalationDate
+    );
+
+    /*
+     * GUARDA O ID DA DISPONIBILIDADE
+     *
+     * ESSA É A CORREÇÃO DO BUG.
+     */
+    setTourFormAvailabilityId(
+      selectedGuideAvailability.id
     );
 
     setTourGuideId(
@@ -2115,13 +2303,24 @@ export default function AdminCalendar() {
     );
 
     setTourTitle("");
+
     setTourDescription("");
+
     setTourAddress("");
-    setTourAllDay(true);
-    setTourAdditionalEmail("");
+
+    setTourAllDay(
+      true
+    );
+
+    setTourAdditionalEmail(
+      ""
+    );
 
     /*
-     * Fecha somente o modal do guia.
+     * FECHA O MODAL DO GUIA.
+     *
+     * O ID NÃO É PERDIDO PORQUE
+     * ESTÁ NO tourFormAvailabilityId.
      */
     setSelectedGuideDetails(
       null
@@ -2137,25 +2336,39 @@ export default function AdminCalendar() {
   }
 
   /* ============================================================
-  CRIAR TOUR
+  CRIAR TOUR E ESCALAR
   ============================================================ */
 
   async function createTourAndEscalate() {
     /*
-     * A data vem do estado específico do formulário.
-     *
-     * Isso funciona tanto no modo Mês quanto no modo Dia.
+     * A DATA VEM DO FORMULÁRIO.
      */
     const escalationDate =
       tourFormDate ||
       selectedDate ||
       currentDayString;
 
+    /*
+     * O ID VEM DO FORMULÁRIO.
+     */
+    const availabilityId =
+      tourFormAvailabilityId;
+
     if (
       !escalationDate
     ) {
       alert(
         "Não foi possível identificar o dia da escala."
+      );
+
+      return;
+    }
+
+    if (
+      !availabilityId
+    ) {
+      alert(
+        "Não foi possível identificar a disponibilidade do guia."
       );
 
       return;
@@ -2194,7 +2407,9 @@ export default function AdminCalendar() {
       return;
     }
 
-    setUpdating(true);
+    setUpdating(
+      true
+    );
 
     let createdDatabaseEvent:
       | TourEvent
@@ -2207,6 +2422,10 @@ export default function AdminCalendar() {
       null;
 
     try {
+      /* ========================================================
+         DESCRIÇÃO
+      ======================================================== */
+
       const normalizedDescription =
         sanitizeDescriptionHtml(
           tourDescription
@@ -2218,7 +2437,7 @@ export default function AdminCalendar() {
         );
 
       /* ========================================================
-         SUPABASE
+         1. CRIAR TOUR NO SUPABASE
       ======================================================== */
 
       const {
@@ -2276,7 +2495,7 @@ export default function AdminCalendar() {
         !newEvent
       ) {
         console.error(
-          "ERRO AO CRIAR TOUR:",
+          "❌ ERRO AO CRIAR TOUR:",
           eventError
         );
 
@@ -2289,41 +2508,39 @@ export default function AdminCalendar() {
         newEvent as TourEvent;
 
       /* ========================================================
-         GOOGLE
+         2. CRIAR EVENTO GOOGLE
       ======================================================== */
 
       const googleResult =
-        await callGoogleCalendar(
-          {
-            action:
-              "create",
+        await callGoogleCalendar({
+          action:
+            "create",
 
-            date:
-              escalationDate,
+          date:
+            escalationDate,
 
-            title:
-              tourTitle.trim(),
+          title:
+            tourTitle.trim(),
 
-            description:
-              normalizedDescription
-                ? normalizedDescription
-                : null,
+          description:
+            normalizedDescription
+              ? normalizedDescription
+              : null,
 
-            address:
-              tourAddress.trim() ||
-              null,
+          address:
+            tourAddress.trim() ||
+            null,
 
-            allDay:
-              tourAllDay,
+          allDay:
+            tourAllDay,
 
-            guideEmail:
-              guide.email,
+          guideEmail:
+            guide.email,
 
-            additionalEmail:
-              tourAdditionalEmail.trim() ||
-              null,
-          }
-        );
+          additionalEmail:
+            tourAdditionalEmail.trim() ||
+            null,
+        });
 
       googleEventId =
         googleResult.eventId ||
@@ -2338,7 +2555,7 @@ export default function AdminCalendar() {
       }
 
       /* ========================================================
-         SALVAR ID GOOGLE
+         3. SALVAR ID DO GOOGLE
       ======================================================== */
 
       const {
@@ -2368,20 +2585,24 @@ export default function AdminCalendar() {
         calendarIdError ||
         !eventWithGoogleId
       ) {
+        console.error(
+          "❌ ERRO AO SALVAR ID DO GOOGLE:",
+          calendarIdError
+        );
+
         try {
-          await callGoogleCalendar(
-            {
-              action:
-                "delete",
-              eventId:
-                googleEventId,
-            }
-          );
+          await callGoogleCalendar({
+            action:
+              "delete",
+
+            eventId:
+              googleEventId,
+          });
         } catch (
           cleanupError
         ) {
           console.error(
-            "ERRO AO LIMPAR GOOGLE:",
+            "❌ ERRO AO REMOVER EVENTO GOOGLE:",
             cleanupError
           );
         }
@@ -2405,10 +2626,20 @@ export default function AdminCalendar() {
         eventWithGoogleId as TourEvent;
 
       /* ========================================================
-         ESCALAR GUIA
+         4. ESCALAR DISPONIBILIDADE
+         
+         AQUI ESTÁ A CORREÇÃO.
+         
+         NÃO usamos mais:
+         selectedGuideAvailability?.id
+
+         Usamos:
+         tourFormAvailabilityId
       ======================================================== */
 
       const {
+        data:
+          escalatedAvailability,
         error:
           availabilityError,
       } =
@@ -2422,30 +2653,45 @@ export default function AdminCalendar() {
           })
           .eq(
             "id",
-            selectedGuideAvailability?.id
-          );
+            availabilityId
+          )
+          .select(
+            "id, guide_id, date, status"
+          )
+          .single();
 
       if (
-        availabilityError
+        availabilityError ||
+        !escalatedAvailability
       ) {
+        console.error(
+          "❌ ERRO AO ESCALAR DISPONIBILIDADE:",
+          availabilityError
+        );
+
+        /*
+         * DESFAZER GOOGLE
+         */
         try {
-          await callGoogleCalendar(
-            {
-              action:
-                "delete",
-              eventId:
-                googleEventId,
-            }
-          );
+          await callGoogleCalendar({
+            action:
+              "delete",
+
+            eventId:
+              googleEventId,
+          });
         } catch (
           cleanupError
         ) {
           console.error(
-            "ERRO AO REMOVER GOOGLE:",
+            "❌ ERRO AO DESFAZER GOOGLE:",
             cleanupError
           );
         }
 
+        /*
+         * DESFAZER TOUR
+         */
         await supabase
           .from(
             "tour_events"
@@ -2457,12 +2703,12 @@ export default function AdminCalendar() {
           );
 
         throw new Error(
-          "O tour foi criado, mas não foi possível escalar o guia. A operação foi desfeita."
+          "O tour foi criado, mas não foi possível escalar o guia."
         );
       }
 
       /* ========================================================
-         ESTADO LOCAL
+         5. ATUALIZAR ESTADO LOCAL
       ======================================================== */
 
       setTourEvents(
@@ -2493,34 +2739,34 @@ export default function AdminCalendar() {
         }
       );
 
-      /*
-       * Atualiza a disponibilidade somente se temos
-       * a disponibilidade que originou a escala.
-       */
-      if (
-        selectedGuideAvailability
-      ) {
-        setAvailability(
-          (current) =>
-            current.map(
-              (item) =>
-                item.id ===
-                selectedGuideAvailability.id
-                  ? {
-                      ...item,
-                      status:
-                        "escalated",
-                    }
-                  : item
-            )
-        );
-      }
+      setAvailability(
+        (current) =>
+          current.map(
+            (item) =>
+              item.id ===
+              availabilityId
+                ? {
+                    ...item,
+                    status:
+                      "escalated",
+                  }
+                : item
+          )
+      );
+
+      /* ========================================================
+         6. LIMPAR
+      ======================================================== */
 
       setShowTourForm(
         false
       );
 
       setTourFormDate(
+        null
+      );
+
+      setTourFormAvailabilityId(
         null
       );
 
@@ -2548,7 +2794,9 @@ export default function AdminCalendar() {
           "Ocorreu um erro ao criar o tour."
       );
     } finally {
-      setUpdating(false);
+      setUpdating(
+        false
+      );
     }
   }
 
@@ -2563,7 +2811,9 @@ export default function AdminCalendar() {
       return;
     }
 
-    setUpdating(true);
+    setUpdating(
+      true
+    );
 
     const availabilityId =
       selectedGuideAvailability.id;
@@ -2622,32 +2872,27 @@ export default function AdminCalendar() {
       /* ========================================================
          GOOGLE
          
-         REMOVE APENAS O GUIA.
+         REMOVE SOMENTE O GUIA.
          NÃO APAGA O EVENTO.
       ======================================================== */
 
       if (
         tourEvent?.calendar_event_id
       ) {
-        await callGoogleCalendar(
-          {
-            action:
-              "removeGuide",
+        await callGoogleCalendar({
+          action:
+            "removeGuide",
 
-            eventId:
-              tourEvent.calendar_event_id,
+          eventId:
+            tourEvent.calendar_event_id,
 
-            guideEmail:
-              tourEvent.guide_email,
-          }
-        );
+          guideEmail:
+            tourEvent.guide_email,
+        });
       }
 
       /* ========================================================
-         SUPABASE
-         
-         MANTÉM O TOUR.
-         APENAS REMOVE O GUIA.
+         DEIXAR TOUR SEM GUIA
       ======================================================== */
 
       if (
@@ -2708,7 +2953,7 @@ export default function AdminCalendar() {
           (current) =>
             current &&
             current.id ===
-              updatedTour.id
+            updatedTour.id
               ? updatedTour as TourEvent
               : current
         );
@@ -2787,7 +3032,9 @@ export default function AdminCalendar() {
           "Não foi possível remover a escala."
       );
     } finally {
-      setUpdating(false);
+      setUpdating(
+        false
+      );
     }
   }
 
@@ -2886,7 +3133,9 @@ export default function AdminCalendar() {
       (newGuide?.id ||
         null);
 
-    setUpdating(true);
+    setUpdating(
+      true
+    );
 
     try {
       let oldAvailability:
@@ -3025,41 +3274,39 @@ export default function AdminCalendar() {
       if (
         selectedTourEvent.calendar_event_id
       ) {
-        await callGoogleCalendar(
-          {
-            action:
-              "update",
+        await callGoogleCalendar({
+          action:
+            "update",
 
-            eventId:
-              selectedTourEvent.calendar_event_id,
+          eventId:
+            selectedTourEvent.calendar_event_id,
 
-            date:
-              selectedTourEvent.date,
+          date:
+            selectedTourEvent.date,
 
-            title:
-              editTourTitle.trim(),
+          title:
+            editTourTitle.trim(),
 
-            description:
-              normalizedDescription
-                ? normalizedDescription
-                : null,
+          description:
+            normalizedDescription
+              ? normalizedDescription
+              : null,
 
-            address:
-              editTourAddress.trim() ||
-              null,
+          address:
+            editTourAddress.trim() ||
+            null,
 
-            allDay:
-              editTourAllDay,
+          allDay:
+            editTourAllDay,
 
-            guideEmail:
-              newGuide?.email ||
-              null,
+          guideEmail:
+            newGuide?.email ||
+            null,
 
-            additionalEmail:
-              editTourAdditionalEmail.trim() ||
-              null,
-          }
-        );
+          additionalEmail:
+            editTourAdditionalEmail.trim() ||
+            null,
+        });
       }
 
       /* ========================================================
@@ -3121,7 +3368,7 @@ export default function AdminCalendar() {
       }
 
       /* ========================================================
-         TROCA DE GUIA
+         TROCAR GUIA
       ======================================================== */
 
       if (
@@ -3255,7 +3502,9 @@ export default function AdminCalendar() {
           "Não foi possível atualizar o tour."
       );
     } finally {
-      setUpdating(false);
+      setUpdating(
+        false
+      );
     }
   }
 
@@ -3271,26 +3520,32 @@ export default function AdminCalendar() {
         `Deseja realmente cancelar o tour "${event.title}"? Ele será removido da agenda do Google e do sistema.`
       );
 
-    if (!confirmed) {
+    if (
+      !confirmed
+    ) {
       return;
     }
 
-    setUpdating(true);
+    setUpdating(
+      true
+    );
 
     try {
+      /* GOOGLE */
+
       if (
         event.calendar_event_id
       ) {
-        await callGoogleCalendar(
-          {
-            action:
-              "delete",
+        await callGoogleCalendar({
+          action:
+            "delete",
 
-            eventId:
-              event.calendar_event_id,
-          }
-        );
+          eventId:
+            event.calendar_event_id,
+        });
       }
+
+      /* LIBERAR GUIA */
 
       if (
         event.guide_id
@@ -3361,6 +3616,8 @@ export default function AdminCalendar() {
         }
       }
 
+      /* APAGAR TOUR */
+
       const {
         error:
           deleteError,
@@ -3412,12 +3669,14 @@ export default function AdminCalendar() {
           "Não foi possível cancelar o tour."
       );
     } finally {
-      setUpdating(false);
+      setUpdating(
+        false
+      );
     }
   }
 
   /* ============================================================
-  TROCAR PARA MÊS
+  MODO MÊS
   ============================================================ */
 
   function switchToMonthView() {
@@ -3433,6 +3692,10 @@ export default function AdminCalendar() {
       null
     );
 
+    setSelectedTourEvent(
+      null
+    );
+
     setShowTourForm(
       false
     );
@@ -3441,11 +3704,11 @@ export default function AdminCalendar() {
       false
     );
 
-    setSelectedTourEvent(
+    setTourFormDate(
       null
     );
 
-    setTourFormDate(
+    setTourFormAvailabilityId(
       null
     );
 
@@ -3455,14 +3718,10 @@ export default function AdminCalendar() {
   }
 
   /* ============================================================
-  TROCAR PARA DIA
+  MODO DIA
   ============================================================ */
 
   function enterDayView() {
-    /*
-     * Se veio de um dia selecionado no Mês,
-     * transforma aquele dia em currentDay.
-     */
     if (
       selectedDate
     ) {
@@ -3473,10 +3732,6 @@ export default function AdminCalendar() {
       );
     }
 
-    /*
-     * Limpamos a seleção do modal.
-     * Isso evita reabertura quando voltar.
-     */
     setSelectedDate(
       null
     );
@@ -3489,6 +3744,10 @@ export default function AdminCalendar() {
       null
     );
 
+    setSelectedTourEvent(
+      null
+    );
+
     setShowTourForm(
       false
     );
@@ -3497,11 +3756,11 @@ export default function AdminCalendar() {
       false
     );
 
-    setSelectedTourEvent(
+    setTourFormDate(
       null
     );
 
-    setTourFormDate(
+    setTourFormAvailabilityId(
       null
     );
 
@@ -3550,6 +3809,10 @@ export default function AdminCalendar() {
     setCurrentMonth(
       newDay
     );
+
+    setSelectedDate(
+      null
+    );
   }
 
   function goNextDay() {
@@ -3565,6 +3828,10 @@ export default function AdminCalendar() {
 
     setCurrentMonth(
       newDay
+    );
+
+    setSelectedDate(
+      null
     );
   }
 
@@ -3592,6 +3859,10 @@ export default function AdminCalendar() {
       null
     );
 
+    setSelectedTourEvent(
+      null
+    );
+
     setShowTourForm(
       false
     );
@@ -3600,11 +3871,11 @@ export default function AdminCalendar() {
       false
     );
 
-    setSelectedTourEvent(
+    setTourFormDate(
       null
     );
 
-    setTourFormDate(
+    setTourFormAvailabilityId(
       null
     );
   }
@@ -4008,24 +4279,18 @@ export default function AdminCalendar() {
                               (
                                 event
                               ) => (
-                                <button
+                                <div
                                   key={`event-${event.id}`}
-                                  type="button"
-                                  onClick={(eventClick) => {
-                                    eventClick.stopPropagation();
-
-                                    setSelectedTourEvent(
-                                      event
-                                    );
-                                  }}
-                                  className="block w-full truncate rounded bg-blue-100 px-0.5 py-0.5 text-left text-[7px] font-extrabold leading-tight text-blue-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                                  title={event.title}
+                                  className="truncate rounded bg-blue-100 px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-blue-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                                  title={
+                                    event.title
+                                  }
                                 >
                                   📅{" "}
                                   {
                                     event.title
                                   }
-                                </button>
+                                </div>
                               )
                             )}
 
@@ -4053,6 +4318,9 @@ export default function AdminCalendar() {
                                 <div
                                   key={`escalated-${item.id}`}
                                   className="truncate rounded bg-[#f3e5a5] px-0.5 py-0.5 text-[7px] font-bold leading-tight text-[#806600] sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                                  title={getGuideName(
+                                    item.guide_id
+                                  )}
                                 >
                                   {
                                     getGuideFlags(
@@ -4092,6 +4360,9 @@ export default function AdminCalendar() {
                                 <div
                                   key={`available-${item.id}`}
                                   className="truncate rounded bg-green-100 px-0.5 py-0.5 text-[7px] font-semibold leading-tight text-green-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                                  title={getGuideName(
+                                    item.guide_id
+                                  )}
                                 >
                                   {
                                     getGuideFlags(
@@ -4130,6 +4401,9 @@ export default function AdminCalendar() {
                                 <div
                                   key={`unavailable-${item.id}`}
                                   className="truncate rounded bg-red-100 px-0.5 py-0.5 text-[7px] font-semibold leading-tight text-red-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                                  title={getGuideName(
+                                    item.guide_id
+                                  )}
                                 >
                                   {
                                     getGuideFlags(
@@ -4165,6 +4439,8 @@ export default function AdminCalendar() {
 
               </div>
 
+              {/* LEGENDA */}
+
               <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
 
                 <div className="flex items-center gap-1.5">
@@ -4188,6 +4464,7 @@ export default function AdminCalendar() {
                 </div>
 
               </div>
+
             </>
           )}
 
@@ -4334,11 +4611,6 @@ export default function AdminCalendar() {
                               if (
                                 guide
                               ) {
-                                /*
-                                 * NÃO usamos selectedDate.
-                                 * A data continua sendo currentDayString.
-                                 */
-
                                 setSelectedGuideDetails(
                                   guide
                                 );
@@ -4432,14 +4704,11 @@ export default function AdminCalendar() {
                                 guide
                               ) {
                                 /*
-                                 * IMPORTANTE:
-                                 * NÃO colocamos a data em selectedDate.
+                                 * NÃO colocamos selectedDate.
                                  *
-                                 * openEscalationForm()
-                                 * saberá que estamos no modo DIA
-                                 * e usará currentDayString.
+                                 * A função openEscalationForm()
+                                 * vai usar currentDayString.
                                  */
-
                                 setSelectedGuideDetails(
                                   guide
                                 );
@@ -4583,7 +4852,7 @@ export default function AdminCalendar() {
       )}
 
       {/* ======================================================
-         MODAL DO DIA
+         MODAL DO DIA — MÊS
       ====================================================== */}
 
       {selectedDate &&
@@ -4592,7 +4861,9 @@ export default function AdminCalendar() {
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 backdrop-blur-sm sm:p-4"
             onClick={() =>
-              setSelectedDate(null)
+              setSelectedDate(
+                null
+              )
             }
           >
 
@@ -4633,7 +4904,9 @@ export default function AdminCalendar() {
                 <button
                   type="button"
                   onClick={() =>
-                    setSelectedDate(null)
+                    setSelectedDate(
+                      null
+                    )
                   }
                   className="flex h-8 w-8 items-center justify-center rounded-lg text-base font-bold text-gray-700 transition hover:bg-gray-100 sm:h-9 sm:w-9 sm:rounded-xl sm:text-lg"
                 >
@@ -5143,6 +5416,8 @@ export default function AdminCalendar() {
 
               </div>
 
+              {/* ESCALAR */}
+
               {
                 selectedGuideAvailability?.status ===
                   "available" && (
@@ -5160,6 +5435,8 @@ export default function AdminCalendar() {
                   </button>
                 )
               }
+
+              {/* REMOVER ESCALA */}
 
               {
                 selectedGuideAvailability?.status ===
@@ -5230,6 +5507,10 @@ export default function AdminCalendar() {
               setTourFormDate(
                 null
               );
+
+              setTourFormAvailabilityId(
+                null
+              );
             }
 
           }}
@@ -5272,6 +5553,10 @@ export default function AdminCalendar() {
                     );
 
                     setTourFormDate(
+                      null
+                    );
+
+                    setTourFormAvailabilityId(
                       null
                     );
 
@@ -5534,7 +5819,7 @@ export default function AdminCalendar() {
 
               </div>
 
-              {/* EMAIL GUIA */}
+              {/* EMAIL DO GUIA */}
 
               {
                 tourGuideId && (
@@ -5584,6 +5869,10 @@ export default function AdminCalendar() {
                     );
 
                     setTourFormDate(
+                      null
+                    );
+
+                    setTourFormAvailabilityId(
                       null
                     );
 
