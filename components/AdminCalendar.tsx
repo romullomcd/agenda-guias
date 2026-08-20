@@ -2718,73 +2718,79 @@ guideEmail:
       newDatabaseEvent =
         eventWithGoogleId as TourEvent;
 
-      /* ========================================================
-         ESCALAR GUIA
-      ======================================================== */
+   /* ========================================================
+   ESCALAR GUIA
+   Só executa no fluxo normal de escala.
+   No modo "Lançar tour" sem guia, não existe
+   disponibilidade para escalar.
+======================================================== */
 
-      const {
-        data:
-          escalatedAvailability,
-        error:
-          availabilityError,
-      } =
-        await supabase
-          .from(
-            "availability"
-          )
-          .update({
-            status:
-              "escalated",
-          })
-          .eq(
-            "id",
-            availabilityId
-          )
-          .select(
-            "id, guide_id, date, status"
-          )
-          .single();
+if (
+  !launchTourWithoutGuide
+) {
+  const {
+    data:
+      escalatedAvailability,
+    error:
+      availabilityError,
+  } =
+    await supabase
+      .from(
+        "availability"
+      )
+      .update({
+        status:
+          "escalated",
+      })
+      .eq(
+        "id",
+        availabilityId
+      )
+      .select(
+        "id, guide_id, date, status"
+      )
+      .single();
 
-      if (
-        availabilityError ||
-        !escalatedAvailability
-      ) {
-        console.error(
-          "❌ ERRO AO ESCALAR DISPONIBILIDADE:",
-          availabilityError
-        );
+  if (
+    availabilityError ||
+    !escalatedAvailability
+  ) {
+    console.error(
+      "❌ ERRO AO ESCALAR DISPONIBILIDADE:",
+      availabilityError
+    );
 
-        try {
-          await callGoogleCalendar({
-            action:
-              "delete",
+    try {
+      await callGoogleCalendar({
+        action:
+          "delete",
+        eventId:
+          googleEventId,
+      });
+    } catch (
+      cleanupError
+    ) {
+      console.error(
+        "ERRO AO DESFAZER GOOGLE:",
+        cleanupError
+      );
+    }
 
-            eventId:
-              googleEventId,
-          });
-        } catch (
-          cleanupError
-        ) {
-          console.error(
-            "ERRO AO DESFAZER GOOGLE:",
-            cleanupError
-          );
-        }
+    await supabase
+      .from(
+        "tour_events"
+      )
+      .delete()
+      .eq(
+        "id",
+        newEvent.id
+      );
 
-        await supabase
-          .from(
-            "tour_events"
-          )
-          .delete()
-          .eq(
-            "id",
-            newEvent.id
-          );
-
-        throw new Error(
-          "O tour foi criado, mas não foi possível escalar o guia."
-        );
-      }
+    throw new Error(
+      "O tour foi criado, mas não foi possível escalar o guia."
+    );
+  }
+}
 
       setTourEvents(
         (current) => {
@@ -2814,20 +2820,24 @@ guideEmail:
         }
       );
 
-      setAvailability(
-        (current) =>
-          current.map(
-            (item) =>
-              item.id ===
-                availabilityId
-                ? {
-                    ...item,
-                    status:
-                      "escalated",
-                  }
-                : item
-          )
-      );
+      if (
+  !launchTourWithoutGuide
+) {
+  setAvailability(
+    (current) =>
+      current.map(
+        (item) =>
+          item.id ===
+            availabilityId
+            ? {
+                ...item,
+                status:
+                  "escalated",
+              }
+            : item
+      )
+  );
+}
 
       setShowTourForm(
         false
@@ -5732,15 +5742,15 @@ guideEmail:
                   className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
                 >
 
-                  <option value="">
-                    Sem guia
-                  </option>
-
-                  {
-                    guides.map(
-                      (
-                        guide
-                      ) => (
+<option value="">
+  Sem guia
+</option>
+{
+  !launchTourWithoutGuide &&
+  guides.map(
+    (
+      guide
+    ) => (
                         <option
                           key={
                             guide.id
