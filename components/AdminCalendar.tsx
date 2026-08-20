@@ -6698,3 +6698,18 @@ export default function AdminCalendar() {
                         ? "Sincronizando..."
                         : "Salvar alterações"
                     }
+                  </button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        )
+      }
+
+    </div>
+  );
+}
