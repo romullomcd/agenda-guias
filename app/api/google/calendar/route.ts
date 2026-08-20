@@ -4,13 +4,14 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { createClient } from "@supabase/supabase-js";
 
 /* ============================================================
-TIPOS
+   TIPOS
 ============================================================ */
 
 type CalendarAction =
   | "create"
   | "update"
-  | "delete";
+  | "delete"
+  | "removeGuide";
 
 type CalendarRequest = {
   action: CalendarAction;
@@ -21,27 +22,18 @@ type CalendarRequest = {
   title?: string;
   description?: string | null;
   address?: string | null;
-
   allDay?: boolean;
-
-  startTime?: string | null;
-  endTime?: string | null;
 
   guideEmail?: string | null;
   additionalEmail?: string | null;
-
-  colorId?: string | null;
 };
 
 /* ============================================================
-SANITIZAR HTML
+   SANITIZAR HTML DA DESCRIÇÃO
 ============================================================ */
 
 function sanitizeDescriptionHtml(
-  html:
-    | string
-    | null
-    | undefined
+  html: string | null | undefined
 ) {
   if (!html) {
     return "";
@@ -76,7 +68,7 @@ function sanitizeDescriptionHtml(
 }
 
 /* ============================================================
-AUTENTICAR USUÁRIO
+   AUTENTICAR USUÁRIO SUPABASE
 ============================================================ */
 
 async function getAuthenticatedUser(
@@ -143,7 +135,7 @@ async function getAuthenticatedUser(
 }
 
 /* ============================================================
-CLIENT GOOGLE
+   CLIENT GOOGLE
 ============================================================ */
 
 async function getGoogleCalendarClient(
@@ -233,72 +225,7 @@ async function getGoogleCalendarClient(
 }
 
 /* ============================================================
-VALIDAR COR
-============================================================ */
-
-function normalizeColorId(
-  colorId:
-    | string
-    | null
-    | undefined
-) {
-  if (!colorId) {
-    return undefined;
-  }
-
-  const allowedColors =
-    new Set([
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "7",
-      "8",
-      "9",
-      "10",
-      "11",
-    ]);
-
-  return allowedColors.has(
-    colorId
-  )
-    ? colorId
-    : undefined;
-}
-
-/* ============================================================
-VALIDAR HORÁRIO
-============================================================ */
-
-function isValidTime(
-  time:
-    | string
-    | null
-    | undefined
-) {
-  if (!time) {
-    return false;
-  }
-
-  return /^([01]\d|2[0-3]):[0-5]\d$/.test(
-    time
-  );
-}
-
-function isEndAfterStart(
-  startTime: string,
-  endTime: string
-) {
-  return (
-    startTime <
-    endTime
-  );
-}
-
-/* ============================================================
-MONTAR EVENTO GOOGLE
+   MONTAR EVENTO GOOGLE
 ============================================================ */
 
 function buildGoogleEvent(
@@ -323,11 +250,6 @@ function buildGoogleEvent(
       data.description
     );
 
-  const normalizedColorId =
-    normalizeColorId(
-      data.colorId
-    );
-
   const event: any = {
     summary:
       data.title.trim(),
@@ -339,13 +261,10 @@ function buildGoogleEvent(
     location:
       data.address?.trim() ||
       undefined,
-
-    colorId:
-      normalizedColorId,
   };
 
   /* ==========================================================
-  CONVIDADOS
+     CONVIDADOS
   ========================================================== */
 
   const emails = [
@@ -362,15 +281,22 @@ function buildGoogleEvent(
     ...new Set(emails),
   ];
 
-  event.attendees =
-    uniqueEmails.map(
-      (email) => ({
-        email,
-      })
-    );
+  if (
+    uniqueEmails.length >
+    0
+  ) {
+    event.attendees =
+      uniqueEmails.map(
+        (email) => ({
+          email,
+        })
+      );
+  } else {
+    event.attendees = [];
+  }
 
   /* ==========================================================
-  DIA INTEIRO
+     DIA INTEIRO
   ========================================================== */
 
   if (
@@ -403,43 +329,13 @@ function buildGoogleEvent(
   }
 
   /* ==========================================================
-  EVENTO COM HORÁRIO
+     EVENTO COM HORÁRIO
   ========================================================== */
 
   else {
-    if (
-      !isValidTime(
-        data.startTime
-      ) ||
-      !isValidTime(
-        data.endTime
-      )
-    ) {
-      throw new Error(
-        "Informe um horário de início e término válidos."
-      );
-    }
-
-    const startTime =
-      data.startTime!;
-
-    const endTime =
-      data.endTime!;
-
-    if (
-      !isEndAfterStart(
-        startTime,
-        endTime
-      )
-    ) {
-      throw new Error(
-        "O horário de término precisa ser maior que o horário de início."
-      );
-    }
-
     event.start = {
       dateTime:
-        `${data.date}T${startTime}:00`,
+        `${data.date}T09:00:00`,
 
       timeZone:
         "America/Sao_Paulo",
@@ -447,7 +343,7 @@ function buildGoogleEvent(
 
     event.end = {
       dateTime:
-        `${data.date}T${endTime}:00`,
+        `${data.date}T10:00:00`,
 
       timeZone:
         "America/Sao_Paulo",
@@ -455,41 +351,16 @@ function buildGoogleEvent(
   }
 
   console.log(
-    "📝 DESCRIÇÃO:",
+    "📝 DESCRIÇÃO HTML ENVIADA AO GOOGLE:",
     event.description ||
       "(sem descrição)"
   );
-
-  console.log(
-    "🎨 COLOR ID:",
-    normalizedColorId ||
-      "(padrão)"
-  );
-
-  console.log(
-    "📅 DIA TODO:",
-    data.allDay !== false
-  );
-
-  if (
-    data.allDay === false
-  ) {
-    console.log(
-      "⏰ INÍCIO:",
-      data.startTime
-    );
-
-    console.log(
-      "⏰ FIM:",
-      data.endTime
-    );
-  }
 
   return event;
 }
 
 /* ============================================================
-CRIAR
+   CRIAR
 ============================================================ */
 
 async function createGoogleEvent(
@@ -535,7 +406,7 @@ async function createGoogleEvent(
 }
 
 /* ============================================================
-ATUALIZAR
+   ATUALIZAR
 ============================================================ */
 
 async function updateGoogleEvent(
@@ -579,14 +450,223 @@ async function updateGoogleEvent(
 }
 
 /* ============================================================
-EXCLUIR
+   REMOVER SOMENTE O GUIA
+============================================================ */
+
+async function removeGuideFromGoogleEvent(
+  calendar: any,
+  eventId: string,
+  guideEmail: string | null | undefined
+) {
+  if (!eventId) {
+    throw new Error(
+      "ID do evento Google não informado."
+    );
+  }
+
+  console.log(
+    "=========================================="
+  );
+
+  console.log(
+    "👤 REMOVENDO SOMENTE O GUIA DO EVENTO"
+  );
+
+  console.log(
+    "🆔 EVENT ID:",
+    eventId
+  );
+
+  console.log(
+    "📧 GUIA:",
+    guideEmail ||
+      null
+  );
+
+  /* ========================================================
+     1. BUSCAR EVENTO ATUAL
+  ======================================================== */
+
+  const existingEvent =
+    await calendar.events.get(
+      {
+        calendarId:
+          "primary",
+
+        eventId:
+          eventId,
+      }
+    );
+
+  const eventData =
+    existingEvent.data;
+
+  console.log(
+    "✅ EVENTO ENCONTRADO:",
+    {
+      id:
+        eventData.id,
+
+      summary:
+        eventData.summary,
+
+      status:
+        eventData.status,
+
+      attendees:
+        eventData.attendees,
+    }
+  );
+
+  /* ========================================================
+     2. NÃO HÁ GUIA INFORMADO
+  ======================================================== */
+
+  if (
+    !guideEmail?.trim()
+  ) {
+    console.log(
+      "ℹ️ Nenhum e-mail de guia informado. Nenhuma alteração necessária."
+    );
+
+    return eventData;
+  }
+
+  const normalizedGuideEmail =
+    guideEmail
+      .trim()
+      .toLowerCase();
+
+  /* ========================================================
+     3. FILTRAR GUIA
+  ======================================================== */
+
+  const currentAttendees =
+    Array.isArray(
+      eventData.attendees
+    )
+      ? eventData.attendees
+      : [];
+
+  const newAttendees =
+    currentAttendees.filter(
+      (attendee: any) =>
+        (
+          attendee.email ||
+          ""
+        )
+          .trim()
+          .toLowerCase() !==
+        normalizedGuideEmail
+    );
+
+  const guideWasPresent =
+    newAttendees.length !==
+    currentAttendees.length;
+
+  /* ========================================================
+     4. SE JÁ NÃO ESTIVER COMO CONVIDADO
+  ======================================================== */
+
+  if (
+    !guideWasPresent
+  ) {
+    console.log(
+      "ℹ️ O guia já não estava nos convidados do evento."
+    );
+
+    return eventData;
+  }
+
+  /* ========================================================
+     5. ATUALIZAR SOMENTE ATTENDEES
+     
+     IMPORTANTE:
+     NÃO usamos buildGoogleEvent()
+     porque isso reconstruiria o evento inteiro.
+     
+     Mantemos:
+       - título
+       - descrição
+       - endereço
+       - data
+       - horário
+       - demais convidados
+     
+     e removemos somente o guia.
+  ======================================================== */
+
+  const updatedEvent =
+    await calendar.events.update(
+      {
+        calendarId:
+          "primary",
+
+        eventId:
+          eventId,
+
+        requestBody: {
+          attendees:
+            newAttendees,
+        },
+
+        sendUpdates:
+          "all",
+      }
+    );
+
+  console.log(
+    "✅ GUIA REMOVIDO SOMENTE DOS CONVIDADOS"
+  );
+
+  console.log(
+    "📅 O EVENTO CONTINUA EXISTINDO NO GOOGLE"
+  );
+
+  console.log(
+    "📧 CONVIDADOS RESTANTES:",
+    updatedEvent.data
+      ?.attendees ||
+      []
+  );
+
+  console.log(
+    "=========================================="
+  );
+
+  return updatedEvent.data;
+}
+
+/* ============================================================
+   EXCLUIR EVENTO
 ============================================================ */
 
 async function deleteGoogleEvent(
   calendar: any,
   eventId: string
 ) {
+  console.log(
+    "=========================================="
+  );
+
+  console.log(
+    "🔎 VERIFICANDO EVENTO ANTES DE EXCLUIR"
+  );
+
+  console.log(
+    "🆔 EVENT ID:",
+    eventId
+  );
+
+  console.log(
+    "📅 CALENDAR ID: primary"
+  );
+
   try {
+    /* ========================================================
+       1. VERIFICAR
+    ======================================================== */
+
     const existingEvent =
       await calendar.events.get(
         {
@@ -599,20 +679,39 @@ async function deleteGoogleEvent(
       );
 
     console.log(
-      "✅ EVENTO ENCONTRADO:",
+      "✅ EVENTO ENCONTRADO NO GOOGLE:"
+    );
+
+    console.log(
       {
         id:
           existingEvent.data.id,
 
         summary:
-          existingEvent.data.summary,
+          existingEvent
+            .data.summary,
 
         status:
-          existingEvent.data.status,
+          existingEvent
+            .data.status,
 
         htmlLink:
-          existingEvent.data.htmlLink,
+          existingEvent
+            .data.htmlLink,
+
+        organizer:
+          existingEvent
+            .data.organizer
+            ?.email,
       }
+    );
+
+    /* ========================================================
+       2. EXCLUIR
+    ======================================================== */
+
+    console.log(
+      "🗑️ EXCLUINDO EVENTO DO GOOGLE CALENDAR..."
     );
 
     await calendar.events.delete(
@@ -629,7 +728,11 @@ async function deleteGoogleEvent(
     );
 
     console.log(
-      "✅ EVENTO REMOVIDO DO GOOGLE"
+      "✅ EVENTO REMOVIDO DO GOOGLE CALENDAR"
+    );
+
+    console.log(
+      "=========================================="
     );
 
     return true;
@@ -637,10 +740,41 @@ async function deleteGoogleEvent(
     error: any
   ) {
     console.error(
-      "❌ ERRO AO EXCLUIR EVENTO GOOGLE:",
-      error?.response?.data ||
-        error?.message ||
-        error
+      "=========================================="
+    );
+
+    console.error(
+      "❌ ERRO AO EXCLUIR EVENTO DO GOOGLE"
+    );
+
+    console.error(
+      "🆔 EVENT ID:",
+      eventId
+    );
+
+    console.error(
+      "📛 STATUS:",
+      error?.response
+        ?.status ||
+        error?.code ||
+        null
+    );
+
+    console.error(
+      "📛 MENSAGEM:",
+      error?.message ||
+        null
+    );
+
+    console.error(
+      "📛 RESPOSTA GOOGLE:",
+      error?.response
+        ?.data ||
+        null
+    );
+
+    console.error(
+      "=========================================="
     );
 
     throw error;
@@ -648,13 +782,29 @@ async function deleteGoogleEvent(
 }
 
 /* ============================================================
-POST
+   POST
 ============================================================ */
 
 export async function POST(
   request: Request
 ) {
   try {
+    console.log(
+      "=========================================="
+    );
+
+    console.log(
+      "📅 GOOGLE CALENDAR API"
+    );
+
+    console.log(
+      "=========================================="
+    );
+
+    /* ========================================================
+       AUTENTICAÇÃO
+    ======================================================== */
+
     const {
       user,
       error: authError,
@@ -680,51 +830,35 @@ export async function POST(
       );
     }
 
-    const body =
-      (await request.json()) as CalendarRequest;
-
     console.log(
-      "📅 GOOGLE CALENDAR API"
-    );
-
-    console.log(
-      "👤 USUÁRIO:",
+      "👤 USUÁRIO AUTENTICADO:",
       user.id
     );
+
+    /* ========================================================
+       BODY
+    ======================================================== */
+
+    const body =
+      (await request.json()) as CalendarRequest;
 
     console.log(
       "🔎 AÇÃO:",
       body.action
     );
 
-    console.log(
-      "🎨 COLOR:",
-      body.colorId ||
-        "(padrão)"
-    );
-
-    console.log(
-      "📅 DIA TODO:",
-      body.allDay
-    );
-
-    console.log(
-      "⏰ INÍCIO:",
-      body.startTime ||
-        null
-    );
-
-    console.log(
-      "⏰ FIM:",
-      body.endTime ||
-        null
-    );
+    /* ========================================================
+       VALIDAR AÇÃO
+       
+       AGORA REMOVEGUIDE TAMBÉM É ACEITO.
+    ======================================================== */
 
     if (
       ![
         "create",
         "update",
         "delete",
+        "removeGuide",
       ].includes(
         body.action
       )
@@ -744,6 +878,10 @@ export async function POST(
       );
     }
 
+    /* ========================================================
+       GOOGLE CLIENT
+    ======================================================== */
+
     const auth =
       await getGoogleCalendarClient(
         user.id
@@ -759,7 +897,9 @@ export async function POST(
         }
       );
 
-    /* CREATE */
+    /* ========================================================
+       CREATE
+    ======================================================== */
 
     if (
       body.action ===
@@ -770,6 +910,11 @@ export async function POST(
           calendar,
           body
         );
+
+      console.log(
+        "✅ EVENTO CRIADO NO GOOGLE:",
+        event.id
+      );
 
       return NextResponse.json(
         {
@@ -788,7 +933,9 @@ export async function POST(
       );
     }
 
-    /* UPDATE */
+    /* ========================================================
+       UPDATE
+    ======================================================== */
 
     if (
       body.action ===
@@ -799,6 +946,11 @@ export async function POST(
           calendar,
           body
         );
+
+      console.log(
+        "✅ EVENTO ATUALIZADO NO GOOGLE:",
+        event.id
+      );
 
       return NextResponse.json(
         {
@@ -817,7 +969,64 @@ export async function POST(
       );
     }
 
-    /* DELETE */
+    /* ========================================================
+       REMOVE GUIDE
+    ======================================================== */
+
+    if (
+      body.action ===
+      "removeGuide"
+    ) {
+      if (!body.eventId) {
+        return NextResponse.json(
+          {
+            success:
+              false,
+
+            error:
+              "ID do evento Google não informado.",
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+      const event =
+        await removeGuideFromGoogleEvent(
+          calendar,
+
+          body.eventId,
+
+          body.guideEmail
+        );
+
+      console.log(
+        "✅ GUIA REMOVIDO DO EVENTO GOOGLE:",
+        body.guideEmail ||
+          null
+      );
+
+      return NextResponse.json(
+        {
+          success:
+            true,
+
+          action:
+            "removeGuide",
+
+          eventId:
+            body.eventId,
+
+          event,
+        }
+      );
+    }
+
+    /* ========================================================
+       DELETE
+    ======================================================== */
 
     if (
       body.action ===
@@ -842,6 +1051,10 @@ export async function POST(
       await deleteGoogleEvent(
         calendar,
         body.eventId
+      );
+
+      console.log(
+        "✅ EVENTO REMOVIDO DO GOOGLE"
       );
 
       return NextResponse.json(
@@ -875,8 +1088,19 @@ export async function POST(
     error: any
   ) {
     console.error(
-      "❌ ERRO GOOGLE CALENDAR API:",
+      "=========================================="
+    );
+
+    console.error(
+      "❌ ERRO GOOGLE CALENDAR API"
+    );
+
+    console.error(
       error
+    );
+
+    console.error(
+      "=========================================="
     );
 
     const googleMessage =
