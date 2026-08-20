@@ -2301,11 +2301,93 @@ export default function AdminCalendar() {
       ""
     );
 
+    setLaunchTourWithoutGuide(
+      false
+    );
+
     setSelectedGuideDetails(
       null
     );
 
     setSelectedGuideAvailability(
+      null
+    );
+
+    setShowTourForm(
+      true
+    );
+  }
+
+  /* ============================================================
+  LANÇAR TOUR PELO DIA — SEM GUIA OBRIGATÓRIO
+  ============================================================ */
+
+  function openTourFormFromDay() {
+    if (!selectedDate) {
+      alert(
+        "Selecione um dia antes de lançar o tour."
+      );
+
+      return;
+    }
+
+    setTourFormDate(
+      selectedDate
+    );
+
+    setTourFormAvailabilityId(
+      null
+    );
+
+    setTourGuideId(
+      ""
+    );
+
+    setTourTitle(
+      ""
+    );
+
+    setTourDescription(
+      ""
+    );
+
+    setTourAddress(
+      ""
+    );
+
+    setTourAllDay(
+      true
+    );
+
+    setTourStartTime(
+      "09:00"
+    );
+
+    setTourEndTime(
+      "10:00"
+    );
+
+    setTourAdditionalEmail(
+      ""
+    );
+
+    setLaunchTourWithoutGuide(
+      true
+    );
+
+    setSelectedGuideDetails(
+      null
+    );
+
+    setSelectedGuideAvailability(
+      null
+    );
+
+    /*
+     * Fecha o modal do dia antes de abrir
+     * o formulário de lançamento.
+     */
+    setSelectedDate(
       null
     );
 
@@ -2744,6 +2826,10 @@ export default function AdminCalendar() {
         null
       );
 
+      setLaunchTourWithoutGuide(
+        false
+      );
+
       setSelectedGuideDetails(
         null
       );
@@ -2753,7 +2839,9 @@ export default function AdminCalendar() {
       );
 
       alert(
-        "✅ Tour criado, guia escalado e evento enviado para o Google Calendar."
+        launchTourWithoutGuide
+          ? "✅ Tour lançado com sucesso no sistema e no Google Calendar, sem guia."
+          : "✅ Tour criado, guia escalado e evento enviado para o Google Calendar."
       );
     } catch (
       error: any
@@ -3704,6 +3792,10 @@ export default function AdminCalendar() {
       false
     );
 
+    setLaunchTourWithoutGuide(
+      false
+    );
+
     setShowTourEdit(
       false
     );
@@ -3749,6 +3841,10 @@ export default function AdminCalendar() {
     );
 
     setShowTourForm(
+      false
+    );
+
+    setLaunchTourWithoutGuide(
       false
     );
 
@@ -3856,6 +3952,10 @@ export default function AdminCalendar() {
     );
 
     setShowTourForm(
+      false
+    );
+
+    setLaunchTourWithoutGuide(
       false
     );
 
@@ -4884,9 +4984,26 @@ export default function AdminCalendar() {
 
               <div className="mt-5 sm:mt-6">
 
-                <h4 className="text-sm font-extrabold text-blue-700 sm:text-base">
-                  📅 Tours
-                </h4>
+                <div className="flex items-center justify-between gap-3">
+
+                  <h4 className="text-sm font-extrabold text-blue-700 sm:text-base">
+                    📅 Tours
+                  </h4>
+
+                  <button
+                    type="button"
+                    disabled={
+                      updating
+                    }
+                    onClick={
+                      openTourFormFromDay
+                    }
+                    className="shrink-0 rounded-xl bg-[#1687d9] px-3 py-2 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#0f75bd] disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm"
+                  >
+                    ➕ Lançar tour
+                  </button>
+
+                </div>
 
                 <div className="mt-2 space-y-2">
 
@@ -5503,11 +5620,15 @@ export default function AdminCalendar() {
                 <div>
 
                   <h3 className="text-xl font-extrabold text-gray-900">
-                    🟡 Escalar guia
+                    {launchTourWithoutGuide
+                      ? "📅 Lançar tour"
+                      : "🟡 Escalar guia"}
                   </h3>
 
                   <p className="mt-1 text-sm font-medium text-gray-500">
-                    Crie o tour que ficará na agenda e no Google Calendar.
+                    {launchTourWithoutGuide
+                      ? "Crie o tour diretamente neste dia. O guia é opcional."
+                      : "Crie o tour que ficará na agenda e no Google Calendar."}
                   </p>
 
                 </div>
@@ -5597,7 +5718,7 @@ export default function AdminCalendar() {
                 >
 
                   <option value="">
-                    Selecione o guia
+                    Sem guia
                   </option>
 
                   {
@@ -5926,6 +6047,8 @@ export default function AdminCalendar() {
                   {
                     updating
                       ? "Sincronizando..."
+                      : launchTourWithoutGuide
+                      ? "Lançar tour"
                       : "Criar tour e escalar"
                   }
                 </button>
