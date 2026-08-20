@@ -1,4 +1,3 @@
-
 "use client";
 
 import { FormEvent, useState } from "react";
@@ -27,7 +26,8 @@ export default function Home() {
       // PEGAR DADOS DIRETAMENTE DO FORMULÁRIO
       // ========================================================
 
-      const formData = new FormData(event.currentTarget);
+      const formData =
+        new FormData(event.currentTarget);
 
       const cleanEmail = String(
         formData.get("email") ?? ""
@@ -39,22 +39,39 @@ export default function Home() {
         formData.get("password") ?? ""
       );
 
-      console.log("==========================================");
-      console.log("🔐 INICIANDO LOGIN");
-      console.log("📧 E-MAIL:", cleanEmail);
+      console.log(
+        "=========================================="
+      );
+
+      console.log(
+        "🔐 INICIANDO LOGIN"
+      );
+
+      console.log(
+        "📧 E-MAIL:",
+        cleanEmail
+      );
+
       console.log(
         "🔑 SENHA RECEBIDA:",
         formPassword.length > 0
       );
-      console.log("==========================================");
+
+      console.log(
+        "=========================================="
+      );
 
       // ========================================================
       // VALIDAR E-MAIL
       // ========================================================
 
       if (!cleanEmail) {
-        setError("Digite seu e-mail.");
+        setError(
+          "Digite seu e-mail."
+        );
+
         setLoading(false);
+
         return;
       }
 
@@ -63,8 +80,12 @@ export default function Home() {
       // ========================================================
 
       if (!formPassword) {
-        setError("Digite sua senha.");
+        setError(
+          "Digite sua senha."
+        );
+
         setLoading(false);
+
         return;
       }
 
@@ -75,10 +96,11 @@ export default function Home() {
       const {
         data,
         error: loginError,
-      } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: formPassword,
-      });
+      } =
+        await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: formPassword,
+        });
 
       // ========================================================
       // ERRO DO LOGIN
@@ -147,6 +169,7 @@ export default function Home() {
         }
 
         setLoading(false);
+
         return;
       }
 
@@ -171,6 +194,7 @@ export default function Home() {
         );
 
         setLoading(false);
+
         return;
       }
 
@@ -221,6 +245,7 @@ export default function Home() {
           );
 
           setLoading(false);
+
           return;
         }
 
@@ -236,6 +261,7 @@ export default function Home() {
           );
 
           setLoading(false);
+
           return;
         }
 
@@ -314,6 +340,7 @@ export default function Home() {
         );
 
         setLoading(false);
+
         return;
       }
 
@@ -333,6 +360,7 @@ export default function Home() {
         );
 
         setLoading(false);
+
         return;
       }
 
@@ -357,6 +385,7 @@ export default function Home() {
         );
 
         setLoading(false);
+
         return;
       }
 
@@ -402,7 +431,6 @@ export default function Home() {
       window.location.replace(
         "/dashboard"
       );
-
     } catch (error) {
       console.error(
         "=========================================="
@@ -429,51 +457,59 @@ export default function Home() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f7fb] px-6 py-10">
+    <main className="relative min-h-dvh overflow-x-hidden bg-[#f7f7fb] px-5 py-8 sm:flex sm:items-center sm:justify-center sm:px-6 sm:py-10">
 
-      {/* FUNDO */}
+      {/* ======================================================
+         FUNDO
+      ====================================================== */}
 
-      <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-[#e91e8c] opacity-20 blur-3xl" />
+      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-[#e91e8c] opacity-20 blur-3xl" />
 
-      <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-[#1687d9] opacity-20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-[#1687d9] opacity-20 blur-3xl" />
 
-      <div className="absolute right-20 top-20 h-32 w-32 rounded-full bg-[#ffd21c] opacity-30 blur-3xl" />
+      <div className="pointer-events-none absolute right-20 top-20 h-32 w-32 rounded-full bg-[#ffd21c] opacity-30 blur-3xl" />
 
-      {/* CONTEÚDO */}
+      {/* ======================================================
+         CONTEÚDO
+      ====================================================== */}
 
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 mx-auto flex w-full max-w-md flex-col">
 
-        {/* LOGO */}
+        {/* ====================================================
+           LOGO
+        ==================================================== */}
 
-        <div className="mb-8 text-center">
+        <div className="mb-7 text-center sm:mb-8">
 
-          <div className="mb-6 flex justify-center">
+          <div className="mb-5 flex justify-center sm:mb-6">
 
-            <div className="flex h-28 w-72 items-center justify-center rounded-3xl bg-[#e91e8c] shadow-xl shadow-pink-200">
+            <div className="flex h-24 w-full max-w-[288px] items-center justify-center rounded-3xl bg-[#e91e8c] shadow-xl shadow-pink-200 sm:h-28">
 
               <img
                 src="/logo-branca.png"
                 alt="Way To Know Rio"
-                className="max-h-20 max-w-[230px] object-contain"
+                className="max-h-16 max-w-[210px] object-contain sm:max-h-20 sm:max-w-[230px]"
               />
 
             </div>
 
           </div>
 
-          <h1 className="text-3xl font-extrabold text-gray-900">
+          <h1 className="text-2xl font-extrabold text-gray-900 sm:text-3xl">
             Agenda de Guias
           </h1>
 
-          <p className="mt-2 text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 sm:text-base">
             Gerencie a disponibilidade da sua equipe.
           </p>
 
         </div>
 
-        {/* CARD */}
+        {/* ====================================================
+           CARD
+        ==================================================== */}
 
-        <div className="rounded-3xl bg-white p-8 shadow-2xl shadow-gray-200/70">
+        <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-gray-200/70 sm:p-8">
 
           <h2 className="text-2xl font-bold text-gray-900">
             Bem-vindo! 👋
@@ -483,10 +519,14 @@ export default function Home() {
             Entre com seus dados para continuar.
           </p>
 
-          {/* FORMULÁRIO */}
+          {/* ==================================================
+             FORMULÁRIO
+          ================================================== */}
 
           <form
-            onSubmit={handleLogin}
+            onSubmit={
+              handleLogin
+            }
             className="mt-7 space-y-5"
           >
 
@@ -502,7 +542,9 @@ export default function Home() {
                 type="email"
                 name="email"
                 value={email}
-                onChange={(event) =>
+                onChange={(
+                  event
+                ) =>
                   setEmail(
                     event.target.value
                   )
@@ -511,7 +553,7 @@ export default function Home() {
                 autoComplete="email"
                 placeholder="seu@email.com"
                 disabled={loading}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-[#e91e8c] focus:bg-white focus:ring-4 focus:ring-pink-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-gray-900 outline-none transition placeholder:text-gray-500 focus:border-[#e91e8c] focus:bg-white focus:ring-4 focus:ring-pink-100 disabled:cursor-not-allowed disabled:opacity-60"
               />
 
             </div>
@@ -528,7 +570,9 @@ export default function Home() {
                 type="password"
                 name="password"
                 value={password}
-                onChange={(event) =>
+                onChange={(
+                  event
+                ) =>
                   setPassword(
                     event.target.value
                   )
@@ -537,7 +581,7 @@ export default function Home() {
                 autoComplete="current-password"
                 placeholder="Digite sua senha"
                 disabled={loading}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-[#e91e8c] focus:bg-white focus:ring-4 focus:ring-pink-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-gray-900 outline-none transition placeholder:text-gray-500 focus:border-[#e91e8c] focus:bg-white focus:ring-4 focus:ring-pink-100 disabled:cursor-not-allowed disabled:opacity-60"
               />
 
             </div>
@@ -545,7 +589,7 @@ export default function Home() {
             {/* ERRO */}
 
             {error && (
-              <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+              <div className="break-words rounded-xl bg-red-50 px-4 py-3 text-sm font-medium leading-5 text-red-600">
                 {error}
               </div>
             )}
@@ -564,7 +608,9 @@ export default function Home() {
 
           </form>
 
-          {/* CORES */}
+          {/* ==================================================
+             CORES
+          ================================================== */}
 
           <div className="mt-7 flex justify-center gap-2">
 
@@ -578,26 +624,27 @@ export default function Home() {
 
         </div>
 
-        {/* RODAPÉ */}
+        {/* ====================================================
+           RODAPÉ
+        ==================================================== */}
 
-        <div className="mt-8 text-center">
+        <footer className="mt-7 pb-4 text-center sm:mt-8 sm:pb-0">
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs leading-5 text-gray-400">
             © 2026 Way To Know Rio
           </p>
 
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs leading-5 text-gray-400">
             Desenvolvido por{" "}
             <span className="font-semibold text-[#e91e8c]">
               Machado's
             </span>
           </p>
 
-        </div>
+        </footer>
 
       </div>
 
     </main>
   );
 }
-
