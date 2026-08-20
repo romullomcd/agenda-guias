@@ -57,20 +57,11 @@ type TourEvent = {
   description: string | null;
   address: string | null;
   all_day: boolean;
-
-  start_time: string | null;
-  end_time: string | null;
-
   guide_id: string;
   guide_email: string;
   additional_email: string | null;
   calendar_event_id: string | null;
-  google_color_id: string | null;
-
-  status:
-    | "scheduled"
-    | "cancelled";
-
+  status: "scheduled" | "cancelled";
   created_at: string;
   updated_at: string;
 };
@@ -89,68 +80,6 @@ const LANGUAGE_FLAGS: Record<string, string> = {
   Mandarim: "/flags/cn.png",
   Japonês: "/flags/jp.png",
 };
-
-/* ============================================================
-CORES GOOGLE CALENDAR
-============================================================ */
-
-const GOOGLE_EVENT_COLORS = [
-  {
-    id: "1",
-    name: "Lavanda",
-    className: "bg-[#a4bdfc]",
-  },
-  {
-    id: "2",
-    name: "Verde claro",
-    className: "bg-[#7ae7bf]",
-  },
-  {
-    id: "3",
-    name: "Roxo",
-    className: "bg-[#dbadff]",
-  },
-  {
-    id: "4",
-    name: "Vermelho claro",
-    className: "bg-[#ff887c]",
-  },
-  {
-    id: "5",
-    name: "Amarelo",
-    className: "bg-[#fbd75b]",
-  },
-  {
-    id: "6",
-    name: "Laranja",
-    className: "bg-[#ffb878]",
-  },
-  {
-    id: "7",
-    name: "Ciano",
-    className: "bg-[#46d6db]",
-  },
-  {
-    id: "8",
-    name: "Cinza",
-    className: "bg-[#e1e1e1]",
-  },
-  {
-    id: "9",
-    name: "Azul",
-    className: "bg-[#5484ed]",
-  },
-  {
-    id: "10",
-    name: "Verde",
-    className: "bg-[#51b749]",
-  },
-  {
-    id: "11",
-    name: "Vermelho",
-    className: "bg-[#dc2127]",
-  },
-];
 
 /* ============================================================
 NORMALIZAR HTML
@@ -299,7 +228,7 @@ function descriptionToHtml(
 }
 
 /* ============================================================
-HTML → TEXTO
+HTML → TEXTO PURO
 ============================================================ */
 
 function htmlToPlainText(
@@ -754,97 +683,49 @@ function RichTextEditor({
           fragment
         );
 
-        const wrapped =
+        const wrapper =
           document.createDocumentFragment();
 
-        wrapped.appendChild(
+        wrapper.appendChild(
           strong
         );
 
-        const nodesToSelect =
-          Array.from(
-            wrapped.childNodes
-          );
-
         range.insertNode(
-          wrapped
+          wrapper
         );
 
-        if (
-          nodesToSelect.length >
-          0
-        ) {
-          const firstNode =
-            nodesToSelect[0];
+        const newRange =
+          document.createRange();
 
-          const lastNode =
-            nodesToSelect[
-              nodesToSelect.length -
-                1
-            ];
+        newRange.selectNodeContents(
+          strong
+        );
 
-          const newRange =
-            document.createRange();
+        selection.removeAllRanges();
 
-          newRange.setStartBefore(
-            firstNode
-          );
+        selection.addRange(
+          newRange
+        );
 
-          newRange.setEndAfter(
-            lastNode
-          );
-
-          selection.removeAllRanges();
-          selection.addRange(
-            newRange
-          );
-
-          saveSelection();
-        }
-
+        saveSelection();
         syncValue();
 
         return;
       }
 
-      const nodesToSelect =
-        Array.from(
-          fragment.childNodes
-        );
-
       range.insertNode(
         fragment
       );
 
+      const insertedNodes =
+        Array.from(
+          range.commonAncestorContainer
+            .childNodes || []
+        );
+
       if (
-        nodesToSelect.length >
-        0
+        insertedNodes.length > 0
       ) {
-        const firstNode =
-          nodesToSelect[0];
-
-        const lastNode =
-          nodesToSelect[
-            nodesToSelect.length -
-              1
-          ];
-
-        const newRange =
-          document.createRange();
-
-        newRange.setStartBefore(
-          firstNode
-        );
-
-        newRange.setEndAfter(
-          lastNode
-        );
-
-        selection.removeAllRanges();
-        selection.addRange(
-          newRange
-        );
-
         saveSelection();
       }
 
@@ -1066,6 +947,7 @@ function RichTextEditor({
             event.preventDefault();
 
             saveSelection();
+
             clearFormatting();
           }}
           title="Limpar formatação"
@@ -1237,10 +1119,6 @@ export default function AdminCalendar() {
     false
   );
 
-  /* ============================================================
-  CRIAR
-  ============================================================ */
-
   const [
     showTourForm,
     setShowTourForm,
@@ -1271,20 +1149,6 @@ export default function AdminCalendar() {
   );
 
   const [
-    tourStartTime,
-    setTourStartTime,
-  ] = useState(
-    "09:00"
-  );
-
-  const [
-    tourEndTime,
-    setTourEndTime,
-  ] = useState(
-    "10:00"
-  );
-
-  const [
     tourGuideId,
     setTourGuideId,
   ] = useState("");
@@ -1293,17 +1157,6 @@ export default function AdminCalendar() {
     tourAdditionalEmail,
     setTourAdditionalEmail,
   ] = useState("");
-
-  const [
-    tourColorId,
-    setTourColorId,
-  ] = useState(
-    "9"
-  );
-
-  /* ============================================================
-  EDIÇÃO
-  ============================================================ */
 
   const [
     showTourEdit,
@@ -1335,20 +1188,6 @@ export default function AdminCalendar() {
   );
 
   const [
-    editTourStartTime,
-    setEditTourStartTime,
-  ] = useState(
-    "09:00"
-  );
-
-  const [
-    editTourEndTime,
-    setEditTourEndTime,
-  ] = useState(
-    "10:00"
-  );
-
-  const [
     editTourGuideId,
     setEditTourGuideId,
   ] = useState("");
@@ -1358,26 +1197,11 @@ export default function AdminCalendar() {
     setEditTourAdditionalEmail,
   ] = useState("");
 
-  const [
-    editTourColorId,
-    setEditTourColorId,
-  ] = useState(
-    "9"
-  );
-
-  /* ============================================================
-  CARREGAMENTO
-  ============================================================ */
-
   useEffect(() => {
     loadData();
   }, [
     currentMonth,
   ]);
-
-  /* ============================================================
-  REALTIME
-  ============================================================ */
 
   useEffect(() => {
     const channel =
@@ -1389,9 +1213,12 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event: "INSERT",
-            schema: "public",
-            table: "availability",
+            event:
+              "INSERT",
+            schema:
+              "public",
+            table:
+              "availability",
           },
           (payload) => {
             const newItem =
@@ -1454,9 +1281,12 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event: "UPDATE",
-            schema: "public",
-            table: "availability",
+            event:
+              "UPDATE",
+            schema:
+              "public",
+            table:
+              "availability",
           },
           (payload) => {
             const updatedItem =
@@ -1487,9 +1317,12 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event: "DELETE",
-            schema: "public",
-            table: "availability",
+            event:
+              "DELETE",
+            schema:
+              "public",
+            table:
+              "availability",
           },
           (payload) => {
             const deletedItem =
@@ -1518,9 +1351,12 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event: "INSERT",
-            schema: "public",
-            table: "tour_events",
+            event:
+              "INSERT",
+            schema:
+              "public",
+            table:
+              "tour_events",
           },
           (payload) => {
             const newEvent =
@@ -1583,9 +1419,12 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event: "UPDATE",
-            schema: "public",
-            table: "tour_events",
+            event:
+              "UPDATE",
+            schema:
+              "public",
+            table:
+              "tour_events",
           },
           (payload) => {
             const updatedEvent =
@@ -1616,9 +1455,12 @@ export default function AdminCalendar() {
         .on(
           "postgres_changes",
           {
-            event: "DELETE",
-            schema: "public",
-            table: "tour_events",
+            event:
+              "DELETE",
+            schema:
+              "public",
+            table:
+              "tour_events",
           },
           (payload) => {
             const deletedEvent =
@@ -1662,10 +1504,6 @@ export default function AdminCalendar() {
     currentMonth,
   ]);
 
-  /* ============================================================
-  CARREGAR
-  ============================================================ */
-
   async function loadData() {
     setLoading(
       true
@@ -1686,9 +1524,6 @@ export default function AdminCalendar() {
         ),
         "yyyy-MM-dd"
       );
-
-    const tourSelect =
-      "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at";
 
     const [
       guidesResult,
@@ -1733,7 +1568,7 @@ export default function AdminCalendar() {
             "tour_events"
           )
           .select(
-            tourSelect
+            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
           )
           .gte(
             "date",
@@ -1820,8 +1655,6 @@ export default function AdminCalendar() {
                     "",
                   pix_key:
                     result.pix_key ||
-                    result.pix ||
-                    result.pixKey ||
                     "",
                 };
               } catch (
@@ -1887,10 +1720,6 @@ export default function AdminCalendar() {
       false
     );
   }
-
-  /* ============================================================
-  BUSCA
-  ============================================================ */
 
   const normalizedSearch =
     guideSearch
@@ -1988,10 +1817,6 @@ export default function AdminCalendar() {
       normalizedSearch,
     ]);
 
-  /* ============================================================
-  CALENDÁRIO
-  ============================================================ */
-
   const calendarStart =
     startOfWeek(
       startOfMonth(
@@ -2019,10 +1844,6 @@ export default function AdminCalendar() {
       end:
         calendarEnd,
     });
-
-  /* ============================================================
-  SELEÇÃO DIA
-  ============================================================ */
 
   const selectedDayData =
     selectedDate
@@ -2064,10 +1885,6 @@ export default function AdminCalendar() {
               "scheduled"
         )
       : [];
-
-  /* ============================================================
-  FUNÇÕES AUXILIARES
-  ============================================================ */
 
   function getDayAvailability(
     date: string
@@ -2143,7 +1960,7 @@ export default function AdminCalendar() {
                 title={
                   language
                 }
-                className="inline-block h-3.5 w-5 rounded-sm object-cover sm:h-4 sm:w-6"
+                className="inline-block h-2.5 w-4 rounded-sm object-cover sm:h-4 sm:w-6"
               />
             );
           }
@@ -2194,82 +2011,20 @@ export default function AdminCalendar() {
     return value;
   }
 
-  function getColorName(
-    colorId:
-      | string
-      | null
-      | undefined
-  ) {
-    return (
-      GOOGLE_EVENT_COLORS.find(
-        (color) =>
-          color.id ===
-          colorId
-      )?.name ||
-      "Azul"
-    );
-  }
-
-  function getColorClass(
-    colorId:
-      | string
-      | null
-      | undefined
-  ) {
-    return (
-      GOOGLE_EVENT_COLORS.find(
-        (color) =>
-          color.id ===
-          colorId
-      )?.className ||
-      "bg-[#5484ed]"
-    );
-  }
-
-  function validateTimes(
-    startTime: string,
-    endTime: string
-  ) {
-    if (
-      !startTime ||
-      !endTime
-    ) {
-      return false;
-    }
-
-    return (
-      startTime <
-      endTime
-    );
-  }
-
-  /* ============================================================
-  GOOGLE CALENDAR
-  ============================================================ */
-
   async function callGoogleCalendar(
     payload: {
       action:
         | "create"
         | "update"
         | "delete";
-
       eventId?: string | null;
-
       date?: string;
       title?: string;
       description?: string | null;
       address?: string | null;
-
       allDay?: boolean;
-
-      startTime?: string | null;
-      endTime?: string | null;
-
       guideEmail?: string | null;
       additionalEmail?: string | null;
-
-      colorId?: string | null;
     }
   ) {
     const {
@@ -2330,10 +2085,6 @@ export default function AdminCalendar() {
     return result;
   }
 
-  /* ============================================================
-  ESCALAR GUIA
-  ============================================================ */
-
   function openEscalationForm() {
     if (
       !selectedGuideAvailability
@@ -2374,20 +2125,8 @@ export default function AdminCalendar() {
       true
     );
 
-    setTourStartTime(
-      "09:00"
-    );
-
-    setTourEndTime(
-      "10:00"
-    );
-
     setTourAdditionalEmail(
       ""
-    );
-
-    setTourColorId(
-      "9"
     );
 
     setSelectedGuideDetails(
@@ -2398,10 +2137,6 @@ export default function AdminCalendar() {
       true
     );
   }
-
-  /* ============================================================
-  CRIAR TOUR
-  ============================================================ */
 
   async function createTourAndEscalate() {
     if (
@@ -2444,20 +2179,6 @@ export default function AdminCalendar() {
       return;
     }
 
-    if (
-      !tourAllDay &&
-      !validateTimes(
-        tourStartTime,
-        tourEndTime
-      )
-    ) {
-      alert(
-        "O horário de término precisa ser maior que o horário de início."
-      );
-
-      return;
-    }
-
     setUpdating(
       true
     );
@@ -2482,10 +2203,6 @@ export default function AdminCalendar() {
         htmlToPlainText(
           normalizedDescription
         );
-
-      /* ========================================================
-      SUPABASE
-      ======================================================== */
 
       const {
         data:
@@ -2516,12 +2233,6 @@ export default function AdminCalendar() {
             all_day:
               tourAllDay,
 
-            start_time:
-              tourStartTime,
-
-            end_time:
-              tourEndTime,
-
             guide_id:
               guide.id,
 
@@ -2535,14 +2246,11 @@ export default function AdminCalendar() {
             calendar_event_id:
               null,
 
-            google_color_id:
-              tourColorId,
-
             status:
               "scheduled",
           })
           .select(
-            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at"
+            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
           )
           .single();
 
@@ -2562,10 +2270,6 @@ export default function AdminCalendar() {
 
       createdDatabaseEvent =
         newEvent as TourEvent;
-
-      /* ========================================================
-      GOOGLE
-      ======================================================== */
 
       const googleResult =
         await callGoogleCalendar(
@@ -2591,21 +2295,12 @@ export default function AdminCalendar() {
             allDay:
               tourAllDay,
 
-            startTime:
-              tourStartTime,
-
-            endTime:
-              tourEndTime,
-
             guideEmail:
               guide.email,
 
             additionalEmail:
               tourAdditionalEmail.trim() ||
               null,
-
-            colorId:
-              tourColorId,
           }
         );
 
@@ -2620,10 +2315,6 @@ export default function AdminCalendar() {
           "O Google criou o evento, mas não retornou o ID."
         );
       }
-
-      /* ========================================================
-      SALVAR ID GOOGLE
-      ======================================================== */
 
       const {
         data:
@@ -2644,7 +2335,7 @@ export default function AdminCalendar() {
             newEvent.id
           )
           .select(
-            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at"
+            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
           )
           .single();
 
@@ -2693,10 +2384,6 @@ export default function AdminCalendar() {
 
       createdDatabaseEvent =
         eventWithGoogleId as TourEvent;
-
-      /* ========================================================
-      ESCALAR GUIA
-      ======================================================== */
 
       const {
         error:
@@ -2756,8 +2443,6 @@ export default function AdminCalendar() {
           "O tour foi criado, mas não foi possível escalar o guia. A operação foi desfeita."
         );
       }
-
-      /* ESTADO */
 
       setTourEvents(
         (current) => {
@@ -2834,10 +2519,6 @@ export default function AdminCalendar() {
     }
   }
 
-  /* ============================================================
-  REMOVER ESCALA
-  ============================================================ */
-
   async function unEscalateGuide() {
     if (
       !selectedGuideAvailability
@@ -2913,10 +2594,6 @@ export default function AdminCalendar() {
     );
   }
 
-  /* ============================================================
-  ABRIR EDIÇÃO
-  ============================================================ */
-
   function openTourEdit(
     event: TourEvent
   ) {
@@ -2938,16 +2615,6 @@ export default function AdminCalendar() {
       event.all_day
     );
 
-    setEditTourStartTime(
-      event.start_time ||
-        "09:00"
-    );
-
-    setEditTourEndTime(
-      event.end_time ||
-        "10:00"
-    );
-
     setEditTourGuideId(
       event.guide_id
     );
@@ -2957,19 +2624,10 @@ export default function AdminCalendar() {
         ""
     );
 
-    setEditTourColorId(
-      event.google_color_id ||
-        "9"
-    );
-
     setShowTourEdit(
       true
     );
   }
-
-  /* ============================================================
-  SALVAR EDIÇÃO
-  ============================================================ */
 
   async function saveTourEdit() {
     if (
@@ -3011,20 +2669,6 @@ export default function AdminCalendar() {
       return;
     }
 
-    if (
-      !editTourAllDay &&
-      !validateTimes(
-        editTourStartTime,
-        editTourEndTime
-      )
-    ) {
-      alert(
-        "O horário de término precisa ser maior que o horário de início."
-      );
-
-      return;
-    }
-
     const guideChanged =
       selectedTourEvent.guide_id !==
       newGuide.id;
@@ -3043,8 +2687,6 @@ export default function AdminCalendar() {
         | Availability
         | null =
         null;
-
-      /* DISPONIBILIDADES */
 
       if (
         guideChanged
@@ -3147,8 +2789,6 @@ export default function AdminCalendar() {
           normalizedDescription
         );
 
-      /* GOOGLE */
-
       if (
         selectedTourEvent.calendar_event_id
       ) {
@@ -3178,26 +2818,15 @@ export default function AdminCalendar() {
             allDay:
               editTourAllDay,
 
-            startTime:
-              editTourStartTime,
-
-            endTime:
-              editTourEndTime,
-
             guideEmail:
               newGuide.email,
 
             additionalEmail:
               editTourAdditionalEmail.trim() ||
               null,
-
-            colorId:
-              editTourColorId,
           }
         );
       }
-
-      /* SUPABASE */
 
       const {
         data,
@@ -3223,12 +2852,6 @@ export default function AdminCalendar() {
             all_day:
               editTourAllDay,
 
-            start_time:
-              editTourStartTime,
-
-            end_time:
-              editTourEndTime,
-
             guide_id:
               newGuide.id,
 
@@ -3238,16 +2861,13 @@ export default function AdminCalendar() {
             additional_email:
               editTourAdditionalEmail.trim() ||
               null,
-
-            google_color_id:
-              editTourColorId,
           })
           .eq(
             "id",
             selectedTourEvent.id
           )
           .select(
-            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at"
+            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
           )
           .single();
 
@@ -3259,8 +2879,6 @@ export default function AdminCalendar() {
           "Não foi possível atualizar o tour no sistema."
         );
       }
-
-      /* TROCAR GUIA */
 
       if (
         guideChanged
@@ -3396,10 +3014,6 @@ export default function AdminCalendar() {
       );
     }
   }
-
-  /* ============================================================
-  CANCELAR
-  ============================================================ */
 
   async function cancelTour(
     event: TourEvent
@@ -3556,10 +3170,6 @@ export default function AdminCalendar() {
     }
   }
 
-  /* ============================================================
-  MÊS
-  ============================================================ */
-
   const monthName =
     format(
       currentMonth,
@@ -3570,14 +3180,12 @@ export default function AdminCalendar() {
       }
     );
 
-  /* ============================================================
-  RENDER
-  ============================================================ */
-
   return (
     <div className="mt-4 rounded-2xl bg-white p-3 shadow-sm sm:mt-6 sm:rounded-3xl sm:p-6">
 
-      {/* CABEÇALHO */}
+      {/* ======================================================
+         CABEÇALHO
+      ====================================================== */}
 
       <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:gap-5 md:flex-row md:items-center md:justify-between">
 
@@ -3624,11 +3232,11 @@ export default function AdminCalendar() {
           )}
 
         </div>
-
       </div>
 
       {guideSearch.trim() && (
         <div className="mb-4 rounded-xl bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-800 sm:mb-6 sm:text-sm">
+
           {filteredGuides.length ===
           0 ? (
             <>
@@ -3655,10 +3263,13 @@ export default function AdminCalendar() {
                 : ""}.
             </>
           )}
+
         </div>
       )}
 
-      {/* NAVEGAÇÃO */}
+      {/* ======================================================
+         NAVEGAÇÃO
+      ====================================================== */}
 
       <div className="mb-4 flex items-center justify-between rounded-xl bg-gray-50 p-2 sm:mb-6 sm:rounded-2xl sm:p-3">
 
@@ -3678,9 +3289,7 @@ export default function AdminCalendar() {
         </button>
 
         <h4 className="px-2 text-base font-extrabold capitalize text-gray-900 sm:text-2xl">
-          {
-            monthName
-          }
+          {monthName}
         </h4>
 
         <button
@@ -3700,7 +3309,9 @@ export default function AdminCalendar() {
 
       </div>
 
-      {/* LOADING */}
+      {/* ======================================================
+         LOADING
+      ====================================================== */}
 
       {loading ? (
         <div className="py-10 text-center sm:py-12">
@@ -3715,7 +3326,9 @@ export default function AdminCalendar() {
       ) : (
         <>
 
-          <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[9px] font-extrabold uppercase tracking-wide text-gray-800 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
+          {/* DIAS */}
+
+          <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[8px] font-extrabold uppercase tracking-wide text-gray-800 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
 
             <div>Seg</div>
             <div>Ter</div>
@@ -3727,10 +3340,13 @@ export default function AdminCalendar() {
 
           </div>
 
+          {/* CALENDÁRIO */}
+
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
 
             {days.map(
               (day) => {
+
                 const date =
                   format(
                     day,
@@ -3789,18 +3405,22 @@ export default function AdminCalendar() {
                     disabled={
                       !sameMonth
                     }
-                  className={[
-  "min-h-[58px] rounded-lg border p-1 text-left transition",
-  "sm:min-h-32 sm:rounded-xl sm:p-2",
-  !sameMonth
-    ? "cursor-default border-transparent bg-gray-100 text-gray-400"
-    : "border-gray-200 bg-white hover:border-[#1687d9] hover:shadow-md",
-].join(" ")}
+                    className={[
+                      "min-h-[58px] overflow-hidden rounded-lg border p-1 text-left transition",
+                      "sm:min-h-32 sm:rounded-xl sm:p-2",
+                      !sameMonth
+                        ? "cursor-default border-transparent bg-gray-100 text-gray-400"
+                        : "border-gray-200 bg-white hover:border-[#1687d9] hover:shadow-md",
+                    ].join(
+                      " "
+                    )}
                   >
+
+                    {/* NÚMERO DO DIA */}
 
                     <div
                       className={[
-                        "mb-1 text-right text-[10px] font-extrabold sm:mb-2 sm:text-sm",
+                        "mb-1 text-right text-[9px] font-extrabold sm:mb-2 sm:text-sm",
                         sameMonth
                           ? "text-gray-900"
                           : "text-gray-400",
@@ -3816,6 +3436,8 @@ export default function AdminCalendar() {
                       }
                     </div>
 
+                    {/* EVENTOS */}
+
                     <div className="space-y-0.5 overflow-hidden sm:space-y-1">
 
                       {dayEvents
@@ -3829,15 +3451,7 @@ export default function AdminCalendar() {
                           ) => (
                             <div
                               key={`event-${event.id}`}
-                              className={[
-                                "truncate rounded px-0.5 py-0.5 text-[8px] font-extrabold leading-tight text-gray-900 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
-                                getColorClass(
-                                  event.google_color_id ||
-                                    "9"
-                                ),
-                              ].join(
-                                " "
-                              )}
+                              className="truncate rounded bg-blue-100 px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-blue-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
                               title={
                                 event.title
                               }
@@ -3846,24 +3460,13 @@ export default function AdminCalendar() {
                               {
                                 event.title
                               }
-
-                              {!event.all_day &&
-                                event.start_time && (
-                                  <>
-                                    {" "}
-                                    ·{" "}
-                                    {
-                                      event.start_time
-                                    }
-                                  </>
-                                )}
                             </div>
                           )
                         )}
 
                       {dayEvents.length >
                         2 && (
-                        <div className="px-0.5 text-[8px] font-bold text-blue-700 sm:text-xs">
+                        <div className="px-0.5 text-[7px] font-bold leading-tight text-blue-700 sm:text-xs">
                           +
                           {
                             dayEvents.length -
@@ -3884,28 +3487,31 @@ export default function AdminCalendar() {
                           ) => (
                             <div
                               key={`escalated-${item.id}`}
-                              className="truncate rounded bg-[#f3e5a5] px-0.5 py-0.5 text-[8px] font-bold leading-tight text-[#806600] sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                              className="truncate rounded bg-[#f3e5a5] px-0.5 py-0.5 text-[7px] font-bold leading-tight text-[#806600] sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
                               title={getGuideName(
                                 item.guide_id
                               )}
                             >
+
                               {
                                 getGuideFlags(
                                   item.guide_id
                                 )
                               }{" "}
+
                               {
                                 getGuideName(
                                   item.guide_id
                                 )
                               }
+
                             </div>
                           )
                         )}
 
                       {escalated.length >
                         2 && (
-                        <div className="px-0.5 text-[8px] font-bold text-[#806600] sm:text-xs">
+                        <div className="px-0.5 text-[7px] font-bold leading-tight text-[#806600] sm:text-xs">
                           +
                           {
                             escalated.length -
@@ -3926,28 +3532,31 @@ export default function AdminCalendar() {
                           ) => (
                             <div
                               key={`available-${item.id}`}
-                              className="truncate rounded bg-green-100 px-0.5 py-0.5 text-[8px] font-semibold leading-tight text-green-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                              className="truncate rounded bg-green-100 px-0.5 py-0.5 text-[7px] font-semibold leading-tight text-green-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
                               title={getGuideName(
                                 item.guide_id
                               )}
                             >
+
                               {
                                 getGuideFlags(
                                   item.guide_id
                                 )
                               }{" "}
+
                               {
                                 getGuideName(
                                   item.guide_id
                                 )
                               }
+
                             </div>
                           )
                         )}
 
                       {available.length >
                         2 && (
-                        <div className="px-0.5 text-[8px] font-semibold text-green-700">
+                        <div className="px-0.5 text-[7px] font-semibold leading-tight text-green-700 sm:text-xs">
                           +
                           {
                             available.length -
@@ -3967,28 +3576,31 @@ export default function AdminCalendar() {
                           ) => (
                             <div
                               key={`unavailable-${item.id}`}
-                              className="truncate rounded bg-red-100 px-0.5 py-0.5 text-[8px] font-semibold leading-tight text-red-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                              className="truncate rounded bg-red-100 px-0.5 py-0.5 text-[7px] font-semibold leading-tight text-red-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
                               title={getGuideName(
                                 item.guide_id
                               )}
                             >
+
                               {
                                 getGuideFlags(
                                   item.guide_id
                                 )
                               }{" "}
+
                               {
                                 getGuideName(
                                   item.guide_id
                                 )
                               }
+
                             </div>
                           )
                         )}
 
                       {unavailable.length >
                         1 && (
-                        <div className="px-0.5 text-[8px] font-semibold text-red-700">
+                        <div className="px-0.5 text-[7px] font-semibold leading-tight text-red-700 sm:text-xs">
                           +
                           {
                             unavailable.length -
@@ -4005,6 +3617,8 @@ export default function AdminCalendar() {
             )}
 
           </div>
+
+          {/* LEGENDA */}
 
           <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
 
@@ -4034,7 +3648,7 @@ export default function AdminCalendar() {
       )}
 
       {/* ======================================================
-      MODAL DIA
+         MODAL DO DIA
       ====================================================== */}
 
       {selectedDate && (
@@ -4095,8 +3709,6 @@ export default function AdminCalendar() {
 
             </div>
 
-            {/* TOURS */}
-
             <div className="mt-5 sm:mt-6">
 
               <h4 className="text-sm font-extrabold text-blue-700 sm:text-base">
@@ -4129,15 +3741,7 @@ export default function AdminCalendar() {
                             null
                           );
                         }}
-                        className={[
-                          "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-bold text-gray-900 transition hover:opacity-90",
-                          getColorClass(
-                            event.google_color_id ||
-                              "9"
-                          ),
-                        ].join(
-                          " "
-                        )}
+                        className="flex w-full items-center justify-between rounded-xl bg-blue-50 px-4 py-3 text-left text-sm font-bold text-blue-800 transition hover:bg-blue-100"
                       >
 
                         <span className="min-w-0">
@@ -4148,27 +3752,12 @@ export default function AdminCalendar() {
                             }
                           </span>
 
-                          <span className="mt-0.5 block text-xs font-semibold text-gray-700">
+                          <span className="mt-0.5 block text-xs font-semibold text-blue-600">
                             {
                               getGuideName(
                                 event.guide_id
                               )
                             }
-
-                            {!event.all_day &&
-                              event.start_time &&
-                              event.end_time && (
-                                <>
-                                  {" · "}
-                                  {
-                                    event.start_time
-                                  }{" "}
-                                  às{" "}
-                                  {
-                                    event.end_time
-                                  }
-                                </>
-                              )}
                           </span>
 
                         </span>
@@ -4185,8 +3774,6 @@ export default function AdminCalendar() {
               </div>
 
             </div>
-
-            {/* ESCALADOS */}
 
             <div className="mt-5 sm:mt-6">
 
@@ -4206,6 +3793,7 @@ export default function AdminCalendar() {
                     (
                       item
                     ) => {
+
                       const guide =
                         guideMap.get(
                           item.guide_id
@@ -4218,6 +3806,7 @@ export default function AdminCalendar() {
                           }
                           type="button"
                           onClick={() => {
+
                             if (
                               guide
                             ) {
@@ -4229,9 +3818,11 @@ export default function AdminCalendar() {
                                 item
                               );
                             }
+
                           }}
                           className="flex w-full items-center justify-between rounded-xl bg-[#f3e5a5] px-4 py-3 text-left text-sm font-bold text-[#806600] transition hover:bg-[#ead98c]"
                         >
+
                           <span className="flex min-w-0 items-center gap-2">
 
                             {
@@ -4264,8 +3855,6 @@ export default function AdminCalendar() {
 
             </div>
 
-            {/* DISPONIVEIS */}
-
             <div className="mt-5 sm:mt-6">
 
               <h4 className="text-sm font-extrabold text-green-700 sm:text-base">
@@ -4284,6 +3873,7 @@ export default function AdminCalendar() {
                     (
                       item
                     ) => {
+
                       const guide =
                         guideMap.get(
                           item.guide_id
@@ -4296,6 +3886,7 @@ export default function AdminCalendar() {
                           }
                           type="button"
                           onClick={() => {
+
                             if (
                               guide
                             ) {
@@ -4307,6 +3898,7 @@ export default function AdminCalendar() {
                                 item
                               );
                             }
+
                           }}
                           className="flex w-full items-center justify-between rounded-xl bg-green-50 px-4 py-3 text-left text-sm font-bold text-green-800 transition hover:bg-green-100"
                         >
@@ -4343,8 +3935,6 @@ export default function AdminCalendar() {
 
             </div>
 
-            {/* INDISPONIVEIS */}
-
             <div className="mt-5 sm:mt-6">
 
               <h4 className="text-sm font-extrabold text-red-700 sm:text-base">
@@ -4363,6 +3953,7 @@ export default function AdminCalendar() {
                     (
                       item
                     ) => {
+
                       const guide =
                         guideMap.get(
                           item.guide_id
@@ -4375,6 +3966,7 @@ export default function AdminCalendar() {
                           }
                           type="button"
                           onClick={() => {
+
                             if (
                               guide
                             ) {
@@ -4386,6 +3978,7 @@ export default function AdminCalendar() {
                                 item
                               );
                             }
+
                           }}
                           className="flex w-full items-center justify-between rounded-xl bg-red-50 px-4 py-3 text-left text-sm font-bold text-red-800 transition hover:bg-red-100"
                         >
@@ -4440,13 +4033,14 @@ export default function AdminCalendar() {
       )}
 
       {/* ======================================================
-      MODAL GUIA
+         MODAL GUIA
       ====================================================== */}
 
       {selectedGuideDetails && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
           onClick={() => {
+
             if (
               !updating
             ) {
@@ -4458,6 +4052,7 @@ export default function AdminCalendar() {
                 null
               );
             }
+
           }}
         >
 
@@ -4502,6 +4097,7 @@ export default function AdminCalendar() {
                   updating
                 }
                 onClick={() => {
+
                   setSelectedGuideDetails(
                     null
                   );
@@ -4509,6 +4105,7 @@ export default function AdminCalendar() {
                   setSelectedGuideAvailability(
                     null
                   );
+
                 }}
                 className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 disabled:opacity-50"
               >
@@ -4572,6 +4169,7 @@ export default function AdminCalendar() {
                       <button
                         type="button"
                         onClick={() => {
+
                           navigator.clipboard.writeText(
                             selectedGuideDetails.pix_key
                           );
@@ -4579,6 +4177,7 @@ export default function AdminCalendar() {
                           alert(
                             "Chave PIX copiada!"
                           );
+
                         }}
                         className="shrink-0 rounded-lg bg-white px-3 py-2 text-xs font-extrabold text-green-700 shadow-sm ring-1 ring-green-200 transition hover:bg-green-100"
                       >
@@ -4637,6 +4236,7 @@ export default function AdminCalendar() {
                   updating
                 }
                 onClick={() => {
+
                   setSelectedGuideDetails(
                     null
                   );
@@ -4644,6 +4244,7 @@ export default function AdminCalendar() {
                   setSelectedGuideAvailability(
                     null
                   );
+
                 }}
                 className="w-full rounded-xl bg-[#1687d9] px-4 py-3 font-extrabold text-white shadow-md shadow-blue-200 transition hover:bg-[#0f75bd] disabled:opacity-60"
               >
@@ -4658,13 +4259,14 @@ export default function AdminCalendar() {
       )}
 
       {/* ======================================================
-      MODAL CRIAR
+         MODAL CRIAR TOUR
       ====================================================== */}
 
       {showTourForm && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
           onClick={() => {
+
             if (
               !updating
             ) {
@@ -4672,6 +4274,7 @@ export default function AdminCalendar() {
                 false
               );
             }
+
           }}
         >
 
@@ -4721,8 +4324,6 @@ export default function AdminCalendar() {
 
             <div className="space-y-5 p-6">
 
-              {/* DATA */}
-
               <div className="rounded-2xl bg-blue-50 p-4">
 
                 <p className="text-xs font-bold uppercase tracking-wide text-blue-500">
@@ -4746,8 +4347,6 @@ export default function AdminCalendar() {
                 </p>
 
               </div>
-
-              {/* GUIA */}
 
               <div>
 
@@ -4806,8 +4405,6 @@ export default function AdminCalendar() {
 
               </div>
 
-              {/* TITULO */}
-
               <div>
 
                 <label className="text-sm font-extrabold text-gray-800">
@@ -4834,8 +4431,6 @@ export default function AdminCalendar() {
                 />
 
               </div>
-
-              {/* DESCRIÇÃO */}
 
               <div>
 
@@ -4866,8 +4461,6 @@ export default function AdminCalendar() {
 
               </div>
 
-              {/* ENDEREÇO */}
-
               <div>
 
                 <label className="text-sm font-extrabold text-gray-800">
@@ -4897,8 +4490,6 @@ export default function AdminCalendar() {
                 />
 
               </div>
-
-              {/* DIA INTEIRO */}
 
               <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 p-4">
 
@@ -4934,130 +4525,6 @@ export default function AdminCalendar() {
 
               </label>
 
-              {/* HORÁRIOS */}
-
-              {!tourAllDay && (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
-                  <div>
-                    <label className="text-sm font-extrabold text-gray-800">
-                      Horário de início
-                    </label>
-
-                    <input
-                      type="time"
-                      value={
-                        tourStartTime
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setTourStartTime(
-                          event.target.value
-                        )
-                      }
-                      disabled={
-                        updating
-                      }
-                      className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-extrabold text-gray-800">
-                      Horário de término
-                    </label>
-
-                    <input
-                      type="time"
-                      value={
-                        tourEndTime
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setTourEndTime(
-                          event.target.value
-                        )
-                      }
-                      disabled={
-                        updating
-                      }
-                      className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
-                    />
-                  </div>
-
-                </div>
-              )}
-
-              {/* COR */}
-
-              <div>
-
-                <label className="text-sm font-extrabold text-gray-800">
-                  Cor do evento
-                </label>
-
-                <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
-
-                  {GOOGLE_EVENT_COLORS.map(
-                    (color) => (
-                      <button
-                        key={
-                          color.id
-                        }
-                        type="button"
-                        disabled={
-                          updating
-                        }
-                        onClick={() =>
-                          setTourColorId(
-                            color.id
-                          )
-                        }
-                        title={
-                          color.name
-                        }
-                        className={[
-                          "relative flex h-11 items-center justify-center rounded-xl border-2 transition",
-                          color.className,
-                          tourColorId ===
-                          color.id
-                            ? "border-gray-900 ring-4 ring-gray-200"
-                            : "border-transparent hover:scale-105",
-                        ].join(
-                          " "
-                        )}
-                      >
-
-                        {tourColorId ===
-                          color.id && (
-                          <span className="text-lg font-black text-white drop-shadow">
-                            ✓
-                          </span>
-                        )}
-
-                      </button>
-                    )
-                  )}
-
-                </div>
-
-                <p className="mt-2 text-xs font-medium text-gray-500">
-                  Cor selecionada:{" "}
-                  <strong>
-                    {
-                      getColorName(
-                        tourColorId
-                      )
-                    }
-                  </strong>
-                </p>
-
-              </div>
-
-              {/* EMAIL */}
-
               <div>
 
                 <label className="text-sm font-extrabold text-gray-800">
@@ -5087,8 +4554,6 @@ export default function AdminCalendar() {
                 />
 
               </div>
-
-              {/* EMAIL GUIA */}
 
               {
                 tourGuideId && (
@@ -5121,8 +4586,6 @@ export default function AdminCalendar() {
                   </div>
                 )
               }
-
-              {/* BOTÕES */}
 
               <div className="flex flex-col gap-3 sm:flex-row">
 
@@ -5168,13 +4631,14 @@ export default function AdminCalendar() {
       )}
 
       {/* ======================================================
-      MODAL TOUR
+         MODAL TOUR
       ====================================================== */}
 
       {selectedTourEvent && (
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
           onClick={() => {
+
             if (
               !updating
             ) {
@@ -5182,6 +4646,7 @@ export default function AdminCalendar() {
                 null
               );
             }
+
           }}
         >
 
@@ -5200,17 +4665,7 @@ export default function AdminCalendar() {
 
                 <div className="min-w-0">
 
-                  <span
-                    className={[
-                      "inline-flex rounded-full px-3 py-1 text-xs font-extrabold text-gray-900",
-                      getColorClass(
-                        selectedTourEvent.google_color_id ||
-                          "9"
-                      ),
-                    ].join(
-                      " "
-                    )}
-                  >
+                  <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-extrabold text-blue-700">
                     Tour agendado
                   </span>
 
@@ -5243,8 +4698,6 @@ export default function AdminCalendar() {
 
             <div className="space-y-4 p-6">
 
-              {/* DATA */}
-
               <div className="rounded-2xl bg-gray-50 p-4">
 
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
@@ -5267,29 +4720,6 @@ export default function AdminCalendar() {
                 </p>
 
               </div>
-
-              {/* HORÁRIO */}
-
-              <div className="rounded-2xl bg-gray-50 p-4">
-
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                  Horário
-                </p>
-
-                <p className="mt-1 text-sm font-extrabold text-gray-800">
-
-                  {selectedTourEvent.all_day
-                    ? "Dia inteiro"
-                    : selectedTourEvent.start_time &&
-                      selectedTourEvent.end_time
-                      ? `${selectedTourEvent.start_time} às ${selectedTourEvent.end_time}`
-                      : "Horário não informado"}
-
-                </p>
-
-              </div>
-
-              {/* GUIA */}
 
               <div className="rounded-2xl bg-yellow-50 p-4">
 
@@ -5344,42 +4774,6 @@ export default function AdminCalendar() {
 
               </div>
 
-              {/* COR */}
-
-              <div className="rounded-2xl bg-gray-50 p-4">
-
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                  Cor do evento
-                </p>
-
-                <div className="mt-2 flex items-center gap-3">
-
-                  <span
-                    className={[
-                      "h-7 w-7 rounded-lg ring-2 ring-gray-200",
-                      getColorClass(
-                        selectedTourEvent.google_color_id ||
-                          "9"
-                      ),
-                    ].join(
-                      " "
-                    )}
-                  />
-
-                  <p className="text-sm font-bold text-gray-800">
-                    {
-                      getColorName(
-                        selectedTourEvent.google_color_id
-                      )
-                    }
-                  </p>
-
-                </div>
-
-              </div>
-
-              {/* DESCRIÇÃO */}
-
               <div className="rounded-2xl bg-gray-50 p-4">
 
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
@@ -5400,8 +4794,6 @@ export default function AdminCalendar() {
 
               </div>
 
-              {/* ENDEREÇO */}
-
               <div className="rounded-2xl bg-gray-50 p-4">
 
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
@@ -5417,8 +4809,6 @@ export default function AdminCalendar() {
 
               </div>
 
-              {/* EMAIL */}
-
               <div className="rounded-2xl bg-gray-50 p-4">
 
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
@@ -5433,8 +4823,6 @@ export default function AdminCalendar() {
                 </p>
 
               </div>
-
-              {/* GOOGLE */}
 
               <div className="rounded-2xl bg-green-50 p-4">
 
@@ -5509,7 +4897,7 @@ export default function AdminCalendar() {
       )}
 
       {/* ======================================================
-      MODAL EDITAR
+         MODAL EDITAR
       ====================================================== */}
 
       {
@@ -5518,6 +4906,7 @@ export default function AdminCalendar() {
           <div
             className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4"
             onClick={() => {
+
               if (
                 !updating
               ) {
@@ -5525,6 +4914,7 @@ export default function AdminCalendar() {
                   false
                 );
               }
+
             }}
           >
 
@@ -5573,8 +4963,6 @@ export default function AdminCalendar() {
               </div>
 
               <div className="space-y-5 p-6">
-
-                {/* GUIA */}
 
                 <div className="rounded-2xl border-2 border-yellow-100 bg-yellow-50 p-4">
 
@@ -5658,8 +5046,6 @@ export default function AdminCalendar() {
 
                 </div>
 
-                {/* TÍTULO */}
-
                 <div>
 
                   <label className="text-sm font-extrabold text-gray-800">
@@ -5685,8 +5071,6 @@ export default function AdminCalendar() {
                   />
 
                 </div>
-
-                {/* DESCRIÇÃO */}
 
                 <div>
 
@@ -5716,8 +5100,6 @@ export default function AdminCalendar() {
                   />
 
                 </div>
-
-                {/* ENDEREÇO */}
 
                 <div>
 
@@ -5749,8 +5131,6 @@ export default function AdminCalendar() {
 
                 </div>
 
-                {/* DIA INTEIRO */}
-
                 <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 p-4">
 
                   <input
@@ -5777,137 +5157,9 @@ export default function AdminCalendar() {
                       Dia inteiro
                     </span>
 
-                    <span className="block text-xs font-medium text-gray-500">
-                      O evento ocupará o dia inteiro na agenda.
-                    </span>
-
                   </span>
 
                 </label>
-
-                {/* HORÁRIOS */}
-
-                {!editTourAllDay && (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
-                    <div>
-                      <label className="text-sm font-extrabold text-gray-800">
-                        Horário de início
-                      </label>
-
-                      <input
-                        type="time"
-                        value={
-                          editTourStartTime
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setEditTourStartTime(
-                            event.target.value
-                          )
-                        }
-                        disabled={
-                          updating
-                        }
-                        className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-extrabold text-gray-800">
-                        Horário de término
-                      </label>
-
-                      <input
-                        type="time"
-                        value={
-                          editTourEndTime
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setEditTourEndTime(
-                            event.target.value
-                          )
-                        }
-                        disabled={
-                          updating
-                        }
-                        className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
-                      />
-                    </div>
-
-                  </div>
-                )}
-
-                {/* COR */}
-
-                <div>
-
-                  <label className="text-sm font-extrabold text-gray-800">
-                    Cor do evento
-                  </label>
-
-                  <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
-
-                    {GOOGLE_EVENT_COLORS.map(
-                      (color) => (
-                        <button
-                          key={
-                            color.id
-                          }
-                          type="button"
-                          disabled={
-                            updating
-                          }
-                          onClick={() =>
-                            setEditTourColorId(
-                              color.id
-                            )
-                          }
-                          title={
-                            color.name
-                          }
-                          className={[
-                            "relative flex h-11 items-center justify-center rounded-xl border-2 transition",
-                            color.className,
-                            editTourColorId ===
-                            color.id
-                              ? "border-gray-900 ring-4 ring-gray-200"
-                              : "border-transparent hover:scale-105",
-                          ].join(
-                            " "
-                          )}
-                        >
-
-                          {editTourColorId ===
-                            color.id && (
-                            <span className="text-lg font-black text-white drop-shadow">
-                              ✓
-                            </span>
-                          )}
-
-                        </button>
-                      )
-                    )}
-
-                  </div>
-
-                  <p className="mt-2 text-xs font-medium text-gray-500">
-                    Cor selecionada:{" "}
-                    <strong>
-                      {
-                        getColorName(
-                          editTourColorId
-                        )
-                      }
-                    </strong>
-                  </p>
-
-                </div>
-
-                {/* EMAIL */}
 
                 <div>
 
@@ -5936,8 +5188,6 @@ export default function AdminCalendar() {
 
                 </div>
 
-                {/* GOOGLE */}
-
                 <div className="rounded-xl bg-green-50 p-4">
 
                   <p className="text-xs font-bold uppercase tracking-wide text-green-600">
@@ -5963,8 +5213,6 @@ export default function AdminCalendar() {
                   </p>
 
                 </div>
-
-                {/* BOTÕES */}
 
                 <div className="flex flex-col gap-3 sm:flex-row">
 
