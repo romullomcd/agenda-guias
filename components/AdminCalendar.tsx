@@ -2426,28 +2426,32 @@ export default function AdminCalendar() {
       return;
     }
 
-    if (
-      !availabilityId
-    ) {
-      alert(
-        "Não foi possível identificar a disponibilidade do guia."
-      );
+   const guide =
+  guideMap.get(
+    tourGuideId
+  );
 
-      return;
-    }
+if (
+  !launchTourWithoutGuide &&
+  !availabilityId
+) {
+  alert(
+    "Não foi possível identificar a disponibilidade do guia."
+  );
 
-    const guide =
-      guideMap.get(
-        tourGuideId
-      );
+  return;
+}
 
-    if (!guide) {
-      alert(
-        "Selecione um guia válido."
-      );
+if (
+  !launchTourWithoutGuide &&
+  !guide
+) {
+  alert(
+    "Selecione um guia válido."
+  );
 
-      return;
-    }
+  return;
+}
 
     if (
       !tourTitle.trim()
@@ -2459,8 +2463,9 @@ export default function AdminCalendar() {
       return;
     }
 
-    if (
-      !guide.email
+        if (
+      !launchTourWithoutGuide &&
+      !guide?.email
     ) {
       alert(
         "Este guia não possui e-mail cadastrado."
@@ -2549,11 +2554,13 @@ export default function AdminCalendar() {
                 ? null
                 : tourEndTime,
 
-            guide_id:
-              guide.id,
+guide_id:
+  guide?.id ||
+  null,
 
-            guide_email:
-              guide.email,
+guide_email:
+  guide?.email ||
+  null,
 
             additional_email:
               tourAdditionalEmail.trim() ||
@@ -2624,8 +2631,9 @@ export default function AdminCalendar() {
               ? null
               : tourEndTime,
 
-          guideEmail:
-            guide.email,
+guideEmail:
+  guide?.email ||
+  null,
 
           additionalEmail:
             tourAdditionalEmail.trim() ||
