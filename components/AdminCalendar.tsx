@@ -3789,15 +3789,13 @@ export default function AdminCalendar() {
                     disabled={
                       !sameMonth
                     }
-                    className={[
-                      "min-h-[88px] rounded-lg border p-1 text-left transition",
-                      "sm:min-h-32 sm:rounded-xl sm:p-2",
-                      !sameMonth
-                        ? "cursor-default border-transparent bg-gray-100 text-gray-400"
-                        : "border-gray-200 bg-white hover:border-[#1687d9] hover:shadow-md",
-                    ].join(
-                      " "
-                    )}
+                  className={[
+  "min-h-[58px] rounded-lg border p-1 text-left transition",
+  "sm:min-h-32 sm:rounded-xl sm:p-2",
+  !sameMonth
+    ? "cursor-default border-transparent bg-gray-100 text-gray-400"
+    : "border-gray-200 bg-white hover:border-[#1687d9] hover:shadow-md",
+].join(" ")}
                   >
 
                     <div
@@ -3818,7 +3816,7 @@ export default function AdminCalendar() {
                       }
                     </div>
 
-                    <div className="space-y-0.5 sm:space-y-1">
+                    <div className="space-y-0.5 overflow-hidden sm:space-y-1">
 
                       {dayEvents
                         .slice(
