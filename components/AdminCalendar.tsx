@@ -61,6 +61,7 @@ type TourEvent = {
   guide_email: string;
   additional_email: string | null;
   calendar_event_id: string | null;
+  google_color_id: string | null;
   status: "scheduled" | "cancelled";
   created_at: string;
   updated_at: string;
@@ -80,6 +81,68 @@ const LANGUAGE_FLAGS: Record<string, string> = {
   Mandarim: "/flags/cn.png",
   Japonês: "/flags/jp.png",
 };
+
+/* ============================================================
+CORES GOOGLE CALENDAR
+============================================================ */
+
+const GOOGLE_EVENT_COLORS = [
+  {
+    id: "1",
+    name: "Lavanda",
+    className: "bg-[#a4bdfc]",
+  },
+  {
+    id: "2",
+    name: "Verde claro",
+    className: "bg-[#7ae7bf]",
+  },
+  {
+    id: "3",
+    name: "Roxo",
+    className: "bg-[#dbadff]",
+  },
+  {
+    id: "4",
+    name: "Vermelho claro",
+    className: "bg-[#ff887c]",
+  },
+  {
+    id: "5",
+    name: "Amarelo",
+    className: "bg-[#fbd75b]",
+  },
+  {
+    id: "6",
+    name: "Laranja",
+    className: "bg-[#ffb878]",
+  },
+  {
+    id: "7",
+    name: "Ciano",
+    className: "bg-[#46d6db]",
+  },
+  {
+    id: "8",
+    name: "Cinza",
+    className: "bg-[#e1e1e1]",
+  },
+  {
+    id: "9",
+    name: "Azul",
+    className: "bg-[#5484ed]",
+  },
+  {
+    id: "10",
+    name: "Verde",
+    className: "bg-[#51b749]",
+  },
+  {
+    id: "11",
+    name: "Vermelho",
+    className: "bg-[#dc2127]",
+  },
+];
 
 /* ============================================================
 NORMALIZAR HTML
@@ -193,16 +256,9 @@ function descriptionToHtml(
     return "";
   }
 
-  /*
-   * NÃO usamos trim().
-   * Espaços fazem parte da edição.
-   */
   const original =
     value;
 
-  /*
-   * Se já for HTML, preserva.
-   */
   if (
     /<\s*(b|strong|i|em|u|br|p|div|ul|ol|li)\b/i.test(
       original
@@ -211,9 +267,6 @@ function descriptionToHtml(
     return original;
   }
 
-  /*
-   * Texto antigo sem HTML.
-   */
   return original
     .replace(
       /&/g,
@@ -474,10 +527,6 @@ function RichTextEditor({
       return;
     }
 
-    /*
-     * Durante a digitação NÃO sanitizamos
-     * e NÃO reconstruímos o DOM.
-     */
     internalChangeRef.current =
       true;
 
@@ -498,9 +547,6 @@ function RichTextEditor({
       return;
     }
 
-    /*
-     * Primeira montagem.
-     */
     if (
       !initializedRef.current
     ) {
@@ -515,9 +561,6 @@ function RichTextEditor({
       return;
     }
 
-    /*
-     * A alteração veio do próprio editor.
-     */
     if (
       internalChangeRef.current
     ) {
@@ -527,10 +570,6 @@ function RichTextEditor({
       return;
     }
 
-    /*
-     * Não mexemos no DOM enquanto
-     * o usuário está digitando.
-     */
     if (
       document.activeElement ===
       editor
@@ -553,7 +592,7 @@ function RichTextEditor({
   }, [value]);
 
   /* ==========================================================
-  VERIFICAR SE TODO O FRAGMENTO ESTÁ EM BOLD
+  VERIFICAR BOLD
   ========================================================== */
 
   function fragmentIsCompletelyBold(
@@ -577,9 +616,6 @@ function RichTextEditor({
       const textNode =
         currentNode as Text;
 
-      /*
-       * Ignora textos vazios.
-       */
       if (
         textNode.nodeValue
           ?.length
@@ -590,9 +626,6 @@ function RichTextEditor({
         let parent =
           textNode.parentElement;
 
-        /*
-         * Procura um B/STRONG acima.
-         */
         let isBold =
           false;
 
@@ -615,9 +648,6 @@ function RichTextEditor({
             parent.parentElement;
         }
 
-        /*
-         * Achou texto não negritado.
-         */
         if (
           !isBold
         ) {
@@ -629,15 +659,11 @@ function RichTextEditor({
         walker.nextNode();
     }
 
-    /*
-     * Se não encontrou texto,
-     * não considera bold.
-     */
     return foundText;
   }
 
   /* ==========================================================
-  REMOVER B/STRONG DE UM FRAGMENTO
+  REMOVER BOLD
   ========================================================== */
 
   function unwrapBoldFromFragment(
@@ -691,9 +717,6 @@ function RichTextEditor({
       return;
     }
 
-    /*
-     * Recupera a seleção salva.
-     */
     restoreSelection();
 
     const selection =
@@ -710,19 +733,12 @@ function RichTextEditor({
     const range =
       selection.getRangeAt(0);
 
-    /*
-     * Sem texto selecionado.
-     */
     if (
       range.collapsed
     ) {
       return;
     }
 
-    /*
-     * Seleção precisa estar dentro
-     * do editor.
-     */
     if (
       !editor.contains(
         range.commonAncestorContainer
@@ -732,37 +748,16 @@ function RichTextEditor({
     }
 
     try {
-      /*
-       * Primeiro pegamos uma cópia
-       * do conteúdo selecionado.
-       */
       const preview =
         range.cloneContents();
 
-      /*
-       * Descobre se TODO o conteúdo
-       * selecionado já está em bold.
-       */
       const completelyBold =
         fragmentIsCompletelyBold(
           preview
         );
 
-      /*
-       * Agora extraímos apenas a seleção
-       * do DOM real.
-       *
-       * O navegador preserva o restante
-       * da formatação fora da seleção.
-       */
       const fragment =
         range.extractContents();
-
-      /*
-       * ======================================================
-       * REMOVER BOLD
-       * ======================================================
-       */
 
       if (
         completelyBold
@@ -770,53 +765,79 @@ function RichTextEditor({
         unwrapBoldFromFragment(
           fragment
         );
-      }
-
-      /*
-       * ======================================================
-       * APLICAR BOLD
-       * ======================================================
-       */
-
-      else {
+      } else {
         const strong =
           document.createElement(
             "strong"
           );
 
-        /*
-         * Todo o conteúdo selecionado
-         * fica dentro do STRONG.
-         */
         strong.appendChild(
           fragment
         );
 
-        fragment.appendChild(
+        const wrapped =
+          document.createDocumentFragment();
+
+        wrapped.appendChild(
           strong
         );
+
+        const nodesToSelect =
+          Array.from(
+            wrapped.childNodes
+          );
+
+        range.insertNode(
+          wrapped
+        );
+
+        if (
+          nodesToSelect.length >
+          0
+        ) {
+          const firstNode =
+            nodesToSelect[0];
+
+          const lastNode =
+            nodesToSelect[
+              nodesToSelect.length -
+                1
+            ];
+
+          const newRange =
+            document.createRange();
+
+          newRange.setStartBefore(
+            firstNode
+          );
+
+          newRange.setEndAfter(
+            lastNode
+          );
+
+          selection.removeAllRanges();
+
+          selection.addRange(
+            newRange
+          );
+
+          saveSelection();
+        }
+
+        syncValue();
+
+        return;
       }
 
-      /*
-       * Antes de inserir, guardamos
-       * o conteúdo que será inserido.
-       */
       const nodesToSelect =
         Array.from(
           fragment.childNodes
         );
 
-      /*
-       * Insere exatamente no local
-       * da seleção antiga.
-       */
       range.insertNode(
         fragment
       );
 
-      /*
-       * Seleção nova.
-       */
       if (
         nodesToSelect.length >
         0
@@ -847,15 +868,9 @@ function RichTextEditor({
           newRange
         );
 
-        /*
-         * Salva a seleção atualizada.
-         */
         saveSelection();
       }
 
-      /*
-       * Atualiza React.
-       */
       syncValue();
     } catch (
       error
@@ -868,7 +883,7 @@ function RichTextEditor({
   }
 
   /* ==========================================================
-  EXECUTAR OUTROS COMANDOS
+  OUTROS COMANDOS
   ========================================================== */
 
   function executeCommand(
@@ -878,9 +893,6 @@ function RichTextEditor({
       return;
     }
 
-    /*
-     * Bold é totalmente manual.
-     */
     if (
       command ===
       "bold"
@@ -919,26 +931,19 @@ function RichTextEditor({
   }
 
   /* ==========================================================
-  MOUSEDOWN TOOLBAR
+  TOOLBAR
   ========================================================== */
 
   function handleToolbarMouseDown(
     event: ReactMouseEvent<HTMLButtonElement>,
     command: string
   ) {
-    /*
-     * Impede o botão de roubar
-     * a seleção.
-     */
     event.preventDefault();
 
     if (disabled) {
       return;
     }
 
-    /*
-     * Salva ANTES de executar.
-     */
     saveSelection();
 
     executeCommand(
@@ -997,9 +1002,6 @@ function RichTextEditor({
           : "",
       ].join(" ")}
     >
-      {/* ======================================================
-         BARRA
-      ====================================================== */}
 
       <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-2">
 
@@ -1127,11 +1129,8 @@ function RichTextEditor({
         >
           Limpar
         </button>
-      </div>
 
-      {/* ======================================================
-         EDITOR
-      ====================================================== */}
+      </div>
 
       <div
         ref={editorRef}
@@ -1339,6 +1338,11 @@ export default function AdminCalendar() {
     setTourAdditionalEmail,
   ] = useState("");
 
+  const [
+    tourColorId,
+    setTourColorId,
+  ] = useState("9");
+
   /* ============================================================
   EDIÇÃO
   ============================================================ */
@@ -1381,6 +1385,11 @@ export default function AdminCalendar() {
     editTourAdditionalEmail,
     setEditTourAdditionalEmail,
   ] = useState("");
+
+  const [
+    editTourColorId,
+    setEditTourColorId,
+  ] = useState("9");
 
   /* ============================================================
   CARREGAMENTO
@@ -1722,6 +1731,9 @@ export default function AdminCalendar() {
         "yyyy-MM-dd"
       );
 
+    const tourSelect =
+      "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at";
+
     const [
       guidesResult,
       availabilityResult,
@@ -1765,7 +1777,7 @@ export default function AdminCalendar() {
             "tour_events"
           )
           .select(
-            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+            tourSelect
           )
           .gte(
             "date",
@@ -1780,9 +1792,7 @@ export default function AdminCalendar() {
           ),
       ]);
 
-    /* ==========================================================
-       GUIAS
-    ========================================================== */
+    /* GUIAS */
 
     if (
       guidesResult.error
@@ -1891,9 +1901,7 @@ export default function AdminCalendar() {
       );
     }
 
-    /* ==========================================================
-       AVAILABILITY
-    ========================================================== */
+    /* AVAILABILITY */
 
     if (
       availabilityResult.error
@@ -1909,9 +1917,7 @@ export default function AdminCalendar() {
       );
     }
 
-    /* ==========================================================
-       TOURS
-    ========================================================== */
+    /* TOURS */
 
     if (
       tourEventsResult.error
@@ -2122,7 +2128,7 @@ export default function AdminCalendar() {
       : [];
 
   /* ============================================================
-  FUNÇÕES CALENDÁRIO
+  FUNÇÕES
   ============================================================ */
 
   function getDayAvailability(
@@ -2147,10 +2153,6 @@ export default function AdminCalendar() {
     );
   }
 
-  /* ============================================================
-  NOME GUIA
-  ============================================================ */
-
   function getGuideName(
     guideId: string
   ) {
@@ -2161,10 +2163,6 @@ export default function AdminCalendar() {
       "Guia"
     );
   }
-
-  /* ============================================================
-  BANDEIRAS
-  ============================================================ */
 
   function getGuideFlags(
     guideId: string
@@ -2216,10 +2214,6 @@ export default function AdminCalendar() {
     );
   }
 
-  /* ============================================================
-  TELEFONE
-  ============================================================ */
-
   function formatGuidePhone(
     value: string
   ) {
@@ -2262,6 +2256,38 @@ export default function AdminCalendar() {
     return value;
   }
 
+  function getColorName(
+    colorId:
+      | string
+      | null
+      | undefined
+  ) {
+    return (
+      GOOGLE_EVENT_COLORS.find(
+        (color) =>
+          color.id ===
+          colorId
+      )?.name ||
+      "Azul"
+    );
+  }
+
+  function getColorClass(
+    colorId:
+      | string
+      | null
+      | undefined
+  ) {
+    return (
+      GOOGLE_EVENT_COLORS.find(
+        (color) =>
+          color.id ===
+          colorId
+      )?.className ||
+      "bg-[#5484ed]"
+    );
+  }
+
   /* ============================================================
   GOOGLE CALENDAR
   ============================================================ */
@@ -2272,14 +2298,19 @@ export default function AdminCalendar() {
         | "create"
         | "update"
         | "delete";
+
       eventId?: string | null;
+
       date?: string;
       title?: string;
       description?: string | null;
       address?: string | null;
       allDay?: boolean;
+
       guideEmail?: string | null;
       additionalEmail?: string | null;
+
+      colorId?: string | null;
     }
   ) {
     const {
@@ -2388,6 +2419,10 @@ export default function AdminCalendar() {
       ""
     );
 
+    setTourColorId(
+      "9"
+    );
+
     setSelectedGuideDetails(
       null
     );
@@ -2467,9 +2502,7 @@ export default function AdminCalendar() {
           normalizedDescription
         );
 
-      /* ========================================================
-         SUPABASE
-      ======================================================== */
+      /* SUPABASE */
 
       const {
         data:
@@ -2513,11 +2546,14 @@ export default function AdminCalendar() {
             calendar_event_id:
               null,
 
+            google_color_id:
+              tourColorId,
+
             status:
               "scheduled",
           })
           .select(
-            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at"
           )
           .single();
 
@@ -2538,9 +2574,7 @@ export default function AdminCalendar() {
       createdDatabaseEvent =
         newEvent as TourEvent;
 
-      /* ========================================================
-         GOOGLE
-      ======================================================== */
+      /* GOOGLE */
 
       const googleResult =
         await callGoogleCalendar(
@@ -2554,9 +2588,6 @@ export default function AdminCalendar() {
             title:
               tourTitle.trim(),
 
-            /*
-             * HTML formatado.
-             */
             description:
               normalizedDescription
                 ? normalizedDescription
@@ -2575,6 +2606,9 @@ export default function AdminCalendar() {
             additionalEmail:
               tourAdditionalEmail.trim() ||
               null,
+
+            colorId:
+              tourColorId,
           }
         );
 
@@ -2590,9 +2624,7 @@ export default function AdminCalendar() {
         );
       }
 
-      /* ========================================================
-         SALVAR ID GOOGLE
-      ======================================================== */
+      /* SALVAR ID */
 
       const {
         data:
@@ -2613,7 +2645,7 @@ export default function AdminCalendar() {
             newEvent.id
           )
           .select(
-            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at"
           )
           .single();
 
@@ -2663,9 +2695,7 @@ export default function AdminCalendar() {
       createdDatabaseEvent =
         eventWithGoogleId as TourEvent;
 
-      /* ========================================================
-         ESCALAR GUIA
-      ======================================================== */
+      /* ESCALAR GUIA */
 
       const {
         error:
@@ -2726,9 +2756,7 @@ export default function AdminCalendar() {
         );
       }
 
-      /* ========================================================
-         ESTADO LOCAL
-      ======================================================== */
+      /* ESTADO */
 
       setTourEvents(
         (current) => {
@@ -2918,6 +2946,11 @@ export default function AdminCalendar() {
         ""
     );
 
+    setEditTourColorId(
+      event.google_color_id ||
+        "9"
+    );
+
     setShowTourEdit(
       true
     );
@@ -2985,10 +3018,6 @@ export default function AdminCalendar() {
         | Availability
         | null =
         null;
-
-      /* ========================================================
-         DISPONIBILIDADES
-      ======================================================== */
 
       if (
         guideChanged
@@ -3081,10 +3110,6 @@ export default function AdminCalendar() {
             | null;
       }
 
-      /* ========================================================
-         DESCRIÇÃO
-      ======================================================== */
-
       const normalizedDescription =
         sanitizeDescriptionHtml(
           editTourDescription
@@ -3095,9 +3120,7 @@ export default function AdminCalendar() {
           normalizedDescription
         );
 
-      /* ========================================================
-         GOOGLE
-      ======================================================== */
+      /* GOOGLE */
 
       if (
         selectedTourEvent.calendar_event_id
@@ -3134,13 +3157,14 @@ export default function AdminCalendar() {
             additionalEmail:
               editTourAdditionalEmail.trim() ||
               null,
+
+            colorId:
+              editTourColorId,
           }
         );
       }
 
-      /* ========================================================
-         SUPABASE
-      ======================================================== */
+      /* SUPABASE */
 
       const {
         data,
@@ -3175,13 +3199,16 @@ export default function AdminCalendar() {
             additional_email:
               editTourAdditionalEmail.trim() ||
               null,
+
+            google_color_id:
+              editTourColorId,
           })
           .eq(
             "id",
             selectedTourEvent.id
           )
           .select(
-            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+            "id, date, title, description, address, all_day, guide_id, guide_email, additional_email, calendar_event_id, google_color_id, status, created_at, updated_at"
           )
           .single();
 
@@ -3194,9 +3221,7 @@ export default function AdminCalendar() {
         );
       }
 
-      /* ========================================================
-         TROCAR GUIA
-      ======================================================== */
+      /* TROCA GUIA */
 
       if (
         guideChanged
@@ -3290,10 +3315,6 @@ export default function AdminCalendar() {
         }
       }
 
-      /* ========================================================
-         ESTADO
-      ======================================================== */
-
       setTourEvents(
         (current) =>
           current.map(
@@ -3360,8 +3381,6 @@ export default function AdminCalendar() {
     );
 
     try {
-      /* GOOGLE */
-
       if (
         event.calendar_event_id
       ) {
@@ -3375,8 +3394,6 @@ export default function AdminCalendar() {
           }
         );
       }
-
-      /* LIBERAR GUIA */
 
       const {
         data:
@@ -3442,8 +3459,6 @@ export default function AdminCalendar() {
             )
         );
       }
-
-      /* EXCLUIR TOUR */
 
       const {
         error:
@@ -3523,9 +3538,7 @@ export default function AdminCalendar() {
   return (
     <div className="mt-4 rounded-2xl bg-white p-3 shadow-sm sm:mt-6 sm:rounded-3xl sm:p-6">
 
-      {/* ======================================================
-         CABEÇALHO
-      ====================================================== */}
+      {/* CABEÇALHO */}
 
       <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:gap-5 md:flex-row md:items-center md:justify-between">
 
@@ -3605,9 +3618,7 @@ export default function AdminCalendar() {
         </div>
       )}
 
-      {/* ======================================================
-         NAVEGAÇÃO
-      ====================================================== */}
+      {/* NAVEGAÇÃO */}
 
       <div className="mb-4 flex items-center justify-between rounded-xl bg-gray-50 p-2 sm:mb-6 sm:rounded-2xl sm:p-3">
 
@@ -3646,11 +3657,10 @@ export default function AdminCalendar() {
         >
           →
         </button>
+
       </div>
 
-      {/* ======================================================
-         LOADING
-      ====================================================== */}
+      {/* LOADING */}
 
       {loading ? (
         <div className="py-10 text-center sm:py-12">
@@ -3666,7 +3676,6 @@ export default function AdminCalendar() {
         <>
 
           <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[9px] font-extrabold uppercase tracking-wide text-gray-800 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
-
             <div>Seg</div>
             <div>Ter</div>
             <div>Qua</div>
@@ -3674,12 +3683,9 @@ export default function AdminCalendar() {
             <div>Sex</div>
             <div>Sáb</div>
             <div>Dom</div>
-
           </div>
 
-          {/* ====================================================
-             CALENDÁRIO
-          ==================================================== */}
+          {/* CALENDÁRIO */}
 
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
 
@@ -3785,10 +3791,18 @@ export default function AdminCalendar() {
                           ) => (
                             <div
                               key={`event-${event.id}`}
-                              className="truncate rounded bg-blue-100 px-0.5 py-0.5 text-[8px] font-extrabold leading-tight text-blue-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                              title={
-                                event.title
-                              }
+                              className={[
+                                "truncate rounded px-0.5 py-0.5 text-[8px] font-extrabold leading-tight text-gray-900 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
+                                getColorClass(
+                                  event.google_color_id ||
+                                    "9"
+                                ),
+                              ].join(
+                                " "
+                              )}
+                              title={`${event.title} — ${getColorName(
+                                event.google_color_id
+                              )}`}
                             >
                               📅{" "}
                               {
@@ -4068,7 +4082,15 @@ export default function AdminCalendar() {
                             null
                           );
                         }}
-                        className="flex w-full items-center justify-between rounded-xl bg-blue-50 px-4 py-3 text-left text-sm font-bold text-blue-800 transition hover:bg-blue-100"
+                        className={[
+                          "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-bold text-gray-900 transition hover:opacity-90",
+                          getColorClass(
+                            event.google_color_id ||
+                              "9"
+                          ),
+                        ].join(
+                          " "
+                        )}
                       >
 
                         <span className="min-w-0">
@@ -4079,7 +4101,7 @@ export default function AdminCalendar() {
                             }
                           </span>
 
-                          <span className="mt-0.5 block text-xs font-semibold text-blue-600">
+                          <span className="mt-0.5 block text-xs font-semibold text-gray-700">
                             {
                               getGuideName(
                                 event.guide_id
@@ -4558,7 +4580,7 @@ export default function AdminCalendar() {
                     null
                   );
                 }}
-                className="w-full rounded-xl bg-[#1687d9] px-4 py-3 font-extrabold text-white shadow-md transition hover:bg-[#0f75bd] disabled:opacity-60"
+                className="w-full rounded-xl bg-[#1687d9] px-4 py-3 font-extrabold text-white shadow-md shadow-blue-200 transition hover:bg-[#0f75bd] disabled:opacity-60"
               >
                 Fechar
               </button>
@@ -4719,7 +4741,7 @@ export default function AdminCalendar() {
 
               </div>
 
-              {/* TITULO */}
+              {/* TÍTULO */}
 
               <div>
 
@@ -4808,6 +4830,72 @@ export default function AdminCalendar() {
                   placeholder="Ex.: Av. Atlântica, 1702 - Copacabana"
                   className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] placeholder:text-gray-400"
                 />
+
+              </div>
+
+              {/* COR */}
+
+              <div>
+
+                <label className="text-sm font-extrabold text-gray-800">
+                  Cor do evento
+                </label>
+
+                <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
+
+                  {GOOGLE_EVENT_COLORS.map(
+                    (color) => (
+                      <button
+                        key={
+                          color.id
+                        }
+                        type="button"
+                        disabled={
+                          updating
+                        }
+                        onClick={() =>
+                          setTourColorId(
+                            color.id
+                          )
+                        }
+                        title={
+                          color.name
+                        }
+                        className={[
+                          "relative flex h-11 items-center justify-center rounded-xl border-2 transition",
+                          color.className,
+                          tourColorId ===
+                          color.id
+                            ? "border-gray-900 ring-4 ring-gray-200"
+                            : "border-transparent hover:scale-105",
+                        ].join(
+                          " "
+                        )}
+                      >
+
+                        {tourColorId ===
+                          color.id && (
+                          <span className="text-lg font-black text-white drop-shadow">
+                            ✓
+                          </span>
+                        )}
+
+                      </button>
+                    )
+                  )}
+
+                </div>
+
+                <p className="mt-2 text-xs font-medium text-gray-500">
+                  Cor selecionada:{" "}
+                  <strong>
+                    {
+                      getColorName(
+                        tourColorId
+                      )
+                    }
+                  </strong>
+                </p>
 
               </div>
 
@@ -4991,7 +5079,17 @@ export default function AdminCalendar() {
 
                 <div className="min-w-0">
 
-                  <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-extrabold text-blue-700">
+                  <span
+                    className={[
+                      "inline-flex rounded-full px-3 py-1 text-xs font-extrabold text-gray-900",
+                      getColorClass(
+                        selectedTourEvent.google_color_id ||
+                          "9"
+                      ),
+                    ].join(
+                      " "
+                    )}
+                  >
                     Tour agendado
                   </span>
 
@@ -5099,6 +5197,40 @@ export default function AdminCalendar() {
                   >
                     🔄 Trocar guia
                   </button>
+
+                </div>
+
+              </div>
+
+              {/* COR */}
+
+              <div className="rounded-2xl bg-gray-50 p-4">
+
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                  Cor do evento
+                </p>
+
+                <div className="mt-2 flex items-center gap-3">
+
+                  <span
+                    className={[
+                      "h-7 w-7 rounded-lg ring-2 ring-gray-200",
+                      getColorClass(
+                        selectedTourEvent.google_color_id ||
+                          "9"
+                      ),
+                    ].join(
+                      " "
+                    )}
+                  />
+
+                  <p className="text-sm font-bold text-gray-800">
+                    {
+                      getColorName(
+                        selectedTourEvent.google_color_id
+                      )
+                    }
+                  </p>
 
                 </div>
 
@@ -5481,6 +5613,72 @@ export default function AdminCalendar() {
 
                 </div>
 
+                {/* COR */}
+
+                <div>
+
+                  <label className="text-sm font-extrabold text-gray-800">
+                    Cor do evento
+                  </label>
+
+                  <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
+
+                    {GOOGLE_EVENT_COLORS.map(
+                      (color) => (
+                        <button
+                          key={
+                            color.id
+                          }
+                          type="button"
+                          disabled={
+                            updating
+                          }
+                          onClick={() =>
+                            setEditTourColorId(
+                              color.id
+                            )
+                          }
+                          title={
+                            color.name
+                          }
+                          className={[
+                            "relative flex h-11 items-center justify-center rounded-xl border-2 transition",
+                            color.className,
+                            editTourColorId ===
+                            color.id
+                              ? "border-gray-900 ring-4 ring-gray-200"
+                              : "border-transparent hover:scale-105",
+                          ].join(
+                            " "
+                          )}
+                        >
+
+                          {editTourColorId ===
+                            color.id && (
+                            <span className="text-lg font-black text-white drop-shadow">
+                              ✓
+                            </span>
+                          )}
+
+                        </button>
+                      )
+                    )}
+
+                  </div>
+
+                  <p className="mt-2 text-xs font-medium text-gray-500">
+                    Cor selecionada:{" "}
+                    <strong>
+                      {
+                        getColorName(
+                          editTourColorId
+                        )
+                      }
+                    </strong>
+                  </p>
+
+                </div>
+
                 {/* DIA TODO */}
 
                 <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 p-4">
@@ -5504,9 +5702,11 @@ export default function AdminCalendar() {
                   />
 
                   <span>
+
                     <span className="block text-sm font-extrabold text-gray-800">
                       Dia inteiro
                     </span>
+
                   </span>
 
                 </label>

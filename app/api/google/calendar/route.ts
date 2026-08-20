@@ -25,6 +25,24 @@ type CalendarRequest = {
 
   guideEmail?: string | null;
   additionalEmail?: string | null;
+
+  /*
+   * ID da cor do evento no Google Calendar.
+   *
+   * Exemplos:
+   * 1  = lavanda
+   * 2  = verde
+   * 3  = roxo
+   * 4  = vermelho
+   * 5  = amarelo
+   * 6  = laranja
+   * 7  = ciano
+   * 8  = cinza
+   * 9  = azul
+   * 10 = verde
+   * 11 = vermelho
+   */
+  colorId?: string | null;
 };
 
 /* ============================================================
@@ -224,6 +242,42 @@ async function getGoogleCalendarClient(
 }
 
 /* ============================================================
+   VALIDAR COLOR ID
+============================================================ */
+
+function normalizeColorId(
+  colorId:
+    | string
+    | null
+    | undefined
+) {
+  if (!colorId) {
+    return undefined;
+  }
+
+  const allowedColors =
+    new Set([
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+    ]);
+
+  return allowedColors.has(
+    colorId
+  )
+    ? colorId
+    : undefined;
+}
+
+/* ============================================================
    MONTAR EVENTO GOOGLE
 ============================================================ */
 
@@ -244,14 +298,14 @@ function buildGoogleEvent(
     );
   }
 
-  /*
-   * IMPORTANTE:
-   * O Google Calendar aceita HTML no campo description.
-   * Portanto NÃO usamos htmlToPlainText aqui.
-   */
   const sanitizedDescription =
     sanitizeDescriptionHtml(
       data.description
+    );
+
+  const normalizedColorId =
+    normalizeColorId(
+      data.colorId
     );
 
   const event: any = {
@@ -265,6 +319,12 @@ function buildGoogleEvent(
     location:
       data.address?.trim() ||
       undefined,
+
+    /*
+     * Cor individual do evento.
+     */
+    colorId:
+      normalizedColorId,
   };
 
   /* ==========================================================
@@ -356,6 +416,12 @@ function buildGoogleEvent(
     "📝 DESCRIÇÃO HTML ENVIADA AO GOOGLE:",
     event.description ||
       "(sem descrição)"
+  );
+
+  console.log(
+    "🎨 COLOR ID ENVIADO AO GOOGLE:",
+    normalizedColorId ||
+      "(cor padrão)"
   );
 
   return event;
@@ -452,7 +518,7 @@ async function updateGoogleEvent(
 }
 
 /* ============================================================
-   EXCLUIR — COM VERIFICAÇÃO ANTES
+   EXCLUIR
 ============================================================ */
 
 async function deleteGoogleEvent(
@@ -477,10 +543,6 @@ async function deleteGoogleEvent(
   );
 
   try {
-    /* ========================================================
-       1. VERIFICAR SE O EVENTO EXISTE
-    ======================================================== */
-
     const existingEvent =
       await calendar.events.get(
         {
@@ -519,10 +581,6 @@ async function deleteGoogleEvent(
             ?.email,
       }
     );
-
-    /* ========================================================
-       2. EXCLUIR
-    ======================================================== */
 
     console.log(
       "🗑️ EXCLUINDO EVENTO DO GOOGLE CALENDAR..."
@@ -661,6 +719,12 @@ export async function POST(
       body.action
     );
 
+    console.log(
+      "🎨 COLOR ID RECEBIDO:",
+      body.colorId ||
+        "(não informado)"
+    );
+
     /* ========================================================
        VALIDAR AÇÃO
     ======================================================== */
@@ -727,6 +791,12 @@ export async function POST(
         event.id
       );
 
+      console.log(
+        "🎨 COR APLICADA:",
+        event.colorId ||
+          "(padrão)"
+      );
+
       return NextResponse.json(
         {
           success:
@@ -761,6 +831,12 @@ export async function POST(
       console.log(
         "✅ EVENTO ATUALIZADO NO GOOGLE:",
         event.id
+      );
+
+      console.log(
+        "🎨 COR APLICADA:",
+        event.colorId ||
+          "(padrão)"
       );
 
       return NextResponse.json(
