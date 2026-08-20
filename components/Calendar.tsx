@@ -15,7 +15,6 @@ import {
 } from "date-fns";
 
 import { ptBR } from "date-fns/locale";
-
 import { supabase } from "@/lib/supabase";
 
 /* ============================================================
@@ -59,23 +58,17 @@ export default function Calendar() {
   const [
     currentMonth,
     setCurrentMonth,
-  ] = useState(
-    new Date()
-  );
+  ] = useState(new Date());
 
   const [
     availability,
     setAvailability,
-  ] = useState<Availability[]>(
-    []
-  );
+  ] = useState<Availability[]>([]);
 
   const [
     tourEvents,
     setTourEvents,
-  ] = useState<TourEvent[]>(
-    []
-  );
+  ] = useState<TourEvent[]>([]);
 
   const [
     loading,
@@ -89,9 +82,7 @@ export default function Calendar() {
   const [
     selectedTour,
     setSelectedTour,
-  ] = useState<TourEvent | null>(
-    null
-  );
+  ] = useState<TourEvent | null>(null);
 
   const [
     showTourModal,
@@ -123,9 +114,7 @@ export default function Calendar() {
             table: "availability",
           },
           async () => {
-            await loadAvailability(
-              false
-            );
+            await loadAvailability(false);
           }
         )
 
@@ -141,9 +130,7 @@ export default function Calendar() {
             table: "tour_events",
           },
           async () => {
-            await loadAvailability(
-              false
-            );
+            await loadAvailability(false);
           }
         )
 
@@ -155,9 +142,7 @@ export default function Calendar() {
             table: "tour_events",
           },
           async () => {
-            await loadAvailability(
-              false
-            );
+            await loadAvailability(false);
           }
         )
 
@@ -169,29 +154,21 @@ export default function Calendar() {
             table: "tour_events",
           },
           async () => {
-            await loadAvailability(
-              false
-            );
+            await loadAvailability(false);
           }
         )
 
-        .subscribe(
-          (status) => {
-            console.log(
-              "📡 GUIDE CALENDAR REALTIME:",
-              status
-            );
-          }
-        );
+        .subscribe((status) => {
+          console.log(
+            "📡 GUIDE CALENDAR REALTIME:",
+            status
+          );
+        });
 
     return () => {
-      supabase.removeChannel(
-        channel
-      );
+      supabase.removeChannel(channel);
     };
-  }, [
-    currentMonth,
-  ]);
+  }, [currentMonth]);
 
   /* ============================================================
   BUSCAR DADOS
@@ -205,17 +182,11 @@ export default function Calendar() {
     }
 
     const {
-      data: {
-        user,
-      },
-      error:
-        userError,
-    } =
-      await supabase.auth.getUser();
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-    if (
-      userError
-    ) {
+    if (userError) {
       console.error(
         "ERRO AO PEGAR USUÁRIO:",
         userError
@@ -227,21 +198,15 @@ export default function Calendar() {
       return;
     }
 
-    const firstDay =
-      format(
-        startOfMonth(
-          currentMonth
-        ),
-        "yyyy-MM-dd"
-      );
+    const firstDay = format(
+      startOfMonth(currentMonth),
+      "yyyy-MM-dd"
+    );
 
-    const lastDay =
-      format(
-        endOfMonth(
-          currentMonth
-        ),
-        "yyyy-MM-dd"
-      );
+    const lastDay = format(
+      endOfMonth(currentMonth),
+      "yyyy-MM-dd"
+    );
 
     /* ==========================================================
        BUSCAR DISPONIBILIDADE E TOURS
@@ -250,54 +215,49 @@ export default function Calendar() {
     const [
       availabilityResult,
       tourEventsResult,
-    ] =
-      await Promise.all([
-        supabase
-          .from("availability")
-          .select(
-            "id, date, status"
-          )
-          .eq(
-            "guide_id",
-            user.id
-          )
-          .gte(
-            "date",
-            firstDay
-          )
-          .lte(
-            "date",
-            lastDay
-          )
-          .order(
-            "date"
-          ),
+    ] = await Promise.all([
+      supabase
+        .from("availability")
+        .select(
+          "id, date, status"
+        )
+        .eq(
+          "guide_id",
+          user.id
+        )
+        .gte(
+          "date",
+          firstDay
+        )
+        .lte(
+          "date",
+          lastDay
+        )
+        .order("date"),
 
-        supabase
-          .from("tour_events")
-          .select(
-            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
-          )
-          .eq(
-            "guide_id",
-            user.id
-          )
-          .eq(
-            "status",
-            "scheduled"
-          )
-          .gte(
-            "date",
-            firstDay
-          )
-          .lte(
-            "date",
-            lastDay
-          )
-          .order(
-            "date"
-          ),
-      ]);
+      supabase
+        .from("tour_events")
+        .select(
+          "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+        )
+        .eq(
+          "guide_id",
+          user.id
+        )
+        .eq(
+          "status",
+          "scheduled"
+        )
+        .gte(
+          "date",
+          firstDay
+        )
+        .lte(
+          "date",
+          lastDay
+        )
+        .order("date"),
+    ]);
 
     /* ==========================================================
        AVAILABILITY
@@ -309,29 +269,24 @@ export default function Calendar() {
       console.error(
         "ERRO AO CARREGAR DISPONIBILIDADE:",
         String(
-          availabilityResult
-            .error.message
+          availabilityResult.error.message
         ),
         "CODE:",
         String(
-          availabilityResult
-            .error.code
+          availabilityResult.error.code
         ),
         "DETAILS:",
         String(
-          availabilityResult
-            .error.details
+          availabilityResult.error.details
         ),
         "HINT:",
         String(
-          availabilityResult
-            .error.hint
+          availabilityResult.error.hint
         )
       );
     } else {
       setAvailability(
-        availabilityResult.data ||
-          []
+        availabilityResult.data || []
       );
     }
 
@@ -345,29 +300,24 @@ export default function Calendar() {
       console.error(
         "ERRO AO CARREGAR TOURS:",
         String(
-          tourEventsResult
-            .error.message
+          tourEventsResult.error.message
         ),
         "CODE:",
         String(
-          tourEventsResult
-            .error.code
+          tourEventsResult.error.code
         ),
         "DETAILS:",
         String(
-          tourEventsResult
-            .error.details
+          tourEventsResult.error.details
         ),
         "HINT:",
         String(
-          tourEventsResult
-            .error.hint
+          tourEventsResult.error.hint
         )
       );
     } else {
       setTourEvents(
-        tourEventsResult.data ||
-          []
+        tourEventsResult.data || []
       );
     }
 
@@ -380,32 +330,25 @@ export default function Calendar() {
   ALTERAR DIA
   ============================================================ */
 
-  async function toggleDay(
-    day: Date
-  ) {
+  async function toggleDay(day: Date) {
     const {
-      data: {
-        user,
-      },
-    } =
-      await supabase.auth.getUser();
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       window.location.href = "/";
       return;
     }
 
-    const date =
-      format(
-        day,
-        "yyyy-MM-dd"
-      );
+    const date = format(
+      day,
+      "yyyy-MM-dd"
+    );
 
     const existing =
       availability.find(
         (item) =>
-          item.date ===
-          date
+          item.date === date
       );
 
     /* ==========================================================
@@ -428,41 +371,28 @@ export default function Calendar() {
       const {
         data,
         error,
-      } =
-        await supabase
-          .from(
-            "availability"
-          )
-          .insert({
-            guide_id:
-              user.id,
-            date,
-            status:
-              "available",
-          })
-          .select(
-            "id, date, status"
-          )
-          .single();
+      } = await supabase
+        .from("availability")
+        .insert({
+          guide_id: user.id,
+          date,
+          status: "available",
+        })
+        .select(
+          "id, date, status"
+        )
+        .single();
 
       if (error) {
         console.error(
           "ERRO AO CRIAR DISPONIBILIDADE:",
-          String(
-            error.message
-          ),
+          String(error.message),
           "CODE:",
-          String(
-            error.code
-          ),
+          String(error.code),
           "DETAILS:",
-          String(
-            error.details
-          ),
+          String(error.details),
           "HINT:",
-          String(
-            error.hint
-          )
+          String(error.hint)
         );
 
         return;
@@ -489,42 +419,31 @@ export default function Calendar() {
       const {
         data,
         error,
-      } =
-        await supabase
-          .from(
-            "availability"
-          )
-          .update({
-            status:
-              "unavailable",
-          })
-          .eq(
-            "id",
-            existing.id
-          )
-          .select(
-            "id, date, status"
-          )
-          .single();
+      } = await supabase
+        .from("availability")
+        .update({
+          status:
+            "unavailable",
+        })
+        .eq(
+          "id",
+          existing.id
+        )
+        .select(
+          "id, date, status"
+        )
+        .single();
 
       if (error) {
         console.error(
           "ERRO AO ATUALIZAR DISPONIBILIDADE:",
-          String(
-            error.message
-          ),
+          String(error.message),
           "CODE:",
-          String(
-            error.code
-          ),
+          String(error.code),
           "DETAILS:",
-          String(
-            error.details
-          ),
+          String(error.details),
           "HINT:",
-          String(
-            error.hint
-          )
+          String(error.hint)
         );
 
         return;
@@ -554,35 +473,24 @@ export default function Calendar() {
     ) {
       const {
         error,
-      } =
-        await supabase
-          .from(
-            "availability"
-          )
-          .delete()
-          .eq(
-            "id",
-            existing.id
-          );
+      } = await supabase
+        .from("availability")
+        .delete()
+        .eq(
+          "id",
+          existing.id
+        );
 
       if (error) {
         console.error(
           "ERRO AO REMOVER DISPONIBILIDADE:",
-          String(
-            error.message
-          ),
+          String(error.message),
           "CODE:",
-          String(
-            error.code
-          ),
+          String(error.code),
           "DETAILS:",
-          String(
-            error.details
-          ),
+          String(error.details),
           "HINT:",
-          String(
-            error.hint
-          )
+          String(error.hint)
         );
 
         return;
@@ -609,8 +517,7 @@ export default function Calendar() {
     const tour =
       tourEvents.find(
         (event) =>
-          event.date ===
-            date &&
+          event.date === date &&
           event.status ===
             "scheduled"
       );
@@ -672,10 +579,8 @@ export default function Calendar() {
 
   const days =
     eachDayOfInterval({
-      start:
-        calendarStart,
-      end:
-        calendarEnd,
+      start: calendarStart,
+      end: calendarEnd,
     });
 
   /* ============================================================
@@ -687,8 +592,7 @@ export default function Calendar() {
       currentMonth,
       "MMMM yyyy",
       {
-        locale:
-          ptBR,
+        locale: ptBR,
       }
     );
 
@@ -790,8 +694,7 @@ export default function Calendar() {
                 const existing =
                   availability.find(
                     (item) =>
-                      item.date ===
-                      date
+                      item.date === date
                   );
 
                 const sameMonth =
@@ -847,9 +750,7 @@ export default function Calendar() {
 
                 return (
                   <button
-                    key={
-                      date
-                    }
+                    key={date}
                     type="button"
                     onClick={() => {
 
@@ -861,7 +762,6 @@ export default function Calendar() {
 
                       /* ==========================================
                          ESCALADO
-                         ABRE TOUR
                       ========================================== */
 
                       if (
@@ -878,10 +778,7 @@ export default function Calendar() {
                          NORMAL
                       ========================================== */
 
-                      toggleDay(
-                        day
-                      );
-
+                      toggleDay(day);
                     }}
                     disabled={
                       loading ||
@@ -907,12 +804,10 @@ export default function Calendar() {
                       " "
                     )}
                   >
-
                     {format(
                       day,
                       "d"
                     )}
-
                   </button>
                 );
               }
@@ -990,20 +885,20 @@ export default function Calendar() {
       )}
 
       {/* ========================================================
-         MODAL DO TOUR
+         MODAL DO TOUR — RESPONSIVO
       ======================================================== */}
 
       {showTourModal &&
         selectedTour && (
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/50 p-3 pt-6 backdrop-blur-sm sm:items-center sm:p-4"
             onClick={
               closeTourModal
             }
           >
 
             <div
-              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white shadow-2xl"
+              className="my-auto max-h-[calc(100dvh-3rem)] w-full max-w-lg overflow-y-auto rounded-3xl bg-white shadow-2xl sm:max-h-[90vh]"
               onClick={(
                 event
               ) =>
@@ -1015,17 +910,17 @@ export default function Calendar() {
                  CABEÇALHO
               ================================================== */}
 
-              <div className="border-b border-gray-100 p-6">
+              <div className="sticky top-0 z-10 border-b border-gray-100 bg-white p-5 sm:p-6">
 
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-3">
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 pr-2">
 
                     <span className="inline-flex rounded-full bg-[#f3e5a5] px-3 py-1 text-xs font-extrabold text-[#806600]">
                       Tour escalado
                     </span>
 
-                    <h3 className="mt-3 break-words text-xl font-extrabold text-gray-900 sm:text-2xl">
+                    <h3 className="mt-3 break-words text-xl font-extrabold leading-tight text-gray-900 sm:text-2xl">
                       {
                         selectedTour.title
                       }
@@ -1051,7 +946,7 @@ export default function Calendar() {
                  CONTEÚDO
               ================================================== */}
 
-              <div className="space-y-4 p-6">
+              <div className="space-y-4 p-5 sm:p-6">
 
                 {/* DATA / HORÁRIO */}
 
@@ -1081,7 +976,13 @@ export default function Calendar() {
                     {
                       selectedTour.all_day
                         ? "📅 Dia inteiro"
-                        : `🕐 ${selectedTour.start_time || "09:00"} às ${selectedTour.end_time || "10:00"}`
+                        : `🕐 ${
+                            selectedTour.start_time ||
+                            "09:00"
+                          } às ${
+                            selectedTour.end_time ||
+                            "10:00"
+                          }`
                     }
 
                   </p>
@@ -1121,12 +1022,10 @@ export default function Calendar() {
                   </p>
 
                   <p className="mt-1 whitespace-pre-wrap break-words text-sm font-bold text-gray-800">
-
                     {
                       selectedTour.address ||
                       "Nenhum endereço informado."
                     }
-
                   </p>
 
                 </div>
