@@ -1,7 +1,7 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
+
 import {
   addMonths,
   eachDayOfInterval,
@@ -13,8 +13,14 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
+
 import { ptBR } from "date-fns/locale";
+
 import { supabase } from "@/lib/supabase";
+
+/* ============================================================
+TIPOS
+============================================================ */
 
 type Availability = {
   id: number;
@@ -25,118 +31,344 @@ type Availability = {
     | "escalated";
 };
 
+type TourEvent = {
+  id: number;
+  date: string;
+  title: string;
+  description: string | null;
+  address: string | null;
+  all_day: boolean;
+  start_time: string | null;
+  end_time: string | null;
+  guide_id: string | null;
+  guide_email: string | null;
+  additional_email: string | null;
+  calendar_event_id: string | null;
+  status:
+    | "scheduled"
+    | "cancelled";
+  created_at: string;
+  updated_at: string;
+};
+
+/* ============================================================
+COMPONENTE
+============================================================ */
+
 export default function Calendar() {
-  const [currentMonth, setCurrentMonth] =
-    useState(new Date());
+  const [
+    currentMonth,
+    setCurrentMonth,
+  ] = useState(
+    new Date()
+  );
 
-  const [availability, setAvailability] =
-    useState<Availability[]>([]);
+  const [
+    availability,
+    setAvailability,
+  ] = useState<Availability[]>(
+    []
+  );
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    tourEvents,
+    setTourEvents,
+  ] = useState<TourEvent[]>(
+    []
+  );
 
-  // ============================================================
-  // CARREGAR DISPONIBILIDADE
-  // ============================================================
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  /* ============================================================
+  MODAL DO TOUR
+  ============================================================ */
+
+  const [
+    selectedTour,
+    setSelectedTour,
+  ] = useState<TourEvent | null>(
+    null
+  );
+
+  const [
+    showTourModal,
+    setShowTourModal,
+  ] = useState(false);
+
+  /* ============================================================
+  CARREGAR DISPONIBILIDADE + TOURS
+  ============================================================ */
 
   useEffect(() => {
-    // Carregamento inicial / troca de mês
     loadAvailability(true);
 
-    // ==========================================================
-    // ATUALIZAÇÃO EM TEMPO REAL
-    // ==========================================================
-    //
-    // IMPORTANTE:
-    // Aqui NÃO chamamos loadAvailability(true).
-    //
-    // O Realtime atualiza os dados silenciosamente,
-    // sem mostrar o loading novamente.
-    // ==========================================================
+    const channel =
+      supabase
+        .channel(
+          "guide-availability-calendar"
+        )
 
-    const channel = supabase
-      .channel("guide-availability")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "availability",
-        },
-        async () => {
-          await loadAvailability(false);
-        }
-      )
-      .subscribe();
+        /* ======================================================
+           AVAILABILITY
+        ====================================================== */
+
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "availability",
+          },
+          async () => {
+            await loadAvailability(
+              false
+            );
+          }
+        )
+
+        /* ======================================================
+           TOUR EVENTS
+        ====================================================== */
+
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "tour_events",
+          },
+          async () => {
+            await loadAvailability(
+              false
+            );
+          }
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "tour_events",
+          },
+          async () => {
+            await loadAvailability(
+              false
+            );
+          }
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "tour_events",
+          },
+          async () => {
+            await loadAvailability(
+              false
+            );
+          }
+        )
+
+        .subscribe(
+          (status) => {
+            console.log(
+              "📡 GUIDE CALENDAR REALTIME:",
+              status
+            );
+          }
+        );
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(
+        channel
+      );
     };
-  }, [currentMonth]);
+  }, [
+    currentMonth,
+  ]);
 
-  // ============================================================
-  // BUSCAR DISPONIBILIDADE
-  // ============================================================
+  /* ============================================================
+  BUSCAR DADOS
+  ============================================================ */
 
   async function loadAvailability(
     showLoading = false
   ) {
-    // Só mostra loading quando realmente precisamos.
-    //
-    // Realtime:
-    // showLoading = false
-    //
-    // Carregamento inicial / troca de mês:
-    // showLoading = true
-
     if (showLoading) {
       setLoading(true);
     }
 
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: {
+        user,
+      },
+      error:
+        userError,
+    } =
+      await supabase.auth.getUser();
+
+    if (
+      userError
+    ) {
+      console.error(
+        "ERRO AO PEGAR USUÁRIO:",
+        userError
+      );
+    }
 
     if (!user) {
       window.location.href = "/";
       return;
     }
 
-    const firstDay = format(
-      startOfMonth(currentMonth),
-      "yyyy-MM-dd"
-    );
+    const firstDay =
+      format(
+        startOfMonth(
+          currentMonth
+        ),
+        "yyyy-MM-dd"
+      );
 
-    const lastDay = format(
-      endOfMonth(currentMonth),
-      "yyyy-MM-dd"
-    );
+    const lastDay =
+      format(
+        endOfMonth(
+          currentMonth
+        ),
+        "yyyy-MM-dd"
+      );
 
-    const { data, error } = await supabase
-      .from("availability")
-      .select(
-        "id, date, status"
-      )
-      .eq("guide_id", user.id)
-      .gte("date", firstDay)
-      .lte("date", lastDay)
-      .order("date");
+    /* ==========================================================
+       BUSCAR DISPONIBILIDADE E TOURS
+    ========================================================== */
 
-    if (error) {
+    const [
+      availabilityResult,
+      tourEventsResult,
+    ] =
+      await Promise.all([
+        supabase
+          .from("availability")
+          .select(
+            "id, date, status"
+          )
+          .eq(
+            "guide_id",
+            user.id
+          )
+          .gte(
+            "date",
+            firstDay
+          )
+          .lte(
+            "date",
+            lastDay
+          )
+          .order(
+            "date"
+          ),
+
+        supabase
+          .from("tour_events")
+          .select(
+            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+          )
+          .eq(
+            "guide_id",
+            user.id
+          )
+          .eq(
+            "status",
+            "scheduled"
+          )
+          .gte(
+            "date",
+            firstDay
+          )
+          .lte(
+            "date",
+            lastDay
+          )
+          .order(
+            "date"
+          ),
+      ]);
+
+    /* ==========================================================
+       AVAILABILITY
+    ========================================================== */
+
+    if (
+      availabilityResult.error
+    ) {
       console.error(
         "ERRO AO CARREGAR DISPONIBILIDADE:",
-        String(error.message),
+        String(
+          availabilityResult
+            .error.message
+        ),
         "CODE:",
-        String(error.code),
+        String(
+          availabilityResult
+            .error.code
+        ),
         "DETAILS:",
-        String(error.details),
+        String(
+          availabilityResult
+            .error.details
+        ),
         "HINT:",
-        String(error.hint)
+        String(
+          availabilityResult
+            .error.hint
+        )
       );
     } else {
-      // Atualiza os dados normalmente,
-      // mas sem ativar o loading.
-      setAvailability(data || []);
+      setAvailability(
+        availabilityResult.data ||
+          []
+      );
+    }
+
+    /* ==========================================================
+       TOURS
+    ========================================================== */
+
+    if (
+      tourEventsResult.error
+    ) {
+      console.error(
+        "ERRO AO CARREGAR TOURS:",
+        String(
+          tourEventsResult
+            .error.message
+        ),
+        "CODE:",
+        String(
+          tourEventsResult
+            .error.code
+        ),
+        "DETAILS:",
+        String(
+          tourEventsResult
+            .error.details
+        ),
+        "HINT:",
+        String(
+          tourEventsResult
+            .error.hint
+        )
+      );
+    } else {
+      setTourEvents(
+        tourEventsResult.data ||
+          []
+      );
     }
 
     if (showLoading) {
@@ -144,39 +376,42 @@ export default function Calendar() {
     }
   }
 
-  // ============================================================
-  // ALTERAR DIA
-  // ============================================================
+  /* ============================================================
+  ALTERAR DIA
+  ============================================================ */
 
-  async function toggleDay(day: Date) {
+  async function toggleDay(
+    day: Date
+  ) {
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: {
+        user,
+      },
+    } =
+      await supabase.auth.getUser();
 
     if (!user) {
       window.location.href = "/";
       return;
     }
 
-    const date = format(
-      day,
-      "yyyy-MM-dd"
-    );
+    const date =
+      format(
+        day,
+        "yyyy-MM-dd"
+      );
 
     const existing =
       availability.find(
         (item) =>
-          item.date === date
+          item.date ===
+          date
       );
 
-    // ==========================================================
-    // ESCALADO
-    // ==========================================================
-    //
-    // O administrador escalou esse guia.
-    //
-    // O guia NÃO pode alterar esse dia.
-    // ==========================================================
+    /* ==========================================================
+       ESCALADO
+       NÃO ALTERA
+    ========================================================== */
 
     if (
       existing?.status ===
@@ -185,18 +420,25 @@ export default function Calendar() {
       return;
     }
 
-    // ==========================================================
-    // NÃO MARCADO → DISPONÍVEL
-    // ==========================================================
+    /* ==========================================================
+       NÃO MARCADO → DISPONÍVEL
+    ========================================================== */
 
     if (!existing) {
-      const { data, error } =
+      const {
+        data,
+        error,
+      } =
         await supabase
-          .from("availability")
+          .from(
+            "availability"
+          )
           .insert({
-            guide_id: user.id,
+            guide_id:
+              user.id,
             date,
-            status: "available",
+            status:
+              "available",
           })
           .select(
             "id, date, status"
@@ -206,19 +448,26 @@ export default function Calendar() {
       if (error) {
         console.error(
           "ERRO AO CRIAR DISPONIBILIDADE:",
-          String(error.message),
+          String(
+            error.message
+          ),
           "CODE:",
-          String(error.code),
+          String(
+            error.code
+          ),
           "DETAILS:",
-          String(error.details),
+          String(
+            error.details
+          ),
           "HINT:",
-          String(error.hint)
+          String(
+            error.hint
+          )
         );
 
         return;
       }
 
-      // Atualização imediata da tela.
       setAvailability(
         (current) => [
           ...current,
@@ -229,19 +478,25 @@ export default function Calendar() {
       return;
     }
 
-    // ==========================================================
-    // DISPONÍVEL → INDISPONÍVEL
-    // ==========================================================
+    /* ==========================================================
+       DISPONÍVEL → INDISPONÍVEL
+    ========================================================== */
 
     if (
       existing.status ===
       "available"
     ) {
-      const { data, error } =
+      const {
+        data,
+        error,
+      } =
         await supabase
-          .from("availability")
+          .from(
+            "availability"
+          )
           .update({
-            status: "unavailable",
+            status:
+              "unavailable",
           })
           .eq(
             "id",
@@ -255,19 +510,26 @@ export default function Calendar() {
       if (error) {
         console.error(
           "ERRO AO ATUALIZAR DISPONIBILIDADE:",
-          String(error.message),
+          String(
+            error.message
+          ),
           "CODE:",
-          String(error.code),
+          String(
+            error.code
+          ),
           "DETAILS:",
-          String(error.details),
+          String(
+            error.details
+          ),
           "HINT:",
-          String(error.hint)
+          String(
+            error.hint
+          )
         );
 
         return;
       }
 
-      // Atualização imediata da tela.
       setAvailability(
         (current) =>
           current.map(
@@ -282,17 +544,21 @@ export default function Calendar() {
       return;
     }
 
-    // ==========================================================
-    // INDISPONÍVEL → REMOVE MARCAÇÃO
-    // ==========================================================
+    /* ==========================================================
+       INDISPONÍVEL → REMOVE
+    ========================================================== */
 
     if (
       existing.status ===
       "unavailable"
     ) {
-      const { error } =
+      const {
+        error,
+      } =
         await supabase
-          .from("availability")
+          .from(
+            "availability"
+          )
           .delete()
           .eq(
             "id",
@@ -302,19 +568,26 @@ export default function Calendar() {
       if (error) {
         console.error(
           "ERRO AO REMOVER DISPONIBILIDADE:",
-          String(error.message),
+          String(
+            error.message
+          ),
           "CODE:",
-          String(error.code),
+          String(
+            error.code
+          ),
           "DETAILS:",
-          String(error.details),
+          String(
+            error.details
+          ),
           "HINT:",
-          String(error.hint)
+          String(
+            error.hint
+          )
         );
 
         return;
       }
 
-      // Atualização imediata da tela.
       setAvailability(
         (current) =>
           current.filter(
@@ -326,9 +599,56 @@ export default function Calendar() {
     }
   }
 
-  // ============================================================
-  // CALENDÁRIO
-  // ============================================================
+  /* ============================================================
+  ABRIR TOUR DO DIA ESCALADO
+  ============================================================ */
+
+  function openEscalatedTour(
+    date: string
+  ) {
+    const tour =
+      tourEvents.find(
+        (event) =>
+          event.date ===
+            date &&
+          event.status ===
+            "scheduled"
+      );
+
+    if (!tour) {
+      alert(
+        "Este dia está escalado, mas ainda não foi encontrado um tour vinculado."
+      );
+
+      return;
+    }
+
+    setSelectedTour(
+      tour
+    );
+
+    setShowTourModal(
+      true
+    );
+  }
+
+  /* ============================================================
+  FECHAR TOUR
+  ============================================================ */
+
+  function closeTourModal() {
+    setShowTourModal(
+      false
+    );
+
+    setSelectedTour(
+      null
+    );
+  }
+
+  /* ============================================================
+  CALENDÁRIO
+  ============================================================ */
 
   const calendarStart =
     startOfWeek(
@@ -352,26 +672,29 @@ export default function Calendar() {
 
   const days =
     eachDayOfInterval({
-      start: calendarStart,
-      end: calendarEnd,
+      start:
+        calendarStart,
+      end:
+        calendarEnd,
     });
 
-  // ============================================================
-  // MÊS
-  // ============================================================
+  /* ============================================================
+  MÊS
+  ============================================================ */
 
   const monthName =
     format(
       currentMonth,
       "MMMM yyyy",
       {
-        locale: ptBR,
+        locale:
+          ptBR,
       }
     );
 
-  // ============================================================
-  // RENDER
-  // ============================================================
+  /* ============================================================
+  RENDER
+  ============================================================ */
 
   return (
     <div className="mt-4 rounded-2xl bg-white p-3 shadow-sm sm:mt-6 sm:rounded-3xl sm:p-6">
@@ -381,8 +704,6 @@ export default function Calendar() {
       {/* ====================================================== */}
 
       <div className="mb-4 flex items-center justify-between rounded-xl bg-gray-50 p-2 sm:mb-6 sm:rounded-2xl sm:p-3">
-
-        {/* MÊS ANTERIOR */}
 
         <button
           type="button"
@@ -400,13 +721,9 @@ export default function Calendar() {
           ←
         </button>
 
-        {/* MÊS */}
-
         <h4 className="text-base font-extrabold capitalize text-gray-900 sm:text-xl md:text-2xl">
           {monthName}
         </h4>
-
-        {/* PRÓXIMO MÊS */}
 
         <button
           type="button"
@@ -427,7 +744,7 @@ export default function Calendar() {
       </div>
 
       {/* ====================================================== */}
-      {/* DIAS DA SEMANA */}
+      {/* DIAS */}
       {/* ====================================================== */}
 
       <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-gray-700 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
@@ -490,9 +807,9 @@ export default function Calendar() {
                 let dayClass =
                   "bg-gray-100 text-gray-800 hover:bg-gray-200";
 
-                // ==================================================
-                // DISPONÍVEL
-                // ==================================================
+                /* ==================================================
+                   DISPONÍVEL
+                ================================================== */
 
                 if (
                   sameMonth &&
@@ -503,9 +820,9 @@ export default function Calendar() {
                     "bg-green-500 text-white hover:bg-green-600";
                 }
 
-                // ==================================================
-                // INDISPONÍVEL
-                // ==================================================
+                /* ==================================================
+                   INDISPONÍVEL
+                ================================================== */
 
                 if (
                   sameMonth &&
@@ -516,33 +833,63 @@ export default function Calendar() {
                     "bg-red-500 text-white hover:bg-red-600";
                 }
 
-                // ==================================================
-                // ESCALADO
-                // ==================================================
+                /* ==================================================
+                   ESCALADO
+                ================================================== */
 
                 if (
                   sameMonth &&
                   isEscalated
                 ) {
                   dayClass =
-                    "cursor-not-allowed bg-[#c9aa00] text-white shadow-inner";
+                    "cursor-pointer bg-[#c9aa00] text-white shadow-inner hover:bg-[#b59600]";
                 }
 
                 return (
                   <button
-                    key={date}
-                    type="button"
-                    onClick={() =>
-                      toggleDay(day)
+                    key={
+                      date
                     }
+                    type="button"
+                    onClick={() => {
+
+                      if (
+                        !sameMonth
+                      ) {
+                        return;
+                      }
+
+                      /* ==========================================
+                         ESCALADO
+                         ABRE TOUR
+                      ========================================== */
+
+                      if (
+                        isEscalated
+                      ) {
+                        openEscalatedTour(
+                          date
+                        );
+
+                        return;
+                      }
+
+                      /* ==========================================
+                         NORMAL
+                      ========================================== */
+
+                      toggleDay(
+                        day
+                      );
+
+                    }}
                     disabled={
                       loading ||
-                      !sameMonth ||
-                      isEscalated
+                      !sameMonth
                     }
                     title={
                       isEscalated
-                        ? "Você foi escalado para este dia pelo administrador"
+                        ? "Clique para ver as informações do tour"
                         : undefined
                     }
                     className={[
@@ -554,16 +901,18 @@ export default function Calendar() {
 
                       isEscalated &&
                       sameMonth
-                        ? "cursor-not-allowed"
+                        ? "cursor-pointer"
                         : "",
                     ].join(
                       " "
                     )}
                   >
+
                     {format(
                       day,
                       "d"
                     )}
+
                   </button>
                 );
               }
@@ -577,8 +926,6 @@ export default function Calendar() {
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
 
-            {/* ESCALADO */}
-
             <div className="flex items-center gap-1.5 sm:gap-2">
 
               <span className="h-3 w-3 rounded-md bg-[#c9aa00] ring-1 ring-[#d6c36a] sm:h-4 sm:w-4" />
@@ -588,8 +935,6 @@ export default function Calendar() {
               </span>
 
             </div>
-
-            {/* DISPONÍVEL */}
 
             <div className="flex items-center gap-1.5 sm:gap-2">
 
@@ -601,8 +946,6 @@ export default function Calendar() {
 
             </div>
 
-            {/* INDISPONÍVEL */}
-
             <div className="flex items-center gap-1.5 sm:gap-2">
 
               <span className="h-3 w-3 rounded-md bg-red-500 ring-1 ring-red-200 sm:h-4 sm:w-4" />
@@ -612,8 +955,6 @@ export default function Calendar() {
               </span>
 
             </div>
-
-            {/* NÃO MARCADO */}
 
             <div className="flex items-center gap-1.5 sm:gap-2">
 
@@ -628,7 +969,7 @@ export default function Calendar() {
           </div>
 
           {/* ==================================================== */}
-          {/* AVISO DE ESCALA */}
+          {/* AVISO */}
           {/* ==================================================== */}
 
           {availability.some(
@@ -639,8 +980,8 @@ export default function Calendar() {
             <div className="mt-4 rounded-xl border border-[#d6c36a] bg-[#fff9d9] px-4 py-3 text-xs font-semibold text-[#806600] sm:mt-5 sm:rounded-2xl sm:text-sm">
 
               🟡 Os dias em mostarda foram escalados pelo
-              administrador. Esses dias não podem ser alterados
-              por você.
+              administrador. Clique em um dia escalado para
+              visualizar as informações do tour.
 
             </div>
           )}
@@ -648,7 +989,199 @@ export default function Calendar() {
         </>
       )}
 
+      {/* ========================================================
+         MODAL DO TOUR
+      ======================================================== */}
+
+      {showTourModal &&
+        selectedTour && (
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={
+              closeTourModal
+            }
+          >
+
+            <div
+              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white shadow-2xl"
+              onClick={(
+                event
+              ) =>
+                event.stopPropagation()
+              }
+            >
+
+              {/* ==================================================
+                 CABEÇALHO
+              ================================================== */}
+
+              <div className="border-b border-gray-100 p-6">
+
+                <div className="flex items-start justify-between gap-4">
+
+                  <div className="min-w-0">
+
+                    <span className="inline-flex rounded-full bg-[#f3e5a5] px-3 py-1 text-xs font-extrabold text-[#806600]">
+                      Tour escalado
+                    </span>
+
+                    <h3 className="mt-3 break-words text-xl font-extrabold text-gray-900 sm:text-2xl">
+                      {
+                        selectedTour.title
+                      }
+                    </h3>
+
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={
+                      closeTourModal
+                    }
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-gray-500 transition hover:bg-gray-100 hover:text-gray-800"
+                  >
+                    ✕
+                  </button>
+
+                </div>
+
+              </div>
+
+              {/* ==================================================
+                 CONTEÚDO
+              ================================================== */}
+
+              <div className="space-y-4 p-6">
+
+                {/* DATA / HORÁRIO */}
+
+                <div className="rounded-2xl bg-blue-50 p-4">
+
+                  <p className="text-xs font-bold uppercase tracking-wide text-blue-500">
+                    Data
+                  </p>
+
+                  <p className="mt-1 text-sm font-extrabold capitalize text-blue-900">
+                    {
+                      format(
+                        new Date(
+                          `${selectedTour.date}T12:00:00`
+                        ),
+                        "dd 'de' MMMM 'de' yyyy",
+                        {
+                          locale:
+                            ptBR,
+                        }
+                      )
+                    }
+                  </p>
+
+                  <p className="mt-2 text-sm font-bold text-blue-800">
+
+                    {
+                      selectedTour.all_day
+                        ? "📅 Dia inteiro"
+                        : `🕐 ${selectedTour.start_time || "09:00"} às ${selectedTour.end_time || "10:00"}`
+                    }
+
+                  </p>
+
+                </div>
+
+                {/* DESCRIÇÃO */}
+
+                <div className="rounded-2xl bg-gray-50 p-4">
+
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                    Descrição
+                  </p>
+
+                  {selectedTour.description ? (
+                    <div
+                      className="mt-2 break-words text-sm font-medium leading-7 text-gray-800 [&_b]:font-black [&_strong]:font-black [&_i]:italic [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1"
+                      dangerouslySetInnerHTML={{
+                        __html:
+                          selectedTour.description,
+                      }}
+                    />
+                  ) : (
+                    <p className="mt-2 text-sm font-medium text-gray-500">
+                      Nenhuma descrição informada.
+                    </p>
+                  )}
+
+                </div>
+
+                {/* ENDEREÇO */}
+
+                <div className="rounded-2xl bg-gray-50 p-4">
+
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                    Endereço
+                  </p>
+
+                  <p className="mt-1 whitespace-pre-wrap break-words text-sm font-bold text-gray-800">
+
+                    {
+                      selectedTour.address ||
+                      "Nenhum endereço informado."
+                    }
+
+                  </p>
+
+                </div>
+
+                {/* EMAIL ADICIONAL */}
+
+                {selectedTour.additional_email && (
+                  <div className="rounded-2xl bg-gray-50 p-4">
+
+                    <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                      E-mail adicional
+                    </p>
+
+                    <p className="mt-1 break-all text-sm font-bold text-gray-800">
+                      {
+                        selectedTour.additional_email
+                      }
+                    </p>
+
+                  </div>
+                )}
+
+                {/* STATUS */}
+
+                <div className="rounded-2xl bg-yellow-50 p-4">
+
+                  <p className="text-xs font-bold uppercase tracking-wide text-yellow-600">
+                    Status
+                  </p>
+
+                  <p className="mt-1 text-sm font-extrabold text-[#806600]">
+                    🟡 Você está escalado para este tour.
+                  </p>
+
+                </div>
+
+                {/* FECHAR */}
+
+                <button
+                  type="button"
+                  onClick={
+                    closeTourModal
+                  }
+                  className="w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-extrabold text-white shadow-md transition hover:bg-[#0f75bd]"
+                >
+                  Fechar
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
     </div>
   );
 }
-
