@@ -64,6 +64,7 @@ type TourEvent = {
   guide_id: string | null;
   guide_email: string | null;
   additional_email: string | null;
+  additional_email_2: string | null;
   calendar_event_id: string | null;
   status:
     | "scheduled"
@@ -1192,6 +1193,11 @@ export default function AdminCalendar() {
     setTourAdditionalEmail,
   ] = useState("");
 
+const [
+  tourAdditionalEmail2,
+  setTourAdditionalEmail2,
+] = useState("");
+
   /* ============================================================
   EDIÇÃO
   ============================================================ */
@@ -1240,6 +1246,12 @@ export default function AdminCalendar() {
     editTourAdditionalEmail,
     setEditTourAdditionalEmail,
   ] = useState("");
+
+const [
+  editTourAdditionalEmail2,
+  setEditTourAdditionalEmail2,
+] = useState("");
+
 
   /* ============================================================
   CARREGAMENTO
@@ -1619,9 +1631,9 @@ export default function AdminCalendar() {
 
         supabase
           .from("tour_events")
-          .select(
-            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
-          )
+         .select(
+  "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, calendar_event_id, status, created_at, updated_at"
+)
           .gte(
             "date",
             firstDay
@@ -2177,6 +2189,8 @@ export default function AdminCalendar() {
       guideEmail?: string | null;
 
       additionalEmail?: string | null;
+
+      additionalEmail2?: string | null;
     }
   ) {
     const {
@@ -2308,6 +2322,9 @@ export default function AdminCalendar() {
       ""
     );
 
+setTourAdditionalEmail2(
+  ""
+);
     setLaunchTourWithoutGuide(
       false
     );
@@ -2377,6 +2394,10 @@ export default function AdminCalendar() {
     setTourAdditionalEmail(
       ""
     );
+
+setTourAdditionalEmail2(
+  ""
+);
 
     setLaunchTourWithoutGuide(
       true
@@ -2566,15 +2587,19 @@ guide_email:
               tourAdditionalEmail.trim() ||
               null,
 
+additional_email_2:
+  tourAdditionalEmail2.trim() ||
+  null,
+
             calendar_event_id:
               null,
 
             status:
               "scheduled",
           })
-          .select(
-            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
-          )
+         .select(
+  "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, calendar_event_id, status, created_at, updated_at"
+)
           .single();
 
       if (
@@ -2638,6 +2663,10 @@ guideEmail:
           additionalEmail:
             tourAdditionalEmail.trim() ||
             null,
+
+additionalEmail2:
+  tourAdditionalEmail2.trim() ||
+  null,
         });
 
       googleEventId =
@@ -3170,9 +3199,14 @@ if (
     );
 
     setEditTourAdditionalEmail(
-      event.additional_email ||
-        ""
-    );
+  event.additional_email ||
+    ""
+);
+
+setEditTourAdditionalEmail2(
+  event.additional_email_2 ||
+    ""
+);
 
     setShowTourEdit(
       true
@@ -3423,6 +3457,12 @@ if (
           additionalEmail:
             editTourAdditionalEmail.trim() ||
             null,
+
+additionalEmail2:
+  editTourAdditionalEmail2.trim() ||
+  null,
+
+
         });
       }
 
@@ -3473,14 +3513,19 @@ if (
             additional_email:
               editTourAdditionalEmail.trim() ||
               null,
+
+additional_email_2:
+  editTourAdditionalEmail2.trim() ||
+  null,
+
           })
           .eq(
             "id",
             selectedTourEvent.id
           )
-          .select(
-            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
-          )
+         .select(
+  "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, calendar_event_id, status, created_at, updated_at"
+)
           .single();
 
       if (
@@ -5996,6 +6041,37 @@ if (
 
               </div>
 
+
+<div className="mt-4">
+
+  <label className="text-sm font-extrabold text-gray-800">
+    E-mail adicional 2
+    <span className="ml-1 font-medium text-gray-400">
+      (opcional)
+    </span>
+  </label>
+
+  <input
+    type="email"
+    value={
+      tourAdditionalEmail2
+    }
+    onChange={(
+      event
+    ) =>
+      setTourAdditionalEmail2(
+        event.target.value
+      )
+    }
+    disabled={
+      updating
+    }
+    placeholder="cliente2@email.com"
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+  />
+
+</div>
+
               {/* EMAIL GUIA */}
 
               {
@@ -6781,6 +6857,36 @@ if (
                   />
 
                 </div>
+
+<div className="mt-4">
+
+  <label className="text-sm font-extrabold text-gray-800">
+    E-mail adicional 2
+    <span className="ml-1 font-medium text-gray-400">
+      (opcional)
+    </span>
+  </label>
+
+  <input
+    type="email"
+    value={
+      editTourAdditionalEmail2
+    }
+    onChange={(
+      event
+    ) =>
+      setEditTourAdditionalEmail2(
+        event.target.value
+      )
+    }
+    disabled={
+      updating
+    }
+    placeholder="cliente2@email.com"
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+  />
+
+</div>
 
                 {/* GOOGLE */}
 
