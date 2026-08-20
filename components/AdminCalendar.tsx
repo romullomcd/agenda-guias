@@ -12,14 +12,17 @@ import type {
 } from "react";
 
 import {
+  addDays,
   addMonths,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
   format,
+  isSameDay,
   isSameMonth,
   startOfMonth,
   startOfWeek,
+  subDays,
   subMonths,
 } from "date-fns";
 
@@ -65,6 +68,10 @@ type TourEvent = {
   created_at: string;
   updated_at: string;
 };
+
+type CalendarView =
+  | "month"
+  | "day";
 
 /* ============================================================
 BANDEIRAS
@@ -426,6 +433,7 @@ function RichTextEditor({
 
     try {
       selection.removeAllRanges();
+
       selection.addRange(
         range
       );
@@ -673,6 +681,10 @@ function RichTextEditor({
         unwrapBoldFromFragment(
           fragment
         );
+
+        range.insertNode(
+          fragment
+        );
       } else {
         const strong =
           document.createElement(
@@ -683,15 +695,8 @@ function RichTextEditor({
           fragment
         );
 
-        const wrapper =
-          document.createDocumentFragment();
-
-        wrapper.appendChild(
-          strong
-        );
-
         range.insertNode(
-          wrapper
+          strong
         );
 
         const newRange =
@@ -706,28 +711,9 @@ function RichTextEditor({
         selection.addRange(
           newRange
         );
-
-        saveSelection();
-        syncValue();
-
-        return;
       }
 
-      range.insertNode(
-        fragment
-      );
-
-      const insertedNodes =
-        Array.from(
-          range.commonAncestorContainer
-            .childNodes || []
-        );
-
-      if (
-        insertedNodes.length > 0
-      ) {
-        saveSelection();
-      }
+      saveSelection();
 
       syncValue();
     } catch (
@@ -752,6 +738,7 @@ function RichTextEditor({
       "bold"
     ) {
       toggleBold();
+
       return;
     }
 
@@ -771,6 +758,7 @@ function RichTextEditor({
       );
 
       syncValue();
+
       saveSelection();
     } catch (
       error
@@ -818,6 +806,7 @@ function RichTextEditor({
       );
 
       syncValue();
+
       saveSelection();
     } catch (
       error
@@ -1052,6 +1041,20 @@ export default function AdminCalendar() {
   );
 
   const [
+    currentDay,
+    setCurrentDay,
+  ] = useState(
+    new Date()
+  );
+
+  const [
+    calendarView,
+    setCalendarView,
+  ] = useState<CalendarView>(
+    "month"
+  );
+
+  const [
     guides,
     setGuides,
   ] = useState<Guide[]>(
@@ -1119,6 +1122,10 @@ export default function AdminCalendar() {
     false
   );
 
+  /* ============================================================
+  FORMULÁRIO
+  ============================================================ */
+
   const [
     showTourForm,
     setShowTourForm,
@@ -1157,6 +1164,10 @@ export default function AdminCalendar() {
     tourAdditionalEmail,
     setTourAdditionalEmail,
   ] = useState("");
+
+  /* ============================================================
+  EDIÇÃO
+  ============================================================ */
 
   const [
     showTourEdit,
@@ -1197,11 +1208,39 @@ export default function AdminCalendar() {
     setEditTourAdditionalEmail,
   ] = useState("");
 
+  /* ============================================================
+  CARREGAMENTO
+  ============================================================ */
+
   useEffect(() => {
     loadData();
   }, [
     currentMonth,
   ]);
+
+  /* ============================================================
+  AO ENTRAR NO MODO DIA
+  ============================================================ */
+
+  useEffect(() => {
+    if (
+      calendarView !==
+      "day"
+    ) {
+      return;
+    }
+
+    setCurrentDay(
+      (current) =>
+        current
+    );
+  }, [
+    calendarView,
+  ]);
+
+  /* ============================================================
+  REALTIME
+  ============================================================ */
 
   useEffect(() => {
     const channel =
@@ -1504,6 +1543,10 @@ export default function AdminCalendar() {
     currentMonth,
   ]);
 
+  /* ============================================================
+  CARREGAR DADOS
+  ============================================================ */
+
   async function loadData() {
     setLoading(
       true
@@ -1721,6 +1764,10 @@ export default function AdminCalendar() {
     );
   }
 
+  /* ============================================================
+  BUSCA
+  ============================================================ */
+
   const normalizedSearch =
     guideSearch
       .trim()
@@ -1747,6 +1794,10 @@ export default function AdminCalendar() {
       normalizedSearch,
     ]);
 
+  /* ============================================================
+  MAPA
+  ============================================================ */
+
   const guideMap =
     useMemo(
       () =>
@@ -1760,6 +1811,10 @@ export default function AdminCalendar() {
         ),
       [guides]
     );
+
+  /* ============================================================
+  AVAILABILITY FILTRADA
+  ============================================================ */
 
   const filteredAvailability =
     useMemo(() => {
@@ -1789,6 +1844,10 @@ export default function AdminCalendar() {
       normalizedSearch,
     ]);
 
+  /* ============================================================
+  TOURS FILTRADOS
+  ============================================================ */
+
   const filteredTourEvents =
     useMemo(() => {
       if (
@@ -1817,6 +1876,10 @@ export default function AdminCalendar() {
       normalizedSearch,
     ]);
 
+  /* ============================================================
+  CALENDÁRIO MÊS
+  ============================================================ */
+
   const calendarStart =
     startOfWeek(
       startOfMonth(
@@ -1844,6 +1907,10 @@ export default function AdminCalendar() {
       end:
         calendarEnd,
     });
+
+  /* ============================================================
+  DIA SELECIONADO
+  ============================================================ */
 
   const selectedDayData =
     selectedDate
@@ -1885,6 +1952,10 @@ export default function AdminCalendar() {
               "scheduled"
         )
       : [];
+
+  /* ============================================================
+  FUNÇÕES
+  ============================================================ */
 
   function getDayAvailability(
     date: string
@@ -1937,6 +2008,7 @@ export default function AdminCalendar() {
 
     return (
       <span className="inline-flex items-center gap-0.5 align-middle">
+
         {guide.languages.map(
           (language) => {
             const flag =
@@ -1965,6 +2037,7 @@ export default function AdminCalendar() {
             );
           }
         )}
+
       </span>
     );
   }
@@ -2010,6 +2083,10 @@ export default function AdminCalendar() {
 
     return value;
   }
+
+  /* ============================================================
+  GOOGLE CALENDAR
+  ============================================================ */
 
   async function callGoogleCalendar(
     payload: {
@@ -2085,6 +2162,10 @@ export default function AdminCalendar() {
     return result;
   }
 
+  /* ============================================================
+  ESCALAR
+  ============================================================ */
+
   function openEscalationForm() {
     if (
       !selectedGuideAvailability
@@ -2137,6 +2218,10 @@ export default function AdminCalendar() {
       true
     );
   }
+
+  /* ============================================================
+  CRIAR TOUR
+  ============================================================ */
 
   async function createTourAndEscalate() {
     if (
@@ -2258,11 +2343,6 @@ export default function AdminCalendar() {
         eventError ||
         !newEvent
       ) {
-        console.error(
-          "ERRO AO CRIAR TOUR:",
-          eventError
-        );
-
         throw new Error(
           "Não foi possível criar o tour no banco de dados."
         );
@@ -2343,11 +2423,6 @@ export default function AdminCalendar() {
         calendarIdError ||
         !eventWithGoogleId
       ) {
-        console.error(
-          "ERRO AO SALVAR CALENDAR EVENT ID:",
-          calendarIdError
-        );
-
         try {
           await callGoogleCalendar(
             {
@@ -2362,7 +2437,6 @@ export default function AdminCalendar() {
           cleanupError
         ) {
           console.error(
-            "ERRO AO DESFAZER EVENTO GOOGLE:",
             cleanupError
           );
         }
@@ -2405,11 +2479,6 @@ export default function AdminCalendar() {
       if (
         availabilityError
       ) {
-        console.error(
-          "ERRO AO ESCALAR GUIA:",
-          availabilityError
-        );
-
         try {
           await callGoogleCalendar(
             {
@@ -2424,7 +2493,6 @@ export default function AdminCalendar() {
           cleanupError
         ) {
           console.error(
-            "ERRO AO REMOVER EVENTO GOOGLE:",
             cleanupError
           );
         }
@@ -2519,6 +2587,10 @@ export default function AdminCalendar() {
     }
   }
 
+  /* ============================================================
+  REMOVER ESCALA
+  ============================================================ */
+
   async function unEscalateGuide() {
     if (
       !selectedGuideAvailability
@@ -2550,11 +2622,6 @@ export default function AdminCalendar() {
         );
 
     if (error) {
-      console.error(
-        "ERRO AO REMOVER ESCALA:",
-        error
-      );
-
       alert(
         "Não foi possível remover a escala."
       );
@@ -2594,6 +2661,10 @@ export default function AdminCalendar() {
     );
   }
 
+  /* ============================================================
+  ABRIR EDIÇÃO
+  ============================================================ */
+
   function openTourEdit(
     event: TourEvent
   ) {
@@ -2628,6 +2699,10 @@ export default function AdminCalendar() {
       true
     );
   }
+
+  /* ============================================================
+  SALVAR EDIÇÃO
+  ============================================================ */
 
   async function saveTourEdit() {
     if (
@@ -3015,6 +3090,10 @@ export default function AdminCalendar() {
     }
   }
 
+  /* ============================================================
+  CANCELAR
+  ============================================================ */
+
   async function cancelTour(
     event: TourEvent
   ) {
@@ -3170,6 +3249,143 @@ export default function AdminCalendar() {
     }
   }
 
+  /* ============================================================
+  NAVEGAÇÃO DO MÊS
+  ============================================================ */
+
+  function goPreviousMonth() {
+    setCurrentMonth(
+      subMonths(
+        currentMonth,
+        1
+      )
+    );
+  }
+
+  function goNextMonth() {
+    setCurrentMonth(
+      addMonths(
+        currentMonth,
+        1
+      )
+    );
+  }
+
+  /* ============================================================
+  NAVEGAÇÃO DO DIA
+  ============================================================ */
+
+  function goPreviousDay() {
+    const newDay =
+      subDays(
+        currentDay,
+        1
+      );
+
+    setCurrentDay(
+      newDay
+    );
+
+    setCurrentMonth(
+      newDay
+    );
+  }
+
+  function goNextDay() {
+    const newDay =
+      addDays(
+        currentDay,
+        1
+      );
+
+    setCurrentDay(
+      newDay
+    );
+
+    setCurrentMonth(
+      newDay
+    );
+  }
+
+  function goToday() {
+    const today =
+      new Date();
+
+    setCurrentDay(
+      today
+    );
+
+    setCurrentMonth(
+      today
+    );
+  }
+
+  /* ============================================================
+  QUANDO SELECIONAR UM DIA NO MÊS
+  ============================================================ */
+
+  function openDayView(
+    date: string
+  ) {
+    const day =
+      new Date(
+        `${date}T12:00:00`
+      );
+
+    setCurrentDay(
+      day
+    );
+
+    setCurrentMonth(
+      day
+    );
+
+    setCalendarView(
+      "day"
+    );
+  }
+
+  /* ============================================================
+  DIA ATUAL NO MODO DIA
+  ============================================================ */
+
+  const currentDayString =
+    format(
+      currentDay,
+      "yyyy-MM-dd"
+    );
+
+  const currentDayAvailability =
+    getDayAvailability(
+      currentDayString
+    );
+
+  const currentDayEvents =
+    getDayTourEvents(
+      currentDayString
+    );
+
+  const currentDayAvailable =
+    currentDayAvailability.filter(
+      (item) =>
+        item.status ===
+        "available"
+    );
+
+  const currentDayUnavailable =
+    currentDayAvailability.filter(
+      (item) =>
+        item.status ===
+        "unavailable"
+    );
+
+  const currentDayEscalated =
+    currentDayAvailability.filter(
+      (item) =>
+        item.status ===
+        "escalated"
+    );
+
   const monthName =
     format(
       currentMonth,
@@ -3180,6 +3396,20 @@ export default function AdminCalendar() {
       }
     );
 
+  const dayName =
+    format(
+      currentDay,
+      "EEEE, dd 'de' MMMM 'de' yyyy",
+      {
+        locale:
+          ptBR,
+      }
+    );
+
+  /* ============================================================
+  RENDER
+  ============================================================ */
+
   return (
     <div className="mt-4 rounded-2xl bg-white p-3 shadow-sm sm:mt-6 sm:rounded-3xl sm:p-6">
 
@@ -3187,85 +3417,153 @@ export default function AdminCalendar() {
          CABEÇALHO
       ====================================================== */}
 
-      <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:gap-5 md:flex-row md:items-center md:justify-between">
+      <div className="mb-4 flex flex-col gap-4 sm:mb-6">
 
-        <div>
-          <h3 className="text-lg font-extrabold text-gray-900 sm:text-2xl">
-            Agenda dos Guias
-          </h3>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 
-          <p className="mt-1 text-xs font-medium text-gray-600 sm:text-sm">
-            Visualize a disponibilidade, escalas e tours.
-          </p>
-        </div>
+          <div>
+            <h3 className="text-lg font-extrabold text-gray-900 sm:text-2xl">
+              Agenda dos Guias
+            </h3>
 
-        <div className="relative w-full md:w-80">
+            <p className="mt-1 text-xs font-medium text-gray-600 sm:text-sm">
+              Visualize a disponibilidade, escalas e tours.
+            </p>
+          </div>
 
-          <input
-            type="text"
-            value={
-              guideSearch
-            }
-            onChange={(
-              event
-            ) =>
-              setGuideSearch(
-                event.target.value
-              )
-            }
-            placeholder="Buscar guia pelo nome..."
-            className="w-full rounded-lg border-2 border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-100 sm:rounded-xl"
-          />
+          <div className="relative w-full md:w-80">
 
-          {guideSearch && (
-            <button
-              type="button"
-              onClick={() =>
+            <input
+              type="text"
+              value={
+                guideSearch
+              }
+              onChange={(
+                event
+              ) =>
                 setGuideSearch(
-                  ""
+                  event.target.value
                 )
               }
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 hover:text-gray-700"
-            >
-              ✕
-            </button>
-          )}
+              placeholder="Buscar guia pelo nome..."
+              className="w-full rounded-lg border-2 border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-100 sm:rounded-xl"
+            />
+
+            {guideSearch && (
+              <button
+                type="button"
+                onClick={() =>
+                  setGuideSearch(
+                    ""
+                  )
+                }
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            )}
+
+          </div>
 
         </div>
+
+        {guideSearch.trim() && (
+          <div className="rounded-xl bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-800 sm:text-sm">
+            {filteredGuides.length ===
+            0 ? (
+              <>
+                Nenhum guia encontrado para "
+                {guideSearch}".
+              </>
+            ) : (
+              <>
+                Mostrando a agenda de{" "}
+                <strong>
+                  {
+                    filteredGuides.length
+                  }
+                </strong>{" "}
+                guia
+                {filteredGuides.length !==
+                1
+                  ? "s"
+                  : ""}{" "}
+                encontrado
+                {filteredGuides.length !==
+                1
+                  ? "s"
+                  : ""}.
+              </>
+            )}
+          </div>
+        )}
+
       </div>
 
-      {guideSearch.trim() && (
-        <div className="mb-4 rounded-xl bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-800 sm:mb-6 sm:text-sm">
+      {/* ======================================================
+         SELETOR DE VISUALIZAÇÃO
+      ====================================================== */}
 
-          {filteredGuides.length ===
-          0 ? (
-            <>
-              Nenhum guia encontrado para "
-              {guideSearch}".
-            </>
-          ) : (
-            <>
-              Mostrando a agenda de{" "}
-              <strong>
-                {
-                  filteredGuides.length
-                }
-              </strong>{" "}
-              guia
-              {filteredGuides.length !==
-              1
-                ? "s"
-                : ""}{" "}
-              encontrado
-              {filteredGuides.length !==
-              1
-                ? "s"
-                : ""}.
-            </>
-          )}
+      <div className="mb-4 flex flex-col gap-3 rounded-xl bg-gray-50 p-2 sm:flex-row sm:items-center sm:justify-between sm:rounded-2xl sm:p-3">
+
+        <div className="flex rounded-xl border border-gray-200 bg-white p-1">
+
+          <button
+            type="button"
+            onClick={() =>
+              setCalendarView(
+                "month"
+              )
+            }
+            className={[
+              "flex-1 rounded-lg px-4 py-2 text-sm font-extrabold transition sm:flex-none",
+              calendarView ===
+              "month"
+                ? "bg-[#1687d9] text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-100",
+            ].join(
+              " "
+            )}
+          >
+            📅 Mês
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setCalendarView(
+                "day"
+              )
+            }
+            className={[
+              "flex-1 rounded-lg px-4 py-2 text-sm font-extrabold transition sm:flex-none",
+              calendarView ===
+              "day"
+                ? "bg-[#1687d9] text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-100",
+            ].join(
+              " "
+            )}
+          >
+            📌 Dia
+          </button>
 
         </div>
-      )}
+
+        {calendarView ===
+          "day" && (
+          <button
+            type="button"
+            onClick={
+              goToday
+            }
+            className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-extrabold text-gray-700 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
+          >
+            Hoje
+          </button>
+        )}
+
+      </div>
 
       {/* ======================================================
          NAVEGAÇÃO
@@ -3275,34 +3573,53 @@ export default function AdminCalendar() {
 
         <button
           type="button"
-          onClick={() =>
-            setCurrentMonth(
-              subMonths(
-                currentMonth,
-                1
-              )
-            )
+          onClick={
+            calendarView ===
+            "month"
+              ? goPreviousMonth
+              : goPreviousDay
           }
           className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+          aria-label={
+            calendarView ===
+            "month"
+              ? "Mês anterior"
+              : "Dia anterior"
+          }
         >
           ←
         </button>
 
-        <h4 className="px-2 text-base font-extrabold capitalize text-gray-900 sm:text-2xl">
-          {monthName}
-        </h4>
+        <div className="min-w-0 px-2 text-center">
+
+          {calendarView ===
+          "month" ? (
+            <h4 className="text-base font-extrabold capitalize text-gray-900 sm:text-2xl">
+              {monthName}
+            </h4>
+          ) : (
+            <h4 className="break-words text-sm font-extrabold capitalize text-gray-900 sm:text-xl">
+              {dayName}
+            </h4>
+          )}
+
+        </div>
 
         <button
           type="button"
-          onClick={() =>
-            setCurrentMonth(
-              addMonths(
-                currentMonth,
-                1
-              )
-            )
+          onClick={
+            calendarView ===
+            "month"
+              ? goNextMonth
+              : goNextDay
           }
           className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+          aria-label={
+            calendarView ===
+            "month"
+              ? "Próximo mês"
+              : "Próximo dia"
+          }
         >
           →
         </button>
@@ -3325,711 +3642,690 @@ export default function AdminCalendar() {
         </div>
       ) : (
         <>
+          {/* ====================================================
+             MODO MÊS
+          ==================================================== */}
 
-          {/* DIAS */}
+          {calendarView ===
+            "month" && (
+            <>
+              <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[8px] font-extrabold uppercase tracking-wide text-gray-800 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
 
-          <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[8px] font-extrabold uppercase tracking-wide text-gray-800 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
+                <div>Seg</div>
+                <div>Ter</div>
+                <div>Qua</div>
+                <div>Qui</div>
+                <div>Sex</div>
+                <div>Sáb</div>
+                <div>Dom</div>
 
-            <div>Seg</div>
-            <div>Ter</div>
-            <div>Qua</div>
-            <div>Qui</div>
-            <div>Sex</div>
-            <div>Sáb</div>
-            <div>Dom</div>
+              </div>
 
-          </div>
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
 
-          {/* CALENDÁRIO */}
+                {days.map(
+                  (day) => {
 
-          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                    const date =
+                      format(
+                        day,
+                        "yyyy-MM-dd"
+                      );
 
-            {days.map(
-              (day) => {
+                    const sameMonth =
+                      isSameMonth(
+                        day,
+                        currentMonth
+                      );
 
-                const date =
-                  format(
-                    day,
-                    "yyyy-MM-dd"
-                  );
-
-                const sameMonth =
-                  isSameMonth(
-                    day,
-                    currentMonth
-                  );
-
-                const dayItems =
-                  getDayAvailability(
-                    date
-                  );
-
-                const available =
-                  dayItems.filter(
-                    (item) =>
-                      item.status ===
-                      "available"
-                  );
-
-                const unavailable =
-                  dayItems.filter(
-                    (item) =>
-                      item.status ===
-                      "unavailable"
-                  );
-
-                const escalated =
-                  dayItems.filter(
-                    (item) =>
-                      item.status ===
-                      "escalated"
-                  );
-
-                const dayEvents =
-                  getDayTourEvents(
-                    date
-                  );
-
-                return (
-                  <button
-                    key={
-                      date
-                    }
-                    type="button"
-                    onClick={() =>
-                      sameMonth &&
-                      setSelectedDate(
+                    const dayItems =
+                      getDayAvailability(
                         date
-                      )
-                    }
-                    disabled={
-                      !sameMonth
-                    }
-                    className={[
-                      "min-h-[58px] overflow-hidden rounded-lg border p-1 text-left transition",
-                      "sm:min-h-32 sm:rounded-xl sm:p-2",
-                      !sameMonth
-                        ? "cursor-default border-transparent bg-gray-100 text-gray-400"
-                        : "border-gray-200 bg-white hover:border-[#1687d9] hover:shadow-md",
-                    ].join(
-                      " "
-                    )}
-                  >
+                      );
 
-                    {/* NÚMERO DO DIA */}
+                    const available =
+                      dayItems.filter(
+                        (item) =>
+                          item.status ===
+                          "available"
+                      );
 
-                    <div
-                      className={[
-                        "mb-1 text-right text-[9px] font-extrabold sm:mb-2 sm:text-sm",
-                        sameMonth
-                          ? "text-gray-900"
-                          : "text-gray-400",
-                      ].join(
-                        " "
-                      )}
-                    >
-                      {
-                        format(
-                          day,
-                          "d"
-                        )
-                      }
-                    </div>
+                    const unavailable =
+                      dayItems.filter(
+                        (item) =>
+                          item.status ===
+                          "unavailable"
+                      );
 
-                    {/* EVENTOS */}
+                    const escalated =
+                      dayItems.filter(
+                        (item) =>
+                          item.status ===
+                          "escalated"
+                      );
 
-                    <div className="space-y-0.5 overflow-hidden sm:space-y-1">
+                    const dayEvents =
+                      getDayTourEvents(
+                        date
+                      );
 
-                      {dayEvents
-                        .slice(
-                          0,
-                          2
-                        )
-                        .map(
-                          (
-                            event
-                          ) => (
-                            <div
-                              key={`event-${event.id}`}
-                              className="truncate rounded bg-blue-100 px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-blue-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                              title={
-                                event.title
-                              }
-                            >
-                              📅{" "}
-                              {
-                                event.title
-                              }
-                            </div>
+                    return (
+                      <button
+                        key={
+                          date
+                        }
+                        type="button"
+                        onClick={() =>
+                          sameMonth &&
+                          openDayView(
+                            date
                           )
+                        }
+                        disabled={
+                          !sameMonth
+                        }
+                        className={[
+                          "min-h-[58px] overflow-hidden rounded-lg border p-1 text-left transition",
+                          "sm:min-h-32 sm:rounded-xl sm:p-2",
+                          !sameMonth
+                            ? "cursor-default border-transparent bg-gray-100 text-gray-400"
+                            : "border-gray-200 bg-white hover:border-[#1687d9] hover:shadow-md",
+                        ].join(
+                          " "
                         )}
+                      >
 
-                      {dayEvents.length >
-                        2 && (
-                        <div className="px-0.5 text-[7px] font-bold leading-tight text-blue-700 sm:text-xs">
-                          +
+                        <div
+                          className={[
+                            "mb-1 text-right text-[9px] font-extrabold sm:mb-2 sm:text-sm",
+                            sameMonth
+                              ? "text-gray-900"
+                              : "text-gray-400",
+                          ].join(
+                            " "
+                          )}
+                        >
                           {
-                            dayEvents.length -
-                              2
-                          }{" "}
-                          tours
-                        </div>
-                      )}
-
-                      {escalated
-                        .slice(
-                          0,
-                          2
-                        )
-                        .map(
-                          (
-                            item
-                          ) => (
-                            <div
-                              key={`escalated-${item.id}`}
-                              className="truncate rounded bg-[#f3e5a5] px-0.5 py-0.5 text-[7px] font-bold leading-tight text-[#806600] sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                              title={getGuideName(
-                                item.guide_id
-                              )}
-                            >
-
-                              {
-                                getGuideFlags(
-                                  item.guide_id
-                                )
-                              }{" "}
-
-                              {
-                                getGuideName(
-                                  item.guide_id
-                                )
-                              }
-
-                            </div>
-                          )
-                        )}
-
-                      {escalated.length >
-                        2 && (
-                        <div className="px-0.5 text-[7px] font-bold leading-tight text-[#806600] sm:text-xs">
-                          +
-                          {
-                            escalated.length -
-                              2
-                          }{" "}
-                          escalados
-                        </div>
-                      )}
-
-                      {available
-                        .slice(
-                          0,
-                          2
-                        )
-                        .map(
-                          (
-                            item
-                          ) => (
-                            <div
-                              key={`available-${item.id}`}
-                              className="truncate rounded bg-green-100 px-0.5 py-0.5 text-[7px] font-semibold leading-tight text-green-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                              title={getGuideName(
-                                item.guide_id
-                              )}
-                            >
-
-                              {
-                                getGuideFlags(
-                                  item.guide_id
-                                )
-                              }{" "}
-
-                              {
-                                getGuideName(
-                                  item.guide_id
-                                )
-                              }
-
-                            </div>
-                          )
-                        )}
-
-                      {available.length >
-                        2 && (
-                        <div className="px-0.5 text-[7px] font-semibold leading-tight text-green-700 sm:text-xs">
-                          +
-                          {
-                            available.length -
-                              2
+                            format(
+                              day,
+                              "d"
+                            )
                           }
                         </div>
-                      )}
 
-                      {unavailable
-                        .slice(
-                          0,
-                          1
-                        )
-                        .map(
-                          (
-                            item
-                          ) => (
-                            <div
-                              key={`unavailable-${item.id}`}
-                              className="truncate rounded bg-red-100 px-0.5 py-0.5 text-[7px] font-semibold leading-tight text-red-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                              title={getGuideName(
-                                item.guide_id
-                              )}
-                            >
+                        <div className="space-y-0.5 overflow-hidden sm:space-y-1">
 
+                          {dayEvents
+                            .slice(
+                              0,
+                              2
+                            )
+                            .map(
+                              (
+                                event
+                              ) => (
+                                <div
+                                  key={`event-${event.id}`}
+                                  className="truncate rounded bg-blue-100 px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-blue-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                                  title={
+                                    event.title
+                                  }
+                                >
+                                  📅{" "}
+                                  {
+                                    event.title
+                                  }
+                                </div>
+                              )
+                            )}
+
+                          {dayEvents.length >
+                            2 && (
+                            <div className="px-0.5 text-[7px] font-bold leading-tight text-blue-700 sm:text-xs">
+                              +
                               {
-                                getGuideFlags(
-                                  item.guide_id
-                                )
+                                dayEvents.length -
+                                  2
                               }{" "}
-
-                              {
-                                getGuideName(
-                                  item.guide_id
-                                )
-                              }
-
+                              tours
                             </div>
-                          )
-                        )}
+                          )}
 
-                      {unavailable.length >
-                        1 && (
-                        <div className="px-0.5 text-[7px] font-semibold leading-tight text-red-700 sm:text-xs">
-                          +
-                          {
-                            unavailable.length -
+                          {escalated
+                            .slice(
+                              0,
+                              2
+                            )
+                            .map(
+                              (
+                                item
+                              ) => (
+                                <div
+                                  key={`escalated-${item.id}`}
+                                  className="truncate rounded bg-[#f3e5a5] px-0.5 py-0.5 text-[7px] font-bold leading-tight text-[#806600] sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                                  title={getGuideName(
+                                    item.guide_id
+                                  )}
+                                >
+                                  {
+                                    getGuideFlags(
+                                      item.guide_id
+                                    )
+                                  }{" "}
+                                  {
+                                    getGuideName(
+                                      item.guide_id
+                                    )
+                                  }
+                                </div>
+                              )
+                            )}
+
+                          {escalated.length >
+                            2 && (
+                            <div className="px-0.5 text-[7px] font-bold leading-tight text-[#806600] sm:text-xs">
+                              +
+                              {
+                                escalated.length -
+                                  2
+                              }{" "}
+                              escalados
+                            </div>
+                          )}
+
+                          {available
+                            .slice(
+                              0,
+                              2
+                            )
+                            .map(
+                              (
+                                item
+                              ) => (
+                                <div
+                                  key={`available-${item.id}`}
+                                  className="truncate rounded bg-green-100 px-0.5 py-0.5 text-[7px] font-semibold leading-tight text-green-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                                  title={getGuideName(
+                                    item.guide_id
+                                  )}
+                                >
+                                  {
+                                    getGuideFlags(
+                                      item.guide_id
+                                    )
+                                  }{" "}
+                                  {
+                                    getGuideName(
+                                      item.guide_id
+                                    )
+                                  }
+                                </div>
+                              )
+                            )}
+
+                          {available.length >
+                            2 && (
+                            <div className="px-0.5 text-[7px] font-semibold leading-tight text-green-700 sm:text-xs">
+                              +
+                              {
+                                available.length -
+                                  2
+                              }
+                            </div>
+                          )}
+
+                          {unavailable
+                            .slice(
+                              0,
                               1
-                          }
+                            )
+                            .map(
+                              (
+                                item
+                              ) => (
+                                <div
+                                  key={`unavailable-${item.id}`}
+                                  className="truncate rounded bg-red-100 px-0.5 py-0.5 text-[7px] font-semibold leading-tight text-red-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+                                  title={getGuideName(
+                                    item.guide_id
+                                  )}
+                                >
+                                  {
+                                    getGuideFlags(
+                                      item.guide_id
+                                    )
+                                  }{" "}
+                                  {
+                                    getGuideName(
+                                      item.guide_id
+                                    )
+                                  }
+                                </div>
+                              )
+                            )}
+
+                          {unavailable.length >
+                            1 && (
+                            <div className="px-0.5 text-[7px] font-semibold leading-tight text-red-700 sm:text-xs">
+                              +
+                              {
+                                unavailable.length -
+                                  1
+                              }
+                            </div>
+                          )}
+
                         </div>
-                      )}
 
-                    </div>
-
-                  </button>
-                );
-              }
-            )}
-
-          </div>
-
-          {/* LEGENDA */}
-
-          <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
-
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded bg-blue-100 ring-1 ring-blue-200 sm:h-4 sm:w-4" />
-              Tour
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded bg-[#f3e5a5] ring-1 ring-[#d6c36c] sm:h-4 sm:w-4" />
-              Escalado
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded bg-green-100 ring-1 ring-green-200 sm:h-4 sm:w-4" />
-              Disponível
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded bg-red-100 ring-1 ring-red-200 sm:h-4 sm:w-4" />
-              Indisponível
-            </div>
-
-          </div>
-
-        </>
-      )}
-
-      {/* ======================================================
-         MODAL DO DIA
-      ====================================================== */}
-
-      {selectedDate && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 backdrop-blur-sm sm:p-4"
-          onClick={() =>
-            setSelectedDate(
-              null
-            )
-          }
-        >
-
-          <div
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:rounded-3xl sm:p-6"
-            onClick={(
-              event
-            ) =>
-              event.stopPropagation()
-            }
-          >
-
-            <div className="flex items-start justify-between">
-
-              <div>
-
-                <h3 className="text-lg font-extrabold capitalize text-gray-900 sm:text-xl">
-                  {
-                    format(
-                      new Date(
-                        `${selectedDate}T12:00:00`
-                      ),
-                      "dd 'de' MMMM",
-                      {
-                        locale:
-                          ptBR,
-                      }
-                    )
+                      </button>
+                    );
                   }
-                </h3>
+                )}
 
-                <p className="mt-1 text-xs font-medium text-gray-500 sm:text-sm">
-                  Agenda do dia
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
+
+                <div className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded bg-blue-100 ring-1 ring-blue-200 sm:h-4 sm:w-4" />
+                  Tour
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded bg-[#f3e5a5] ring-1 ring-[#d6c36c] sm:h-4 sm:w-4" />
+                  Escalado
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded bg-green-100 ring-1 ring-green-200 sm:h-4 sm:w-4" />
+                  Disponível
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded bg-red-100 ring-1 ring-red-200 sm:h-4 sm:w-4" />
+                  Indisponível
+                </div>
+
+              </div>
+            </>
+          )}
+
+          {/* ====================================================
+             MODO DIA
+          ==================================================== */}
+
+          {calendarView ===
+            "day" && (
+            <div className="space-y-4">
+
+              {/* RESUMO DO DIA */}
+
+              <div className="rounded-2xl bg-blue-50 p-4 sm:p-5">
+
+                <p className="text-xs font-bold uppercase tracking-wide text-blue-500">
+                  Data selecionada
+                </p>
+
+                <p className="mt-1 text-base font-extrabold capitalize text-blue-900 sm:text-xl">
+                  {dayName}
                 </p>
 
               </div>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setSelectedDate(
-                    null
-                  )
-                }
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-base font-bold text-gray-700 transition hover:bg-gray-100 sm:h-9 sm:w-9 sm:rounded-xl sm:text-lg"
-              >
-                ✕
-              </button>
+              {/* TOURS */}
 
-            </div>
+              <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:p-5">
 
-            <div className="mt-5 sm:mt-6">
+                <div className="flex items-center justify-between gap-3">
 
-              <h4 className="text-sm font-extrabold text-blue-700 sm:text-base">
-                📅 Tours
-              </h4>
+                  <h4 className="text-sm font-extrabold text-blue-700 sm:text-base">
+                    📅 Tours
+                  </h4>
 
-              <div className="mt-2 space-y-2">
+                  <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-extrabold text-blue-700">
+                    {
+                      currentDayEvents.length
+                    }
+                  </span>
 
-                {selectedDayEvents.length ===
-                0 ? (
-                  <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
-                    Nenhum tour agendado para este dia.
-                  </p>
-                ) : (
-                  selectedDayEvents.map(
-                    (
-                      event
-                    ) => (
-                      <button
-                        key={
-                          event.id
-                        }
-                        type="button"
-                        onClick={() => {
-                          setSelectedTourEvent(
-                            event
-                          );
+                </div>
 
-                          setSelectedDate(
-                            null
-                          );
-                        }}
-                        className="flex w-full items-center justify-between rounded-xl bg-blue-50 px-4 py-3 text-left text-sm font-bold text-blue-800 transition hover:bg-blue-100"
-                      >
+                <div className="mt-3 space-y-2">
 
-                        <span className="min-w-0">
+                  {currentDayEvents.length ===
+                  0 ? (
+                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500">
+                      Nenhum tour agendado para este dia.
+                    </p>
+                  ) : (
+                    currentDayEvents.map(
+                      (
+                        event
+                      ) => (
+                        <button
+                          key={
+                            event.id
+                          }
+                          type="button"
+                          onClick={() =>
+                            setSelectedTourEvent(
+                              event
+                            )
+                          }
+                          className="flex w-full items-center justify-between gap-3 rounded-xl bg-blue-50 px-4 py-3 text-left transition hover:bg-blue-100"
+                        >
 
-                          <span className="block truncate">
-                            {
-                              event.title
-                            }
+                          <div className="min-w-0">
+
+                            <p className="truncate text-sm font-extrabold text-blue-900">
+                              {
+                                event.title
+                              }
+                            </p>
+
+                            <p className="mt-1 truncate text-xs font-semibold text-blue-600">
+                              {
+                                getGuideName(
+                                  event.guide_id
+                                )
+                              }
+                            </p>
+
+                          </div>
+
+                          <span className="shrink-0 text-blue-600">
+                            →
                           </span>
 
-                          <span className="mt-0.5 block text-xs font-semibold text-blue-600">
-                            {
-                              getGuideName(
-                                event.guide_id
-                              )
-                            }
-                          </span>
-
-                        </span>
-
-                        <span className="ml-3">
-                          →
-                        </span>
-
-                      </button>
+                        </button>
+                      )
                     )
-                  )
-                )}
+                  )}
+
+                </div>
 
               </div>
 
-            </div>
+              {/* ESCALADOS */}
 
-            <div className="mt-5 sm:mt-6">
+              <div className="rounded-2xl border border-yellow-100 bg-white p-4 shadow-sm sm:p-5">
 
-              <h4 className="text-sm font-extrabold text-[#806600] sm:text-base">
-                🟡 Escalados
-              </h4>
+                <div className="flex items-center justify-between gap-3">
 
-              <div className="mt-2 space-y-2">
+                  <h4 className="text-sm font-extrabold text-[#806600] sm:text-base">
+                    🟡 Escalados
+                  </h4>
 
-                {selectedEscalated.length ===
-                0 ? (
-                  <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
-                    Nenhum guia escalado para este dia.
-                  </p>
-                ) : (
-                  selectedEscalated.map(
-                    (
-                      item
-                    ) => {
+                  <span className="rounded-full bg-[#f3e5a5] px-2.5 py-1 text-xs font-extrabold text-[#806600]">
+                    {
+                      currentDayEscalated.length
+                    }
+                  </span>
 
-                      const guide =
-                        guideMap.get(
-                          item.guide_id
-                        );
+                </div>
 
-                      return (
-                        <button
-                          key={
-                            item.id
-                          }
-                          type="button"
-                          onClick={() => {
+                <div className="mt-3 space-y-2">
 
-                            if (
-                              guide
-                            ) {
-                              setSelectedGuideDetails(
+                  {currentDayEscalated.length ===
+                  0 ? (
+                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500">
+                      Nenhum guia escalado.
+                    </p>
+                  ) : (
+                    currentDayEscalated.map(
+                      (
+                        item
+                      ) => {
+
+                        const guide =
+                          guideMap.get(
+                            item.guide_id
+                          );
+
+                        return (
+                          <button
+                            key={
+                              item.id
+                            }
+                            type="button"
+                            onClick={() => {
+
+                              if (
                                 guide
-                              );
+                              ) {
+                                setSelectedGuideDetails(
+                                  guide
+                                );
 
-                              setSelectedGuideAvailability(
-                                item
-                              );
-                            }
+                                setSelectedGuideAvailability(
+                                  item
+                                );
+                              }
 
-                          }}
-                          className="flex w-full items-center justify-between rounded-xl bg-[#f3e5a5] px-4 py-3 text-left text-sm font-bold text-[#806600] transition hover:bg-[#ead98c]"
-                        >
+                            }}
+                            className="flex w-full items-center justify-between gap-3 rounded-xl bg-[#f3e5a5] px-4 py-3 text-left transition hover:bg-[#ead98c]"
+                          >
 
-                          <span className="flex min-w-0 items-center gap-2">
+                            <span className="flex min-w-0 items-center gap-2">
 
-                            {
-                              getGuideFlags(
-                                item.guide_id
-                              )
-                            }
-
-                            <span className="truncate">
                               {
-                                getGuideName(
+                                getGuideFlags(
                                   item.guide_id
                                 )
                               }
+
+                              <span className="truncate text-sm font-extrabold text-[#806600]">
+                                {
+                                  getGuideName(
+                                    item.guide_id
+                                  )
+                                }
+                              </span>
+
                             </span>
 
-                          </span>
+                            <span className="shrink-0 text-[#806600]">
+                              →
+                            </span>
 
-                          <span>
-                            →
-                          </span>
+                          </button>
+                        );
+                      }
+                    )
+                  )}
 
-                        </button>
-                      );
-                    }
-                  )
-                )}
+                </div>
 
               </div>
 
-            </div>
+              {/* DISPONÍVEIS */}
 
-            <div className="mt-5 sm:mt-6">
+              <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm sm:p-5">
 
-              <h4 className="text-sm font-extrabold text-green-700 sm:text-base">
-                🟢 Disponíveis
-              </h4>
+                <div className="flex items-center justify-between gap-3">
 
-              <div className="mt-2 space-y-2">
+                  <h4 className="text-sm font-extrabold text-green-700 sm:text-base">
+                    🟢 Disponíveis
+                  </h4>
 
-                {selectedAvailable.length ===
-                0 ? (
-                  <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
-                    Nenhum guia marcado como disponível.
-                  </p>
-                ) : (
-                  selectedAvailable.map(
-                    (
-                      item
-                    ) => {
+                  <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-extrabold text-green-700">
+                    {
+                      currentDayAvailable.length
+                    }
+                  </span>
 
-                      const guide =
-                        guideMap.get(
-                          item.guide_id
-                        );
+                </div>
 
-                      return (
-                        <button
-                          key={
-                            item.id
-                          }
-                          type="button"
-                          onClick={() => {
+                <div className="mt-3 space-y-2">
 
-                            if (
-                              guide
-                            ) {
-                              setSelectedGuideDetails(
+                  {currentDayAvailable.length ===
+                  0 ? (
+                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500">
+                      Nenhum guia disponível.
+                    </p>
+                  ) : (
+                    currentDayAvailable.map(
+                      (
+                        item
+                      ) => {
+
+                        const guide =
+                          guideMap.get(
+                            item.guide_id
+                          );
+
+                        return (
+                          <button
+                            key={
+                              item.id
+                            }
+                            type="button"
+                            onClick={() => {
+
+                              if (
                                 guide
-                              );
+                              ) {
+                                setSelectedGuideDetails(
+                                  guide
+                                );
 
-                              setSelectedGuideAvailability(
-                                item
-                              );
-                            }
+                                setSelectedGuideAvailability(
+                                  item
+                                );
+                              }
 
-                          }}
-                          className="flex w-full items-center justify-between rounded-xl bg-green-50 px-4 py-3 text-left text-sm font-bold text-green-800 transition hover:bg-green-100"
-                        >
+                            }}
+                            className="flex w-full items-center justify-between gap-3 rounded-xl bg-green-50 px-4 py-3 text-left transition hover:bg-green-100"
+                          >
 
-                          <span className="flex min-w-0 items-center gap-2">
+                            <span className="flex min-w-0 items-center gap-2">
 
-                            {
-                              getGuideFlags(
-                                item.guide_id
-                              )
-                            }
-
-                            <span className="truncate">
                               {
-                                getGuideName(
+                                getGuideFlags(
                                   item.guide_id
                                 )
                               }
+
+                              <span className="truncate text-sm font-extrabold text-green-800">
+                                {
+                                  getGuideName(
+                                    item.guide_id
+                                  )
+                                }
+                              </span>
+
                             </span>
 
-                          </span>
+                            <span className="shrink-0 text-green-600">
+                              →
+                            </span>
 
-                          <span className="text-green-600">
-                            →
-                          </span>
+                          </button>
+                        );
+                      }
+                    )
+                  )}
 
-                        </button>
-                      );
-                    }
-                  )
-                )}
+                </div>
 
               </div>
 
-            </div>
+              {/* INDISPONÍVEIS */}
 
-            <div className="mt-5 sm:mt-6">
+              <div className="rounded-2xl border border-red-100 bg-white p-4 shadow-sm sm:p-5">
 
-              <h4 className="text-sm font-extrabold text-red-700 sm:text-base">
-                🔴 Indisponíveis
-              </h4>
+                <div className="flex items-center justify-between gap-3">
 
-              <div className="mt-2 space-y-2">
+                  <h4 className="text-sm font-extrabold text-red-700 sm:text-base">
+                    🔴 Indisponíveis
+                  </h4>
 
-                {selectedUnavailable.length ===
-                0 ? (
-                  <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
-                    Nenhum guia marcado como indisponível.
-                  </p>
-                ) : (
-                  selectedUnavailable.map(
-                    (
-                      item
-                    ) => {
+                  <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-extrabold text-red-700">
+                    {
+                      currentDayUnavailable.length
+                    }
+                  </span>
 
-                      const guide =
-                        guideMap.get(
-                          item.guide_id
-                        );
+                </div>
 
-                      return (
-                        <button
-                          key={
-                            item.id
-                          }
-                          type="button"
-                          onClick={() => {
+                <div className="mt-3 space-y-2">
 
-                            if (
-                              guide
-                            ) {
-                              setSelectedGuideDetails(
+                  {currentDayUnavailable.length ===
+                  0 ? (
+                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500">
+                      Nenhum guia indisponível.
+                    </p>
+                  ) : (
+                    currentDayUnavailable.map(
+                      (
+                        item
+                      ) => {
+
+                        const guide =
+                          guideMap.get(
+                            item.guide_id
+                          );
+
+                        return (
+                          <button
+                            key={
+                              item.id
+                            }
+                            type="button"
+                            onClick={() => {
+
+                              if (
                                 guide
-                              );
+                              ) {
+                                setSelectedGuideDetails(
+                                  guide
+                                );
 
-                              setSelectedGuideAvailability(
-                                item
-                              );
-                            }
+                                setSelectedGuideAvailability(
+                                  item
+                                );
+                              }
 
-                          }}
-                          className="flex w-full items-center justify-between rounded-xl bg-red-50 px-4 py-3 text-left text-sm font-bold text-red-800 transition hover:bg-red-100"
-                        >
+                            }}
+                            className="flex w-full items-center justify-between gap-3 rounded-xl bg-red-50 px-4 py-3 text-left transition hover:bg-red-100"
+                          >
 
-                          <span className="flex min-w-0 items-center gap-2">
+                            <span className="flex min-w-0 items-center gap-2">
 
-                            {
-                              getGuideFlags(
-                                item.guide_id
-                              )
-                            }
-
-                            <span className="truncate">
                               {
-                                getGuideName(
+                                getGuideFlags(
                                   item.guide_id
                                 )
                               }
+
+                              <span className="truncate text-sm font-extrabold text-red-800">
+                                {
+                                  getGuideName(
+                                    item.guide_id
+                                  )
+                                }
+                              </span>
+
                             </span>
 
-                          </span>
+                            <span className="shrink-0 text-red-600">
+                              →
+                            </span>
 
-                          <span className="text-red-600">
-                            →
-                          </span>
+                          </button>
+                        );
+                      }
+                    )
+                  )}
 
-                        </button>
-                      );
-                    }
-                  )
-                )}
+                </div>
 
               </div>
 
             </div>
+          )}
 
-            <button
-              type="button"
-              onClick={() =>
-                setSelectedDate(
-                  null
-                )
-              }
-              className="mt-5 w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#0f75bd] sm:mt-6"
-            >
-              Fechar
-            </button>
-
-          </div>
-
-        </div>
+        </>
       )}
 
       {/* ======================================================
@@ -5258,6 +5554,393 @@ export default function AdminCalendar() {
           </div>
         )
       }
+
+      {/* ======================================================
+         MODAL DO DIA — LEGADO / SELEÇÃO
+      ====================================================== */}
+
+      {selectedDate &&
+        calendarView ===
+          "month" && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 backdrop-blur-sm sm:p-4"
+            onClick={() =>
+              setSelectedDate(
+                null
+              )
+            }
+          >
+
+            <div
+              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:rounded-3xl sm:p-6"
+              onClick={(
+                event
+              ) =>
+                event.stopPropagation()
+              }
+            >
+
+              <div className="flex items-start justify-between">
+
+                <div>
+
+                  <h3 className="text-lg font-extrabold capitalize text-gray-900 sm:text-xl">
+                    {
+                      format(
+                        new Date(
+                          `${selectedDate}T12:00:00`
+                        ),
+                        "dd 'de' MMMM",
+                        {
+                          locale:
+                            ptBR,
+                        }
+                      )
+                    }
+                  </h3>
+
+                  <p className="mt-1 text-xs font-medium text-gray-500 sm:text-sm">
+                    Agenda do dia
+                  </p>
+
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedDate(
+                      null
+                    )
+                  }
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-base font-bold text-gray-700 transition hover:bg-gray-100 sm:h-9 sm:w-9 sm:rounded-xl sm:text-lg"
+                >
+                  ✕
+                </button>
+
+              </div>
+
+              <div className="mt-5 sm:mt-6">
+
+                <h4 className="text-sm font-extrabold text-blue-700 sm:text-base">
+                  📅 Tours
+                </h4>
+
+                <div className="mt-2 space-y-2">
+
+                  {selectedDayEvents.length ===
+                  0 ? (
+                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+                      Nenhum tour agendado para este dia.
+                    </p>
+                  ) : (
+                    selectedDayEvents.map(
+                      (
+                        event
+                      ) => (
+                        <button
+                          key={
+                            event.id
+                          }
+                          type="button"
+                          onClick={() => {
+                            setSelectedTourEvent(
+                              event
+                            );
+
+                            setSelectedDate(
+                              null
+                            );
+                          }}
+                          className="flex w-full items-center justify-between rounded-xl bg-blue-50 px-4 py-3 text-left text-sm font-bold text-blue-800 transition hover:bg-blue-100"
+                        >
+
+                          <span className="min-w-0">
+
+                            <span className="block truncate">
+                              {
+                                event.title
+                              }
+                            </span>
+
+                            <span className="mt-0.5 block text-xs font-semibold text-blue-600">
+                              {
+                                getGuideName(
+                                  event.guide_id
+                                )
+                              }
+                            </span>
+
+                          </span>
+
+                          <span className="ml-3">
+                            →
+                          </span>
+
+                        </button>
+                      )
+                    )
+                  )}
+
+                </div>
+
+              </div>
+
+              <div className="mt-5 sm:mt-6">
+
+                <h4 className="text-sm font-extrabold text-[#806600] sm:text-base">
+                  🟡 Escalados
+                </h4>
+
+                <div className="mt-2 space-y-2">
+
+                  {selectedEscalated.length ===
+                  0 ? (
+                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+                      Nenhum guia escalado para este dia.
+                    </p>
+                  ) : (
+                    selectedEscalated.map(
+                      (
+                        item
+                      ) => {
+
+                        const guide =
+                          guideMap.get(
+                            item.guide_id
+                          );
+
+                        return (
+                          <button
+                            key={
+                              item.id
+                            }
+                            type="button"
+                            onClick={() => {
+
+                              if (
+                                guide
+                              ) {
+                                setSelectedGuideDetails(
+                                  guide
+                                );
+
+                                setSelectedGuideAvailability(
+                                  item
+                                );
+                              }
+
+                            }}
+                            className="flex w-full items-center justify-between rounded-xl bg-[#f3e5a5] px-4 py-3 text-left text-sm font-bold text-[#806600] transition hover:bg-[#ead98c]"
+                          >
+
+                            <span className="flex min-w-0 items-center gap-2">
+
+                              {
+                                getGuideFlags(
+                                  item.guide_id
+                                )
+                              }
+
+                              <span className="truncate">
+                                {
+                                  getGuideName(
+                                    item.guide_id
+                                  )
+                                }
+                              </span>
+
+                            </span>
+
+                            <span>
+                              →
+                            </span>
+
+                          </button>
+                        );
+                      }
+                    )
+                  )}
+
+                </div>
+
+              </div>
+
+              <div className="mt-5 sm:mt-6">
+
+                <h4 className="text-sm font-extrabold text-green-700 sm:text-base">
+                  🟢 Disponíveis
+                </h4>
+
+                <div className="mt-2 space-y-2">
+
+                  {selectedAvailable.length ===
+                  0 ? (
+                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+                      Nenhum guia marcado como disponível.
+                    </p>
+                  ) : (
+                    selectedAvailable.map(
+                      (
+                        item
+                      ) => {
+
+                        const guide =
+                          guideMap.get(
+                            item.guide_id
+                          );
+
+                        return (
+                          <button
+                            key={
+                              item.id
+                            }
+                            type="button"
+                            onClick={() => {
+
+                              if (
+                                guide
+                              ) {
+                                setSelectedGuideDetails(
+                                  guide
+                                );
+
+                                setSelectedGuideAvailability(
+                                  item
+                                );
+                              }
+
+                            }}
+                            className="flex w-full items-center justify-between rounded-xl bg-green-50 px-4 py-3 text-left text-sm font-bold text-green-800 transition hover:bg-green-100"
+                          >
+
+                            <span className="flex min-w-0 items-center gap-2">
+
+                              {
+                                getGuideFlags(
+                                  item.guide_id
+                                )
+                              }
+
+                              <span className="truncate">
+                                {
+                                  getGuideName(
+                                    item.guide_id
+                                  )
+                                }
+                              </span>
+
+                            </span>
+
+                            <span className="text-green-600">
+                              →
+                            </span>
+
+                          </button>
+                        );
+                      }
+                    )
+                  )}
+
+                </div>
+
+              </div>
+
+              <div className="mt-5 sm:mt-6">
+
+                <h4 className="text-sm font-extrabold text-red-700 sm:text-base">
+                  🔴 Indisponíveis
+                </h4>
+
+                <div className="mt-2 space-y-2">
+
+                  {selectedUnavailable.length ===
+                  0 ? (
+                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+                      Nenhum guia marcado como indisponível.
+                    </p>
+                  ) : (
+                    selectedUnavailable.map(
+                      (
+                        item
+                      ) => {
+
+                        const guide =
+                          guideMap.get(
+                            item.guide_id
+                          );
+
+                        return (
+                          <button
+                            key={
+                              item.id
+                            }
+                            type="button"
+                            onClick={() => {
+
+                              if (
+                                guide
+                              ) {
+                                setSelectedGuideDetails(
+                                  guide
+                                );
+
+                                setSelectedGuideAvailability(
+                                  item
+                                );
+                              }
+
+                            }}
+                            className="flex w-full items-center justify-between rounded-xl bg-red-50 px-4 py-3 text-left text-sm font-bold text-red-800 transition hover:bg-red-100"
+                          >
+
+                            <span className="flex min-w-0 items-center gap-2">
+
+                              {
+                                getGuideFlags(
+                                  item.guide_id
+                                )
+                              }
+
+                              <span className="truncate">
+                                {
+                                  getGuideName(
+                                    item.guide_id
+                                  )
+                                }
+                              </span>
+
+                            </span>
+
+                            <span className="text-red-600">
+                              →
+                            </span>
+
+                          </button>
+                        );
+                      }
+                    )
+                  )}
+
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedDate(
+                    null
+                  )
+                }
+                className="mt-5 w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#0f75bd] sm:mt-6"
+              >
+                Fechar
+              </button>
+
+            </div>
+
+          </div>
+        )}
 
     </div>
   );
