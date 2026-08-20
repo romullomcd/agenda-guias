@@ -1192,6 +1192,11 @@ export default function AdminCalendar() {
     setTourAdditionalEmail,
   ] = useState("");
 
+const [
+  tourAdditionalEmail2,
+  setTourAdditionalEmail2,
+] = useState("");
+
   /* ============================================================
   EDIÇÃO
   ============================================================ */
@@ -2177,7 +2182,11 @@ export default function AdminCalendar() {
       guideEmail?: string | null;
 
       additionalEmail?: string | null;
-    }
+
+      additionalEmail2?: string | null;
+ 
+
+   }
   ) {
     const {
       data: {
@@ -2308,6 +2317,10 @@ export default function AdminCalendar() {
       ""
     );
 
+setTourAdditionalEmail2(
+  ""
+);
+
     setLaunchTourWithoutGuide(
       false
     );
@@ -2377,6 +2390,10 @@ export default function AdminCalendar() {
     setTourAdditionalEmail(
       ""
     );
+
+setTourAdditionalEmail2(
+  ""
+);
 
     setLaunchTourWithoutGuide(
       true
@@ -2635,9 +2652,13 @@ guideEmail:
   guide?.email ||
   null,
 
-          additionalEmail:
-            tourAdditionalEmail.trim() ||
-            null,
+additionalEmail:
+  tourAdditionalEmail.trim() ||
+  null,
+
+additionalEmail2:
+  tourAdditionalEmail2.trim() ||
+  null,
         });
 
       googleEventId =
@@ -5995,6 +6016,36 @@ if (
                 />
 
               </div>
+
+<div className="mt-4">
+
+  <label className="text-sm font-extrabold text-gray-800">
+    E-mail adicional 2
+    <span className="ml-1 font-medium text-gray-400">
+      (opcional)
+    </span>
+  </label>
+
+  <input
+    type="email"
+    value={
+      tourAdditionalEmail2
+    }
+    onChange={(
+      event
+    ) =>
+      setTourAdditionalEmail2(
+        event.target.value
+      )
+    }
+    disabled={
+      updating
+    }
+    placeholder="cliente2@email.com"
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+  />
+
+</div>
 
               {/* EMAIL GUIA */}
 
