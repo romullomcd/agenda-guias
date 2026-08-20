@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -1325,12 +1324,41 @@ export default function Dashboard() {
 
                 </button>
 
+                {/* =================================================
+                   DROPDOWN DE NOTIFICAÇÕES
+                   CORRIGIDO PARA CELULAR
+                   ================================================= */}
+
                 {showNotifications && (
-                  <div className="absolute right-0 top-12 z-[200] w-[340px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+                  <div
+                    className="
+                      fixed
+                      left-1/2
+                      top-[68px]
+                      z-[200]
+                      w-[calc(100vw-24px)]
+                      max-w-[340px]
+                      -translate-x-1/2
+                      overflow-hidden
+                      rounded-2xl
+                      border
+                      border-gray-100
+                      bg-white
+                      shadow-2xl
 
-                    <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                      sm:absolute
+                      sm:left-auto
+                      sm:right-0
+                      sm:top-12
+                      sm:w-[340px]
+                      sm:max-w-none
+                      sm:translate-x-0
+                    "
+                  >
 
-                      <div>
+                    <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
+
+                      <div className="min-w-0">
 
                         <h3 className="text-sm font-extrabold text-gray-900">
                           Notificações
@@ -1357,7 +1385,7 @@ export default function Dashboard() {
                           onClick={
                             markAllAsRead
                           }
-                          className="text-[11px] font-bold text-[#1687d9] hover:underline"
+                          className="shrink-0 text-right text-[11px] font-bold text-[#1687d9] hover:underline"
                         >
                           Marcar todas como lidas
                         </button>
@@ -1365,7 +1393,7 @@ export default function Dashboard() {
 
                     </div>
 
-                    <div className="max-h-[420px] overflow-y-auto">
+                    <div className="max-h-[420px] overflow-y-auto overflow-x-hidden">
 
                       {notifications.length ===
                       0 ? (
@@ -1400,7 +1428,7 @@ export default function Dashboard() {
                                 )
                               }
                               className={[
-                                "flex w-full gap-3 border-b border-gray-50 px-4 py-4 text-left transition",
+                                "flex w-full min-w-0 gap-3 border-b border-gray-50 px-4 py-4 text-left transition",
                                 notification.read
                                   ? "bg-white hover:bg-gray-50"
                                   : "bg-blue-50/60 hover:bg-blue-50",
@@ -1434,11 +1462,11 @@ export default function Dashboard() {
 
                               <div className="min-w-0 flex-1">
 
-                                <div className="flex items-start justify-between gap-2">
+                                <div className="flex min-w-0 items-start justify-between gap-2">
 
                                   <p
                                     className={[
-                                      "text-sm",
+                                      "min-w-0 break-words text-sm",
                                       notification.read
                                         ? "font-bold text-gray-800"
                                         : "font-extrabold text-gray-900",
@@ -1457,13 +1485,13 @@ export default function Dashboard() {
 
                                 </div>
 
-                                <p className="mt-1 text-xs leading-relaxed text-gray-600">
+                                <p className="mt-1 break-words [overflow-wrap:anywhere] text-xs leading-relaxed text-gray-600">
                                   {
                                     notification.message
                                   }
                                 </p>
 
-                                <p className="mt-2 text-[10px] font-medium text-gray-400">
+                                <p className="mt-2 break-words text-[10px] font-medium text-gray-400">
                                   {formatNotificationDate(
                                     notification.created_at
                                   )}
@@ -1523,7 +1551,7 @@ export default function Dashboard() {
               </button>
 
               {showMenu && (
-                <div className="absolute right-0 top-12 z-[300] w-[290px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+                <div className="absolute right-0 top-12 z-[300] w-[290px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
 
                   <div className="border-b border-gray-100 bg-gray-50 px-5 py-4">
 
@@ -1905,34 +1933,34 @@ export default function Dashboard() {
         showNotificationModal &&
         activeNotification && (
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 px-5 backdrop-blur-[3px]"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 px-4 py-4 backdrop-blur-[3px]"
             role="dialog"
             aria-modal="true"
             aria-labelledby="notification-modal-title"
           >
 
-            <div className="w-full max-w-[500px] overflow-hidden rounded-[28px] bg-white shadow-2xl">
+            <div className="max-h-[90vh] w-full min-w-0 max-w-[500px] overflow-x-hidden overflow-y-auto rounded-[28px] bg-white shadow-2xl">
 
               <div className="h-2 bg-gradient-to-r from-[#e91e8c] via-[#ffd21c] to-[#1687d9]" />
 
-              <div className="px-7 pb-7 pt-8 sm:px-9 sm:pb-9 sm:pt-9">
+              <div className="min-w-0 px-5 pb-6 pt-7 sm:px-9 sm:pb-9 sm:pt-9">
 
                 <h2
                   id="notification-modal-title"
-                  className="text-center text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl"
+                  className="break-words text-center text-xl font-extrabold tracking-tight text-gray-900 sm:text-3xl"
                 >
                   {activeNotification.title}
                 </h2>
 
-                <div className="mt-6 text-center">
+                <div className="mt-5 min-w-0 text-center sm:mt-6">
 
-                  <p className="whitespace-pre-line text-base leading-7 text-gray-600 sm:text-lg sm:leading-8">
+                  <p className="whitespace-pre-line break-words [overflow-wrap:anywhere] text-sm leading-6 text-gray-600 sm:text-lg sm:leading-8">
                     {activeNotification.message}
                   </p>
 
                 </div>
 
-                <p className="mt-5 text-center text-xs font-medium text-gray-400">
+                <p className="mt-5 break-words text-center text-xs font-medium text-gray-400">
                   {formatNotificationDate(
                     activeNotification.created_at
                   )}
@@ -1943,7 +1971,7 @@ export default function Dashboard() {
                   onClick={
                     closeNotificationModal
                   }
-                  className="mt-7 w-full rounded-2xl bg-[#1687d9] px-5 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-200 transition hover:bg-[#0f75bd] hover:shadow-xl active:scale-[0.99]"
+                  className="mt-6 w-full rounded-2xl bg-[#1687d9] px-5 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-200 transition hover:bg-[#0f75bd] hover:shadow-xl active:scale-[0.99]"
                 >
                   Fechar
                 </button>
@@ -1958,4 +1986,3 @@ export default function Dashboard() {
     </main>
   );
 }
-
