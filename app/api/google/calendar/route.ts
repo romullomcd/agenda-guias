@@ -29,7 +29,6 @@ type CalendarRequest = {
 
   guideEmail?: string | null;
   additionalEmail?: string | null;
-  additionalEmail2?: string | null;
 
   colorId?: string | null;
 };
@@ -349,11 +348,10 @@ function buildGoogleEvent(
   CONVIDADOS
   ========================================================== */
 
-const emails = [
-  data.guideEmail?.trim(),
-  data.additionalEmail?.trim(),
-  data.additionalEmail2?.trim(),
-].filter(
+  const emails = [
+    data.guideEmail?.trim(),
+    data.additionalEmail?.trim(),
+  ].filter(
     (
       email
     ): email is string =>
