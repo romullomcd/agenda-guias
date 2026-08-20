@@ -530,13 +530,8 @@ export default function Calendar() {
       return;
     }
 
-    setSelectedTour(
-      tour
-    );
-
-    setShowTourModal(
-      true
-    );
+    setSelectedTour(tour);
+    setShowTourModal(true);
   }
 
   /* ============================================================
@@ -544,13 +539,8 @@ export default function Calendar() {
   ============================================================ */
 
   function closeTourModal() {
-    setShowTourModal(
-      false
-    );
-
-    setSelectedTour(
-      null
-    );
+    setShowTourModal(false);
+    setSelectedTour(null);
   }
 
   /* ============================================================
@@ -648,7 +638,7 @@ export default function Calendar() {
       </div>
 
       {/* ====================================================== */}
-      {/* DIAS */}
+      {/* DIAS DA SEMANA */}
       {/* ====================================================== */}
 
       <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-gray-700 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
@@ -694,7 +684,8 @@ export default function Calendar() {
                 const existing =
                   availability.find(
                     (item) =>
-                      item.date === date
+                      item.date ===
+                      date
                   );
 
                 const sameMonth =
@@ -760,10 +751,6 @@ export default function Calendar() {
                         return;
                       }
 
-                      /* ==========================================
-                         ESCALADO
-                      ========================================== */
-
                       if (
                         isEscalated
                       ) {
@@ -773,10 +760,6 @@ export default function Calendar() {
 
                         return;
                       }
-
-                      /* ==========================================
-                         NORMAL
-                      ========================================== */
 
                       toggleDay(day);
                     }}
@@ -822,43 +805,35 @@ export default function Calendar() {
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
 
             <div className="flex items-center gap-1.5 sm:gap-2">
-
               <span className="h-3 w-3 rounded-md bg-[#c9aa00] ring-1 ring-[#d6c36a] sm:h-4 sm:w-4" />
 
               <span>
                 Escalado
               </span>
-
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2">
-
               <span className="h-3 w-3 rounded-md bg-green-500 ring-1 ring-green-200 sm:h-4 sm:w-4" />
 
               <span>
                 Disponível
               </span>
-
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2">
-
               <span className="h-3 w-3 rounded-md bg-red-500 ring-1 ring-red-200 sm:h-4 sm:w-4" />
 
               <span>
                 Indisponível
               </span>
-
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2">
-
               <span className="h-3 w-3 rounded-md border border-gray-300 bg-gray-100 sm:h-4 sm:w-4" />
 
               <span>
                 Não marcado
               </span>
-
             </div>
 
           </div>
@@ -885,20 +860,34 @@ export default function Calendar() {
       )}
 
       {/* ========================================================
-         MODAL DO TOUR — RESPONSIVO
+         MODAL DO TOUR
       ======================================================== */}
 
       {showTourModal &&
         selectedTour && (
           <div
-            className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/50 p-3 pt-6 backdrop-blur-sm sm:items-center sm:p-4"
+            className="fixed inset-0 z-[9999] h-[100dvh] w-full overflow-y-auto bg-black/50 backdrop-blur-sm"
+            style={{
+              paddingTop:
+                "max(16px, env(safe-area-inset-top))",
+              paddingRight:
+                "16px",
+              paddingBottom:
+                "max(16px, env(safe-area-inset-bottom))",
+              paddingLeft:
+                "16px",
+            }}
             onClick={
               closeTourModal
             }
           >
 
             <div
-              className="my-auto max-h-[calc(100dvh-3rem)] w-full max-w-lg overflow-y-auto rounded-3xl bg-white shadow-2xl sm:max-h-[90vh]"
+              className="mx-auto w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl"
+              style={{
+                maxHeight:
+                  "calc(100dvh - max(16px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom)))",
+              }}
               onClick={(
                 event
               ) =>
@@ -910,11 +899,11 @@ export default function Calendar() {
                  CABEÇALHO
               ================================================== */}
 
-              <div className="sticky top-0 z-10 border-b border-gray-100 bg-white p-5 sm:p-6">
+              <div className="border-b border-gray-100 bg-white p-5 sm:p-6">
 
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
 
-                  <div className="min-w-0 pr-2">
+                  <div className="min-w-0 flex-1">
 
                     <span className="inline-flex rounded-full bg-[#f3e5a5] px-3 py-1 text-xs font-extrabold text-[#806600]">
                       Tour escalado
@@ -946,133 +935,143 @@ export default function Calendar() {
                  CONTEÚDO
               ================================================== */}
 
-              <div className="space-y-4 p-5 sm:p-6">
+              <div
+                className="overflow-y-auto p-5 sm:p-6"
+                style={{
+                  maxHeight:
+                    "calc(100dvh - max(16px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom)) - 100px)",
+                }}
+              >
 
-                {/* DATA / HORÁRIO */}
+                <div className="space-y-4">
 
-                <div className="rounded-2xl bg-blue-50 p-4">
+                  {/* DATA / HORÁRIO */}
 
-                  <p className="text-xs font-bold uppercase tracking-wide text-blue-500">
-                    Data
-                  </p>
+                  <div className="rounded-2xl bg-blue-50 p-4">
 
-                  <p className="mt-1 text-sm font-extrabold capitalize text-blue-900">
-                    {
-                      format(
-                        new Date(
-                          `${selectedTour.date}T12:00:00`
-                        ),
-                        "dd 'de' MMMM 'de' yyyy",
-                        {
-                          locale:
-                            ptBR,
-                        }
-                      )
-                    }
-                  </p>
-
-                  <p className="mt-2 text-sm font-bold text-blue-800">
-
-                    {
-                      selectedTour.all_day
-                        ? "📅 Dia inteiro"
-                        : `🕐 ${
-                            selectedTour.start_time ||
-                            "09:00"
-                          } às ${
-                            selectedTour.end_time ||
-                            "10:00"
-                          }`
-                    }
-
-                  </p>
-
-                </div>
-
-                {/* DESCRIÇÃO */}
-
-                <div className="rounded-2xl bg-gray-50 p-4">
-
-                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                    Descrição
-                  </p>
-
-                  {selectedTour.description ? (
-                    <div
-                      className="mt-2 break-words text-sm font-medium leading-7 text-gray-800 [&_b]:font-black [&_strong]:font-black [&_i]:italic [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1"
-                      dangerouslySetInnerHTML={{
-                        __html:
-                          selectedTour.description,
-                      }}
-                    />
-                  ) : (
-                    <p className="mt-2 text-sm font-medium text-gray-500">
-                      Nenhuma descrição informada.
+                    <p className="text-xs font-bold uppercase tracking-wide text-blue-500">
+                      Data
                     </p>
-                  )}
 
-                </div>
+                    <p className="mt-1 text-sm font-extrabold capitalize text-blue-900">
+                      {
+                        format(
+                          new Date(
+                            `${selectedTour.date}T12:00:00`
+                          ),
+                          "dd 'de' MMMM 'de' yyyy",
+                          {
+                            locale:
+                              ptBR,
+                          }
+                        )
+                      }
+                    </p>
 
-                {/* ENDEREÇO */}
+                    <p className="mt-2 text-sm font-bold text-blue-800">
 
-                <div className="rounded-2xl bg-gray-50 p-4">
+                      {
+                        selectedTour.all_day
+                          ? "📅 Dia inteiro"
+                          : `🕐 ${
+                              selectedTour.start_time ||
+                              "09:00"
+                            } às ${
+                              selectedTour.end_time ||
+                              "10:00"
+                            }`
+                      }
 
-                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                    Endereço
-                  </p>
+                    </p>
 
-                  <p className="mt-1 whitespace-pre-wrap break-words text-sm font-bold text-gray-800">
-                    {
-                      selectedTour.address ||
-                      "Nenhum endereço informado."
-                    }
-                  </p>
+                  </div>
 
-                </div>
+                  {/* DESCRIÇÃO */}
 
-                {/* EMAIL ADICIONAL */}
-
-                {selectedTour.additional_email && (
                   <div className="rounded-2xl bg-gray-50 p-4">
 
                     <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                      E-mail adicional
+                      Descrição
                     </p>
 
-                    <p className="mt-1 break-all text-sm font-bold text-gray-800">
+                    {selectedTour.description ? (
+                      <div
+                        className="mt-2 break-words text-sm font-medium leading-7 text-gray-800 [&_b]:font-black [&_strong]:font-black [&_i]:italic [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1"
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            selectedTour.description,
+                        }}
+                      />
+                    ) : (
+                      <p className="mt-2 text-sm font-medium text-gray-500">
+                        Nenhuma descrição informada.
+                      </p>
+                    )}
+
+                  </div>
+
+                  {/* ENDEREÇO */}
+
+                  <div className="rounded-2xl bg-gray-50 p-4">
+
+                    <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                      Endereço
+                    </p>
+
+                    <p className="mt-1 whitespace-pre-wrap break-words text-sm font-bold text-gray-800">
                       {
-                        selectedTour.additional_email
+                        selectedTour.address ||
+                        "Nenhum endereço informado."
                       }
                     </p>
 
                   </div>
-                )}
 
-                {/* STATUS */}
+                  {/* EMAIL */}
 
-                <div className="rounded-2xl bg-yellow-50 p-4">
+                  {selectedTour.additional_email && (
+                    <div className="rounded-2xl bg-gray-50 p-4">
 
-                  <p className="text-xs font-bold uppercase tracking-wide text-yellow-600">
-                    Status
-                  </p>
+                      <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                        E-mail adicional
+                      </p>
 
-                  <p className="mt-1 text-sm font-extrabold text-[#806600]">
-                    🟡 Você está escalado para este tour.
-                  </p>
+                      <p className="mt-1 break-all text-sm font-bold text-gray-800">
+                        {
+                          selectedTour.additional_email
+                        }
+                      </p>
+
+                    </div>
+                  )}
+
+                  {/* STATUS */}
+
+                  <div className="rounded-2xl bg-yellow-50 p-4">
+
+                    <p className="text-xs font-bold uppercase tracking-wide text-yellow-600">
+                      Status
+                    </p>
+
+                    <p className="mt-1 text-sm font-extrabold text-[#806600]">
+                      🟡 Você está escalado para este tour.
+                    </p>
+
+                  </div>
+
+                  {/* FECHAR */}
+
+                  <button
+                    type="button"
+                    onClick={
+                      closeTourModal
+                    }
+                    className="w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-extrabold text-white shadow-md transition hover:bg-[#0f75bd]"
+                  >
+                    Fechar
+                  </button>
 
                 </div>
-
-                {/* FECHAR */}
-
-                <button
-                  type="button"
-                  onClick={
-                    closeTourModal
-                  }
-                  className="w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-extrabold text-white shadow-md transition hover:bg-[#0f75bd]"
-                >
-                  Fechar
-                </button>
 
               </div>
 
