@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Calendar from "@/components/Calendar";
 import AdminCalendar from "@/components/AdminCalendar";
@@ -22,8 +22,11 @@ type Notification = {
 };
 
 export default function Dashboard() {
+  const menuRef = useRef<HTMLDivElement>(null);
+
   const [profile, setProfile] =
     useState<Profile | null>(null);
+
 
   const [loading, setLoading] =
     useState(true);
@@ -56,6 +59,34 @@ useEffect(() => {
     theme === "dark"
   );
 }, [theme]);
+
+
+useEffect(() => {
+  if (!showMenu) {
+    return;
+  }
+
+  function handleClickOutside(event: MouseEvent) {
+    if (
+      menuRef.current &&
+      !menuRef.current.contains(event.target as Node)
+    ) {
+      setShowMenu(false);
+    }
+  }
+
+  document.addEventListener(
+    "mousedown",
+    handleClickOutside
+  );
+
+  return () => {
+    document.removeEventListener(
+      "mousedown",
+      handleClickOutside
+    );
+  };
+}, [showMenu]);
 
 
   // ============================================================
@@ -1674,7 +1705,10 @@ hover:text-[#1687d9]"
               </button>
 
              {showMenu && (
-  <div className="absolute right-0 top-12 z-[300] w-[290px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-black shadow-2xl">
+  <div
+    ref={menuRef}
+    className="absolute right-0 top-12 z-[300] w-[290px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-black shadow-2xl"
+  >
 
                   <div className="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900 px-5 py-4">
 
