@@ -5910,7 +5910,7 @@ className={[
 
               <div>
 
-                <label className="text-sm font-extrabold text-gray-800">
+                <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                   Guia
                 </label>
 
@@ -5928,7 +5928,7 @@ className={[
                   disabled={
                     updating
                   }
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
                 >
 
 <option value="">
@@ -5969,7 +5969,7 @@ className={[
 
               <div>
 
-                <label className="text-sm font-extrabold text-gray-800">
+                <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                   Título do tour
                 </label>
 
@@ -5989,7 +5989,7 @@ className={[
                     updating
                   }
                   placeholder="Ex.: City Tour Rio"
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                 />
 
               </div>
@@ -6000,7 +6000,7 @@ className={[
 
                 <div className="mb-2 flex items-center justify-between gap-3">
 
-                  <label className="text-sm font-extrabold text-gray-800">
+                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                     Descrição
                   </label>
 
@@ -6029,7 +6029,7 @@ className={[
 
               <div>
 
-                <label className="text-sm font-extrabold text-gray-800">
+                <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                   Endereço
                   <span className="ml-1 font-medium text-gray-400">
                     (opcional)
@@ -6052,7 +6052,7 @@ className={[
                     updating
                   }
                   placeholder="Ex.: Av. Atlântica, 1702 - Copacabana"
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                 />
 
               </div>
@@ -6063,7 +6063,7 @@ className={[
 
               <div>
 
-                <label className="text-sm font-extrabold text-gray-800">
+                <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                   Cor do evento
                 </label>
 
@@ -6150,7 +6150,7 @@ className={[
 
                 <span>
 
-                  <span className="block text-sm font-extrabold text-gray-800">
+                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                     Dia inteiro
                   </span>
 
@@ -6169,7 +6169,7 @@ className={[
 
                   <div>
 
-                    <label className="text-sm font-extrabold text-gray-800">
+                    <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                       Horário de início
                     </label>
 
@@ -6195,7 +6195,7 @@ className={[
 
                   <div>
 
-                    <label className="text-sm font-extrabold text-gray-800">
+                    <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                       Horário de término
                     </label>
 
@@ -6226,7 +6226,7 @@ className={[
 
               <div>
 
-                <label className="text-sm font-extrabold text-gray-800">
+                <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                   E-mail adicional
                   <span className="ml-1 font-medium text-gray-400">
                     (opcional)
@@ -6257,7 +6257,7 @@ className={[
 
 <div className="mt-4">
 
-  <label className="text-sm font-extrabold text-gray-800">
+  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
     E-mail adicional 2
     <span className="ml-1 font-medium text-gray-400">
       (opcional)
