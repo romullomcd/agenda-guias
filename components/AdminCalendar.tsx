@@ -5681,7 +5681,7 @@ className={[
 
               </div>
 
-              <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-100">
+              <div className="rounded-2xl bg-green-50 dark:bg-green-950 p-4 ring-1 ring-green-100 dark:ring-green-900">
 
                 <p className="text-xs font-bold uppercase tracking-wide text-green-600">
                   Chave PIX
