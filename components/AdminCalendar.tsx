@@ -65,6 +65,7 @@ type TourEvent = {
   guide_email: string | null;
   additional_email: string | null;
   additional_email_2: string | null;
+  google_color_id: string | null;
   calendar_event_id: string | null;
   status:
     | "scheduled"
@@ -91,6 +92,71 @@ const LANGUAGE_FLAGS: Record<string, string> = {
   Mandarim: "/flags/cn.png",
   Japonês: "/flags/jp.png",
 };
+
+
+
+/* ============================================================
+CORES GOOGLE CALENDAR
+============================================================ */
+
+const GOOGLE_EVENT_COLORS = [
+  {
+    id: "1",
+    name: "Lavanda",
+    className: "bg-[#a4bdfc]",
+  },
+  {
+    id: "2",
+    name: "Verde claro",
+    className: "bg-[#7ae7bf]",
+  },
+  {
+    id: "3",
+    name: "Roxo",
+    className: "bg-[#dbadff]",
+  },
+  {
+    id: "4",
+    name: "Vermelho claro",
+    className: "bg-[#ff887c]",
+  },
+  {
+    id: "5",
+    name: "Amarelo",
+    className: "bg-[#fbd75b]",
+  },
+  {
+    id: "6",
+    name: "Laranja",
+    className: "bg-[#ffb878]",
+  },
+  {
+    id: "7",
+    name: "Ciano",
+    className: "bg-[#46d6db]",
+  },
+  {
+    id: "8",
+    name: "Cinza",
+    className: "bg-[#e1e1e1]",
+  },
+  {
+    id: "9",
+    name: "Azul",
+    className: "bg-[#5484ed]",
+  },
+  {
+    id: "10",
+    name: "Verde",
+    className: "bg-[#51b749]",
+  },
+  {
+    id: "11",
+    name: "Vermelho",
+    className: "bg-[#dc2127]",
+  },
+];
+
 
 /* ============================================================
 NORMALIZAR HTML
@@ -1198,6 +1264,11 @@ const [
   setTourAdditionalEmail2,
 ] = useState("");
 
+const [
+  tourColorId,
+  setTourColorId,
+] = useState("9");
+
   /* ============================================================
   EDIÇÃO
   ============================================================ */
@@ -1252,6 +1323,10 @@ const [
   setEditTourAdditionalEmail2,
 ] = useState("");
 
+const [
+  editTourColorId,
+  setEditTourColorId,
+] = useState("9");
 
   /* ============================================================
   CARREGAMENTO
@@ -1631,9 +1706,10 @@ const [
 
         supabase
           .from("tour_events")
-         .select(
-  "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, calendar_event_id, status, created_at, updated_at"
+.select(
+  "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, google_color_id, calendar_event_id, status, created_at, updated_at"
 )
+
           .gte(
             "date",
             firstDay
@@ -2159,6 +2235,41 @@ const [
     return value;
   }
 
+
+function getColorName(
+  colorId:
+    | string
+    | null
+    | undefined
+) {
+  return (
+    GOOGLE_EVENT_COLORS.find(
+      (color) =>
+        color.id ===
+        colorId
+    )?.name ||
+    "Azul"
+  );
+}
+
+function getColorClass(
+  colorId:
+    | string
+    | null
+    | undefined
+) {
+  return (
+    GOOGLE_EVENT_COLORS.find(
+      (color) =>
+        color.id ===
+        colorId
+    )?.className ||
+    "bg-[#5484ed]"
+  );
+}
+
+
+
   /* ============================================================
   GOOGLE CALENDAR
   ============================================================ */
@@ -2191,6 +2302,8 @@ const [
       additionalEmail?: string | null;
 
       additionalEmail2?: string | null;
+
+      colorId?: string | null;
     }
   ) {
     const {
@@ -2591,14 +2704,17 @@ additional_email_2:
   tourAdditionalEmail2.trim() ||
   null,
 
-            calendar_event_id:
-              null,
+google_color_id:
+  tourColorId,
+
+calendar_event_id:
+  null,
 
             status:
               "scheduled",
           })
-         .select(
-  "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, calendar_event_id, status, created_at, updated_at"
+ .select(
+  "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, google_color_id, calendar_event_id, status, created_at, updated_at"
 )
           .single();
 
@@ -2667,6 +2783,10 @@ guideEmail:
 additionalEmail2:
   tourAdditionalEmail2.trim() ||
   null,
+
+colorId:
+  tourColorId,
+
         });
 
       googleEventId =
@@ -3462,6 +3582,9 @@ additionalEmail2:
   editTourAdditionalEmail2.trim() ||
   null,
 
+colorId:
+  editTourColorId,
+
 
         });
       }
@@ -3518,13 +3641,16 @@ additional_email_2:
   editTourAdditionalEmail2.trim() ||
   null,
 
+google_color_id:
+  editTourColorId,
+
           })
           .eq(
             "id",
             selectedTourEvent.id
           )
-         .select(
-  "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, calendar_event_id, status, created_at, updated_at"
+.select(
+  "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, google_color_id, calendar_event_id, status, created_at, updated_at"
 )
           .single();
 
@@ -4435,7 +4561,13 @@ additional_email_2:
                               ) => (
                                 <div
                                   key={`event-${event.id}`}
-                                  className="truncate rounded bg-blue-100 px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-blue-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
+className={[
+  "truncate rounded px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-gray-900 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
+  getColorClass(
+    event.google_color_id ||
+      "9"
+  ),
+].join(" ")}
                                 >
                                   📅{" "}
                                   {
@@ -4667,18 +4799,24 @@ additional_email_2:
                               event
                             )
                           }
-                          className="flex w-full items-center justify-between gap-3 rounded-xl bg-blue-50 px-4 py-3 text-left transition hover:bg-blue-100"
+                         className={[
+  "flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left transition hover:opacity-90",
+  getColorClass(
+    event.google_color_id ||
+      "9"
+  ),
+].join(" ")}
                         >
 
                           <div className="min-w-0">
 
-                            <p className="truncate text-sm font-extrabold text-blue-900">
+                            <p className="truncate text-sm font-extrabold text-gray-900">
                               {
                                 event.title
                               }
                             </p>
 
-                            <p className="mt-1 truncate text-xs font-semibold text-blue-600">
+                            <p className="mt-1 truncate text-xs font-semibold text-gray-700">
 
                               {
                                 event.all_day
@@ -4698,7 +4836,7 @@ additional_email_2:
 
                           </div>
 
-                          <span className="shrink-0 text-blue-600">
+                          <span className="shrink-0 text-gray-700">
                             →
                           </span>
 
@@ -5103,7 +5241,13 @@ additional_email_2:
                             );
 
                           }}
-                          className="flex w-full items-center justify-between rounded-xl bg-blue-50 px-4 py-3 text-left text-sm font-bold text-blue-800 transition hover:bg-blue-100"
+className={[
+  "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-bold text-gray-900 transition hover:opacity-90",
+  getColorClass(
+    event.google_color_id ||
+      "9"
+  ),
+].join(" ")}
                         >
 
                           <span className="min-w-0">
@@ -5114,7 +5258,7 @@ additional_email_2:
                               }
                             </span>
 
-                            <span className="mt-0.5 block text-xs font-semibold text-blue-600">
+                            <span className="mt-0.5 block text-xs font-semibold text-gray-700">
 
                               {
                                 event.all_day
@@ -5912,6 +6056,75 @@ additional_email_2:
                 />
 
               </div>
+
+
+
+              {/* COR */}
+
+              <div>
+
+                <label className="text-sm font-extrabold text-gray-800">
+                  Cor do evento
+                </label>
+
+                <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
+
+                  {GOOGLE_EVENT_COLORS.map(
+                    (color) => (
+                      <button
+                        key={
+                          color.id
+                        }
+                        type="button"
+                        disabled={
+                          updating
+                        }
+                        onClick={() =>
+                          setTourColorId(
+                            color.id
+                          )
+                        }
+                        title={
+                          color.name
+                        }
+                        className={[
+                          "relative flex h-11 items-center justify-center rounded-xl border-2 transition",
+                          color.className,
+                          tourColorId ===
+                          color.id
+                            ? "border-gray-900 ring-4 ring-gray-200"
+                            : "border-transparent hover:scale-105",
+                        ].join(
+                          " "
+                        )}
+                      >
+
+                        {tourColorId ===
+                          color.id && (
+                          <span className="text-lg font-black text-white drop-shadow">
+                            ✓
+                          </span>
+                        )}
+
+                      </button>
+                    )
+                  )}
+
+                </div>
+
+                <p className="mt-2 text-xs font-medium text-gray-500">
+                  Cor selecionada:{" "}
+                  <strong>
+                    {
+                      getColorName(
+                        tourColorId
+                      )
+                    }
+                  </strong>
+                </p>
+
+              </div>
+
 
               {/* DIA INTEIRO */}
 
@@ -6765,6 +6978,75 @@ additional_email_2:
                   />
 
                 </div>
+
+
+                {/* COR */}
+
+                <div>
+
+                  <label className="text-sm font-extrabold text-gray-800">
+                    Cor do evento
+                  </label>
+
+                  <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
+
+                    {GOOGLE_EVENT_COLORS.map(
+                      (color) => (
+                        <button
+                          key={
+                            color.id
+                          }
+                          type="button"
+                          disabled={
+                            updating
+                          }
+                          onClick={() =>
+                            setEditTourColorId(
+                              color.id
+                            )
+                          }
+                          title={
+                            color.name
+                          }
+                          className={[
+                            "relative flex h-11 items-center justify-center rounded-xl border-2 transition",
+                            color.className,
+                            editTourColorId ===
+                            color.id
+                              ? "border-gray-900 ring-4 ring-gray-200"
+                              : "border-transparent hover:scale-105",
+                          ].join(
+                            " "
+                          )}
+                        >
+
+                          {editTourColorId ===
+                            color.id && (
+                            <span className="text-lg font-black text-white drop-shadow">
+                              ✓
+                            </span>
+                          )}
+
+                        </button>
+                      )
+                    )}
+
+                  </div>
+
+                  <p className="mt-2 text-xs font-medium text-gray-500">
+                    Cor selecionada:{" "}
+                    <strong>
+                      {
+                        getColorName(
+                          editTourColorId
+                        )
+                      }
+                    </strong>
+                  </p>
+
+                </div>
+
+
 
                 {/* DIA INTEIRO */}
 
