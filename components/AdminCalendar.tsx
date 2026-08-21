@@ -5839,7 +5839,7 @@ className={[
                       : "🟡 Escalar guia"}
                   </h3>
 
-                  <p className="mt-1 text-sm font-medium text-gray-500">
+                  <p className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-300">
                     {launchTourWithoutGuide
                       ? "Crie o tour diretamente neste dia. O guia é opcional."
                       : "Crie o tour que ficará na agenda e no Google Calendar."}
@@ -6128,7 +6128,7 @@ className={[
 
               {/* DIA INTEIRO */}
 
-              <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 p-4">
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 dark:bg-gray-900 p-4">
 
                 <input
                   type="checkbox"
@@ -6154,7 +6154,7 @@ className={[
   Dia inteiro
 </span>
 
-                  <span className="block text-xs font-medium text-gray-500">
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-300">
                     O evento ocupará o dia inteiro na agenda.
                   </span>
 
@@ -6188,7 +6188,7 @@ className={[
                       disabled={
                         updating
                       }
-                      className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                      className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
                     />
 
                   </div>
@@ -6214,7 +6214,7 @@ className={[
                       disabled={
                         updating
                       }
-                      className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                      className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
                     />
 
                   </div>
@@ -6228,7 +6228,7 @@ className={[
 
                 <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                   E-mail adicional
-                  <span className="ml-1 font-medium text-gray-400">
+                  <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
                     (opcional)
                   </span>
                 </label>
@@ -6249,7 +6249,7 @@ className={[
                     updating
                   }
                   placeholder="cliente@email.com"
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                 />
 
               </div>
@@ -6259,7 +6259,7 @@ className={[
 
   <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
     E-mail adicional 2
-    <span className="ml-1 font-medium text-gray-400">
+    <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
       (opcional)
     </span>
   </label>
@@ -6280,7 +6280,7 @@ className={[
       updating
     }
     placeholder="cliente2@email.com"
-    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
   />
 
 </div>
@@ -6343,7 +6343,7 @@ className={[
                     );
 
                   }}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-extrabold text-gray-700 transition hover:bg-gray-50"
+                  className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 px-4 py-3 text-sm font-extrabold text-gray-700 dark:text-gray-200 transition hover:bg-gray-50 dark:hover:bg-gray-900"
                 >
                   Cancelar
                 </button>
