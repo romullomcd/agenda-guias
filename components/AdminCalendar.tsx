@@ -5141,7 +5141,7 @@ className={[
           >
 
             <div
-              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white dark:bg-black p-4 shadow-2xl sm:rounded-3xl sm:p-6"
+              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-black p-4 shadow-2xl sm:rounded-3xl sm:p-6"
               onClick={(
                 event
               ) =>
@@ -5617,7 +5617,7 @@ className={[
 
                 </h3>
 
-                <p className="mt-1 text-sm font-medium text-gray-500">
+                <p className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-300">
                   Guia
                 </p>
 
@@ -5819,7 +5819,7 @@ className={[
         >
 
           <div
-            className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+            className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-black"
             onClick={(
               event
             ) =>
@@ -5827,13 +5827,13 @@ className={[
             }
           >
 
-            <div className="border-b border-gray-100 p-6">
+            <div className="border-b border-gray-100 dark:border-gray-800 p-6">
 
               <div className="flex items-start justify-between">
 
                 <div>
 
-                  <h3 className="text-xl font-extrabold text-gray-900">
+                  <h3 className="text-xl font-extrabold text-gray-900 dark:text-white">
                     {launchTourWithoutGuide
                       ? "📅 Lançar tour"
                       : "🟡 Escalar guia"}
@@ -5867,7 +5867,7 @@ className={[
                     );
 
                   }}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 transition hover:bg-gray-100"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 dark:text-gray-300 transition hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   ✕
                 </button>
