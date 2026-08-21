@@ -2,9 +2,18 @@
   "name": "Agenda de Guias | Way To Know Rio",
   "short_name": "Agenda de Guias",
   "description": "Sistema de gerenciamento de guias da Way To Know Rio",
+  "id": "/",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
-  "lang": "pt-BR"
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
 }
