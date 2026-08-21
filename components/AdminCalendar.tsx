@@ -4761,7 +4761,7 @@ className={[
 
               </div>
 
-              <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:p-5">
+              <div className="rounded-2xl border border-blue-100 bg-white dark:border-blue-900 dark:bg-black p-4 shadow-sm sm:p-5">
 
                 <div className="flex items-center justify-between gap-3">
 
@@ -4781,7 +4781,7 @@ className={[
 
                   {currentDayEvents.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500">
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
                       Nenhum tour agendado para este dia.
                     </p>
                   ) : (
@@ -4849,7 +4849,7 @@ className={[
 
               </div>
 
-              <div className="rounded-2xl border border-yellow-100 bg-white p-4 shadow-sm sm:p-5">
+              <div className="rounded-2xl border border-yellow-100 bg-white dark:border-yellow-900 dark:bg-black p-4 shadow-sm sm:p-5">
 
                 <div className="flex items-center justify-between gap-3">
 
@@ -4869,7 +4869,7 @@ className={[
 
                   {currentDayEscalated.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500">
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
                       Nenhum guia escalado.
                     </p>
                   ) : (
