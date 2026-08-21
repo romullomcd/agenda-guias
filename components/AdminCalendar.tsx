@@ -6150,9 +6150,9 @@ className={[
 
                 <span>
 
-                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
-                    Dia inteiro
-                  </span>
+                  <span className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+  Dia inteiro
+</span>
 
                   <span className="block text-xs font-medium text-gray-500">
                     O evento ocupará o dia inteiro na agenda.
