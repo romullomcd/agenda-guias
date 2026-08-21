@@ -4994,7 +4994,7 @@ className={[
                               }
 
                             }}
-                            className="flex w-full items-center justify-between gap-3 rounded-xl bg-green-50 px-4 py-3 text-left transition hover:bg-green-100"
+                            className="flex w-full items-center justify-between gap-3 rounded-xl bg-green-50 dark:bg-green-950 px-4 py-3 text-left transition hover:bg-green-100"
                           >
 
                             <span className="flex min-w-0 items-center gap-2">
