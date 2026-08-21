@@ -5005,7 +5005,7 @@ className={[
                                 )
                               }
 
-                              <span className="truncate text-sm font-extrabold text-green-800">
+                              <span className="truncate text-sm font-extrabold text-green-800 dark:text-white">
                                 {
                                   getGuideName(
                                     item.guide_id
@@ -5015,7 +5015,7 @@ className={[
 
                             </span>
 
-                            <span className="shrink-0 text-green-600">
+                            <span className="shrink-0 text-green-600 dark:text-white">
                               →
                             </span>
 
