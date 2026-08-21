@@ -1676,7 +1676,7 @@ hover:text-[#1687d9]"
               {showMenu && (
                 <div className="absolute right-0 top-12 z-[300] w-[290px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-black shadow-2xl">
 
-                  <div className="border-b border-gray-100 bg-gray-950 px-5 py-4">
+                  <div className="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900 px-5 py-4">
 
                     <p className="text-sm font-extrabold text-gray-900 dark:text-white">
                       {profile.name}
