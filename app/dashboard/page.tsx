@@ -1681,7 +1681,10 @@ hover:bg-blue-50 hover:text-[#1687d9]"
 
             {/* MENU MOBILE */}
 
-            <div className="relative lg:hidden">
+            <div
+  ref={menuRef}
+  className="relative lg:hidden"
+>
 
               <button
                 type="button"
@@ -1706,7 +1709,6 @@ hover:text-[#1687d9]"
 
              {showMenu && (
   <div
-    ref={menuRef}
     className="absolute right-0 top-12 z-[300] w-[290px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-black shadow-2xl"
   >
 
