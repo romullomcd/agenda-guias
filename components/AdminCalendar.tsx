@@ -6764,7 +6764,7 @@ className={[
 
                 {/* GUIA */}
 
-                <div className="rounded-2xl border-2 border-yellow-100 bg-yellow-50 p-4">
+                <div className="rounded-2xl border-2 border-yellow-100 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950 p-4">
 
                   <label className="text-sm font-extrabold text-yellow-900">
                     Guia escalado
@@ -7243,7 +7243,7 @@ className={[
                         false
                       )
                     }
-                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-extrabold text-gray-700 hover:bg-gray-50"
+                    className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 px-4 py-3 text-sm font-extrabold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900"
                   >
                     Cancelar
                   </button>
