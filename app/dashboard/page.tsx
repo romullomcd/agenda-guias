@@ -1857,7 +1857,7 @@ hover:text-[#1687d9]"
                           "/perfil"
                         )
                       }
-                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-pink-50 hover:text-[#e91e8c]"
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-pink-50 hover:text-[#e91e8c]"
                     >
                       <span className="text-lg">
                         👤
