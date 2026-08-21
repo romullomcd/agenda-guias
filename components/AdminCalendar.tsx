@@ -4234,7 +4234,7 @@ google_color_id:
   ============================================================ */
 
   return (
-    <div className="mt-4 rounded-2xl bg-white p-3 shadow-sm dark:bg-black sm:mt-6 sm:rounded-3xl sm:p-6">
+    <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-black sm:mt-6 sm:rounded-3xl sm:p-6">
 
       {/* CABEÇALHO */}
 

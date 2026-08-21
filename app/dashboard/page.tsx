@@ -1922,7 +1922,7 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
         {/* ==================================================== */}
 
         {isAdmin && (
-          <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm dark:bg-black">
+          <div className="mb-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-black">
 
             <div className="flex h-1">
 
