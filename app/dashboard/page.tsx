@@ -8,6 +8,7 @@ import AdminCalendar from "@/components/AdminCalendar";
 type Profile = {
   name: string;
   role: "admin" | "guide";
+  theme: "light" | "dark";
 };
 
 type Notification = {
@@ -42,6 +43,20 @@ export default function Dashboard() {
 
   const [showMenu, setShowMenu] =
     useState(false);
+
+const [theme, setTheme] =
+  useState<"light" | "dark">(
+    "light"
+  );
+
+
+useEffect(() => {
+  document.documentElement.classList.toggle(
+    "dark",
+    theme === "dark"
+  );
+}, [theme]);
+
 
   // ============================================================
   // NOTIFICAÇÕES
@@ -100,7 +115,7 @@ export default function Dashboard() {
         error,
       } = await supabase
         .from("profiles")
-        .select("name, role")
+        .select("name, role, theme")
         .eq("id", user.id)
         .single();
 
@@ -130,6 +145,13 @@ export default function Dashboard() {
         "✅ PERFIL:",
         data
       );
+
+setTheme(
+  data.theme ===
+    "dark"
+    ? "dark"
+    : "light"
+);
 
       setProfile(data);
       setLoading(false);
@@ -1081,6 +1103,85 @@ export default function Dashboard() {
     }
   }, [profile]);
 
+
+// ============================================================
+// TEMA
+// ============================================================
+
+async function toggleTheme() {
+  const nextTheme =
+    theme ===
+    "light"
+      ? "dark"
+      : "light";
+
+  setTheme(
+    nextTheme
+  );
+
+  const {
+    data: {
+      user,
+    },
+  } =
+    await supabase.auth.getUser();
+
+  if (!user) {
+    return;
+  }
+
+  const {
+    data: updatedProfile,
+    error,
+  } =
+    await supabase
+      .from("profiles")
+      .update({
+        theme:
+          nextTheme,
+      })
+      .eq(
+        "id",
+        user.id
+      )
+      .select(
+        "id, theme"
+      )
+      .single();
+
+  if (error) {
+    console.error(
+      "❌ ERRO AO SALVAR TEMA:",
+      JSON.stringify(
+        error,
+        null,
+        2
+      ),
+      "MESSAGE:",
+      error.message,
+      "DETAILS:",
+      error.details,
+      "HINT:",
+      error.hint,
+      "CODE:",
+      error.code
+    );
+
+    setTheme(
+      theme
+    );
+
+    return;
+  }
+
+  if (
+    updatedProfile?.theme
+  ) {
+    setTheme(
+      updatedProfile.theme
+    );
+  }
+}
   // ============================================================
   // LOGOUT
   // ============================================================
@@ -1103,12 +1204,12 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb]">
+      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] dark:bg-black">
         <div className="text-center">
 
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c]" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-[#e91e8c]" />
 
-          <p className="mt-4 text-sm text-gray-500">
+          <p className="mt-4 text-sm text-gray-500 dark:text-gray-300">
             Carregando...
           </p>
 
@@ -1123,11 +1224,11 @@ export default function Dashboard() {
 
   if (!profile) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] px-6">
+      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] dark:bg-black px-6">
 
-        <div className="rounded-3xl bg-white p-8 text-center shadow-xl">
+        <div className="rounded-3xl bg-white p-8 text-center shadow-xl dark:bg-black">
 
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             Não foi possível carregar seu perfil.
           </p>
 
@@ -1149,7 +1250,7 @@ export default function Dashboard() {
   // ============================================================
 
   return (
-    <main className="min-h-screen bg-[#f7f7fb]">
+    <main className="min-h-screen bg-[#f7f7fb] dark:bg-black">
 
       {/* ====================================================== */}
       {/* DECORAÇÃO DE FUNDO */}
@@ -1165,7 +1266,7 @@ export default function Dashboard() {
       {/* HEADER */}
       {/* ====================================================== */}
 
-      <header className="relative z-50 border-b border-gray-100 bg-white">
+      <header className="relative z-50 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-black">
 
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6">
 
@@ -1185,11 +1286,11 @@ export default function Dashboard() {
 
             <div>
 
-              <h1 className="text-lg font-extrabold leading-tight text-gray-900 sm:text-xl">
+              <h1 className="text-lg font-extrabold leading-tight text-gray-900 dark:text-white sm:text-xl">
                 Agenda de Guias
               </h1>
 
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-300">
                 {isAdmin
                   ? "Painel administrativo"
                   : "Minha agenda"}
@@ -1214,7 +1315,7 @@ export default function Dashboard() {
                     "/dashboard"
                   )
                 }
-                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
+                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-blue-50 hover:text-[#1687d9]"
               >
                 📅{" "}
                 {isAdmin
@@ -1230,7 +1331,7 @@ export default function Dashboard() {
                       "/guias"
                     )
                   }
-                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
+                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-blue-50 hover:text-[#1687d9]"
                 >
                   👥 Gerenciar Guias
                 </button>
@@ -1244,7 +1345,8 @@ export default function Dashboard() {
                       "/admin/ranking"
                     )
                   }
-                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-yellow-50 hover:text-yellow-600"
+                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200
+transition hover:bg-yellow-50 hover:text-yellow-600"
                 >
                   🏆 Ranking
                 </button>
@@ -1258,7 +1360,7 @@ export default function Dashboard() {
                       "/admin/logins"
                     )
                   }
-                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
+                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-blue-50 hover:text-[#1687d9]"
                 >
                   🔐 Logins
                 </button>
@@ -1271,10 +1373,27 @@ export default function Dashboard() {
                     "/perfil"
                   )
                 }
-                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-pink-50 hover:text-[#e91e8c]"
+                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-pink-50 hover:text-[#e91e8c]"
               >
                 👤 Meu Perfil
               </button>
+
+<button
+  type="button"
+  onClick={
+    toggleTheme
+  }
+  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-gray-100 dark:hover:bg-gray-800"
+>
+  {theme ===
+  "light"
+    ? "🌙"
+    : "☀️"}{" "}
+  {theme ===
+  "light"
+    ? "Escuro"
+    : "Claro"}
+</button>
 
             </nav>
 
@@ -1282,11 +1401,11 @@ export default function Dashboard() {
 
             <div className="hidden text-right xl:block">
 
-              <p className="text-sm font-bold text-gray-900">
+              <p className="text-sm font-bold text-gray-900 dark:text-white">
                 {profile.name}
               </p>
 
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-300">
                 {isAdmin
                   ? "Administrador"
                   : "Guia"}
@@ -1307,7 +1426,9 @@ export default function Dashboard() {
                         !current
                     )
                   }
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-xl text-gray-600 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
+                  className="relative flex h-10 w-10 items-center justify-center
+rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-xl text-gray-600 dark:text-gray-200 shadow-sm transition hover:border-[#1687d9]
+hover:bg-blue-50 hover:text-[#1687d9]"
                   aria-label="Notificações"
                 >
 
@@ -1342,8 +1463,8 @@ export default function Dashboard() {
                       overflow-hidden
                       rounded-2xl
                       border
-                      border-gray-100
-                      bg-white
+                      border-gray-100 dark:border-gray-800
+                      bg-white dark:bg-black
                       shadow-2xl
 
                       sm:absolute
@@ -1356,15 +1477,15 @@ export default function Dashboard() {
                     "
                   >
 
-                    <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-800 px-4 py-3">
 
                       <div className="min-w-0">
 
-                        <h3 className="text-sm font-extrabold text-gray-900">
+                        <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">
                           Notificações
                         </h3>
 
-                        <p className="text-[11px] text-gray-500">
+                        <p className="text-[11px] text-gray-500 dark:text-gray-300">
                           {unreadCount >
                           0
                             ? `${unreadCount} não lida${
@@ -1403,11 +1524,11 @@ export default function Dashboard() {
                             🔔
                           </div>
 
-                          <p className="mt-3 text-sm font-bold text-gray-700">
+                          <p className="mt-3 text-sm font-bold text-gray-700 dark:text-gray-200">
                             Nenhuma notificação
                           </p>
 
-                          <p className="mt-1 text-xs text-gray-500">
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-300">
                             Você será avisado aqui quando houver novidades.
                           </p>
 
@@ -1428,9 +1549,9 @@ export default function Dashboard() {
                                 )
                               }
                               className={[
-                                "flex w-full min-w-0 gap-3 border-b border-gray-50 px-4 py-4 text-left transition",
+                                "flex w-full min-w-0 gap-3 border-b border-gray-50 dark:border-gray-800 px-4 py-4 text-left transition",
                                 notification.read
-                                  ? "bg-white hover:bg-gray-50"
+                                  ? "bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-gray-900"
                                   : "bg-blue-50/60 hover:bg-blue-50",
                               ].join(
                                 " "
@@ -1442,7 +1563,7 @@ export default function Dashboard() {
                                   "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base",
                                   notification.type ===
                                     "guide_escalated"
-                                    ? "bg-gray-100"
+                                    ? "bg-gray-100 dark:bg-gray-800"
                                     : notification.type ===
                                       "guide_unescalated"
                                     ? "bg-red-100"
@@ -1468,8 +1589,8 @@ export default function Dashboard() {
                                     className={[
                                       "min-w-0 break-words text-sm",
                                       notification.read
-                                        ? "font-bold text-gray-800"
-                                        : "font-extrabold text-gray-900",
+? "font-bold text-gray-800 dark:text-gray-200"
+: "font-extrabold text-gray-900 dark:text-white",
                                     ].join(
                                       " "
                                     )}
@@ -1485,13 +1606,13 @@ export default function Dashboard() {
 
                                 </div>
 
-                                <p className="mt-1 break-words [overflow-wrap:anywhere] text-xs leading-relaxed text-gray-600">
+                                <p className="mt-1 break-words [overflow-wrap:anywhere] text-xs leading-relaxed text-gray-600 dark:text-gray-300">
                                   {
                                     notification.message
                                   }
                                 </p>
 
-                                <p className="mt-2 break-words text-[10px] font-medium text-gray-400">
+                                <p className="mt-2 break-words text-[10px] font-medium text-gray-400 dark:text-gray-500">
                                   {formatNotificationDate(
                                     notification.created_at
                                   )}
@@ -1539,7 +1660,9 @@ export default function Dashboard() {
                       !current
                   )
                 }
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-xl text-gray-700 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
+className="flex h-10 w-10 items-center justify-center rounded-xl border
+border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-xl text-gray-700 dark:text-gray-200 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50
+hover:text-[#1687d9]"
                 aria-label="Abrir menu"
                 aria-expanded={
                   showMenu
@@ -1551,15 +1674,15 @@ export default function Dashboard() {
               </button>
 
               {showMenu && (
-                <div className="absolute right-0 top-12 z-[300] w-[290px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+                <div className="absolute right-0 top-12 z-[300] w-[290px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-black shadow-2xl">
 
-                  <div className="border-b border-gray-100 bg-gray-50 px-5 py-4">
+                  <div className="border-b border-gray-100 bg-gray-950 px-5 py-4">
 
-                    <p className="text-sm font-extrabold text-gray-900">
+                    <p className="text-sm font-extrabold text-gray-900 dark:text-white">
                       {profile.name}
                     </p>
 
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-300">
                       {isAdmin
                         ? "Administrador"
                         : "Guia"}
@@ -1576,7 +1699,7 @@ export default function Dashboard() {
                           "/dashboard"
                         )
                       }
-                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-blue-50 hover:text-[#1687d9]"
                     >
                       <span className="text-lg">
                         📅
@@ -1597,7 +1720,7 @@ export default function Dashboard() {
                             "/guias"
                           )
                         }
-                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
+                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-blue-50 hover:text-[#1687d9]"
                       >
                         <span className="text-lg">
                           👥
@@ -1617,7 +1740,7 @@ export default function Dashboard() {
                             "/admin/ranking"
                           )
                         }
-                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-yellow-50 hover:text-yellow-600"
+                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-yellow-50 hover:text-yellow-600"
                       >
                         <span className="text-lg">
                           🏆
@@ -1637,7 +1760,7 @@ export default function Dashboard() {
                             "/admin/logins"
                           )
                         }
-                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-[#1687d9]"
+                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-blue-50 hover:text-[#1687d9]"
                       >
                         <span className="text-lg">
                           🔐
@@ -1663,7 +1786,7 @@ export default function Dashboard() {
                             setShowMenu(false);
                             connectGoogleCalendar();
                           }}
-                          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-green-50 hover:text-green-600 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-green-50 hover:text-green-600 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <span className="text-lg">
                             📅
@@ -1709,9 +1832,31 @@ export default function Dashboard() {
                       </span>
                     </button>
 
+<button
+  type="button"
+  onClick={
+    toggleTheme
+  }
+  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-gray-50 dark:hover:bg-gray-900"
+>
+  <span className="text-lg">
+    {theme ===
+    "light"
+      ? "🌙"
+      : "☀️"}
+  </span>
+
+  <span>
+    {theme ===
+    "light"
+      ? "Tema escuro"
+      : "Tema claro"}
+  </span>
+</button>
+
                   </div>
 
-                  <div className="mx-4 border-t border-gray-100" />
+                  <div className="mx-4 border-t border-gray-100 dark:border-gray-800" />
 
                   <div className="p-2">
 
@@ -1744,7 +1889,8 @@ export default function Dashboard() {
               onClick={
                 handleLogout
               }
-              className="hidden rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 sm:px-4 lg:block"
+              className="hidden rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm
+font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 sm:px-4 lg:block"
             >
               Sair
             </button>
@@ -1776,7 +1922,7 @@ export default function Dashboard() {
         {/* ==================================================== */}
 
         {isAdmin && (
-          <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
+          <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm dark:bg-black">
 
             <div className="flex h-1">
 
@@ -1797,11 +1943,11 @@ export default function Dashboard() {
 
                 <div>
 
-                  <h2 className="text-base font-extrabold text-gray-900 sm:text-lg">
+                  <h2 className="text-base font-extrabold text-gray-900 dark:text-white sm:text-lg">
                     Google Calendar
                   </h2>
 
-                  <p className="mt-1 text-xs leading-relaxed text-gray-500 sm:text-sm">
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-300 sm:text-sm">
                     {checkingGoogle
                       ? "Verificando conexão..."
                       : googleConnected
@@ -1856,7 +2002,7 @@ export default function Dashboard() {
         {/* ==================================================== */}
 
         {isAdmin ? (
-          <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+          <div className="overflow-hidden rounded-3xl bg-white shadow-sm dark:bg-black">
 
             <div className="flex h-1">
 
@@ -1874,7 +2020,7 @@ export default function Dashboard() {
 
           </div>
         ) : (
-          <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+          <div className="overflow-hidden rounded-3xl bg-white shadow-sm dark:bg-black">
 
             <div className="flex h-1">
 
@@ -1909,11 +2055,11 @@ export default function Dashboard() {
 
           </div>
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             © 2026 Way To Know Rio
           </p>
 
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
             Desenvolvido por{" "}
             <span className="font-semibold text-[#e91e8c]">
               Machado's
@@ -1939,7 +2085,7 @@ export default function Dashboard() {
             aria-labelledby="notification-modal-title"
           >
 
-            <div className="max-h-[90vh] w-full min-w-0 max-w-[500px] overflow-x-hidden overflow-y-auto rounded-[28px] bg-white shadow-2xl">
+            <div className="max-h-[90vh] w-full min-w-0 max-w-[500px] overflow-x-hidden overflow-y-auto rounded-[28px] bg-white shadow-2xl dark:bg-black">
 
               <div className="h-2 bg-gradient-to-r from-[#e91e8c] via-[#ffd21c] to-[#1687d9]" />
 
@@ -1947,20 +2093,20 @@ export default function Dashboard() {
 
                 <h2
                   id="notification-modal-title"
-                  className="break-words text-center text-xl font-extrabold tracking-tight text-gray-900 sm:text-3xl"
+                  className="break-words text-center text-xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-3xl"
                 >
                   {activeNotification.title}
                 </h2>
 
                 <div className="mt-5 min-w-0 text-center sm:mt-6">
 
-                  <p className="whitespace-pre-line break-words [overflow-wrap:anywhere] text-sm leading-6 text-gray-600 sm:text-lg sm:leading-8">
+                  <p className="whitespace-pre-line break-words [overflow-wrap:anywhere] text-sm leading-6 text-gray-600 dark:text-gray-300 sm:text-lg sm:leading-8">
                     {activeNotification.message}
                   </p>
 
                 </div>
 
-                <p className="mt-5 break-words text-center text-xs font-medium text-gray-400">
+                <p className="mt-5 break-words text-center text-xs font-medium text-gray-400 dark:text-gray-500">
                   {formatNotificationDate(
                     activeNotification.created_at
                   )}
