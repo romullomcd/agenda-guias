@@ -6481,7 +6481,7 @@ className={[
 
               {/* GUIA */}
 
-              <div className="rounded-2xl bg-yellow-50 p-4">
+              <div className="rounded-2xl bg-yellow-50 dark:bg-yellow-950 p-4">
 
                 <div className="flex items-start justify-between gap-3">
 
@@ -6717,7 +6717,7 @@ className={[
           >
 
             <div
-              className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+              className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-black"
               onClick={(
                 event
               ) =>
@@ -6725,17 +6725,17 @@ className={[
               }
             >
 
-              <div className="border-b border-gray-100 p-6">
+              <div className="border-b border-gray-100 dark:border-gray-800 p-6">
 
                 <div className="flex items-start justify-between">
 
                   <div>
 
-                    <h3 className="text-xl font-extrabold text-gray-900">
+                    <h3 className="text-xl font-extrabold text-gray-900 dark:text-white">
                       ✏️ Editar tour
                     </h3>
 
-                    <p className="mt-1 text-sm font-medium text-gray-500">
+                    <p className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-300">
                       Altere as informações e, se necessário, coloque outro guia.
                     </p>
 
@@ -6751,7 +6751,7 @@ className={[
                         false
                       )
                     }
-                    className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 hover:bg-gray-100"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
                     ✕
                   </button>
@@ -6784,7 +6784,7 @@ className={[
                     disabled={
                       updating
                     }
-                    className="mt-2 w-full rounded-xl border-2 border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#c9aa00]"
+                    className="mt-2 w-full rounded-xl border-2 border-yellow-200 bg-white dark:bg-black px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100 outline-none focus:border-[#c9aa00]"
                   >
 
                     <option value="">
@@ -6867,7 +6867,7 @@ className={[
 
                   {
                     editTourGuideId && (
-                      <div className="mt-3 rounded-xl bg-white p-3 ring-1 ring-yellow-200">
+                      <div className="mt-3 rounded-xl bg-white dark:bg-black p-3 ring-1 ring-yellow-200">
 
                         <p className="text-xs font-bold uppercase tracking-wide text-yellow-600">
                           E-mail do guia selecionado
@@ -6892,7 +6892,7 @@ className={[
 
                 <div>
 
-                  <label className="text-sm font-extrabold text-gray-800">
+                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                     Título
                   </label>
 
@@ -6911,7 +6911,7 @@ className={[
                     disabled={
                       updating
                     }
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                   />
 
                 </div>
@@ -6922,11 +6922,11 @@ className={[
 
                   <div className="mb-2 flex items-center justify-between gap-3">
 
-                    <label className="text-sm font-extrabold text-gray-800">
+                    <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                       Descrição
                     </label>
 
-                    <span className="text-xs font-medium text-gray-400">
+                    <span className="text-xs font-medium text-gray-400 dark:text-gray-500">
                       Negrito, itálico, sublinhado e listas
                     </span>
 
@@ -6951,9 +6951,9 @@ className={[
 
                 <div>
 
-                  <label className="text-sm font-extrabold text-gray-800">
+                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                     Endereço
-                    <span className="ml-1 font-medium text-gray-400">
+                    <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
                       (opcional)
                     </span>
                   </label>
@@ -6974,7 +6974,7 @@ className={[
                       updating
                     }
                     placeholder="Ex.: Av. Atlântica, 1702 - Copacabana"
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                   />
 
                 </div>
@@ -6984,7 +6984,7 @@ className={[
 
                 <div>
 
-                  <label className="text-sm font-extrabold text-gray-800">
+                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                     Cor do evento
                   </label>
 
@@ -7033,7 +7033,7 @@ className={[
 
                   </div>
 
-                  <p className="mt-2 text-xs font-medium text-gray-500">
+                  <p className="mt-2 text-xs font-medium text-gray-500 dark:text-gray-300">
                     Cor selecionada:{" "}
                     <strong>
                       {
@@ -7050,7 +7050,7 @@ className={[
 
                 {/* DIA INTEIRO */}
 
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 p-4">
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 dark:bg-gray-900 p-4">
 
                   <input
                     type="checkbox"
@@ -7072,7 +7072,7 @@ className={[
 
                   <span>
 
-                    <span className="block text-sm font-extrabold text-gray-800">
+                    <span className="block text-sm font-extrabold text-gray-800 dark:text-gray-100">
                       Dia inteiro
                     </span>
 
@@ -7087,7 +7087,7 @@ className={[
 
                     <div>
 
-                      <label className="text-sm font-extrabold text-gray-800">
+                      <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                         Horário de início
                       </label>
 
@@ -7106,14 +7106,14 @@ className={[
                         disabled={
                           updating
                         }
-                        className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                        className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                       />
 
                     </div>
 
                     <div>
 
-                      <label className="text-sm font-extrabold text-gray-800">
+                      <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                         Horário de término
                       </label>
 
@@ -7144,7 +7144,7 @@ className={[
 
                 <div>
 
-                  <label className="text-sm font-extrabold text-gray-800">
+                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                     E-mail adicional
                   </label>
 
@@ -7164,14 +7164,14 @@ className={[
                       updating
                     }
                     placeholder="cliente@email.com"
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
                   />
 
                 </div>
 
 <div className="mt-4">
 
-  <label className="text-sm font-extrabold text-gray-800">
+  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
     E-mail adicional 2
     <span className="ml-1 font-medium text-gray-400">
       (opcional)
@@ -7194,7 +7194,7 @@ className={[
       updating
     }
     placeholder="cliente2@email.com"
-    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
   />
 
 </div>
