@@ -4939,7 +4939,7 @@ className={[
 
               </div>
 
-              <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm sm:p-5">
+              <div className="rounded-2xl border border-green-100 bg-white dark:border-green-900 dark:bg-black p-4 shadow-sm sm:p-5">
 
                 <div className="flex items-center justify-between gap-3">
 
@@ -4959,7 +4959,7 @@ className={[
 
                   {currentDayAvailable.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500">
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
                       Nenhum guia disponível.
                     </p>
                   ) : (
@@ -5029,7 +5029,7 @@ className={[
 
               </div>
 
-              <div className="rounded-2xl border border-red-100 bg-white p-4 shadow-sm sm:p-5">
+              <div className="rounded-2xl border border-red-100 bg-white dark:border-red-900 dark:bg-black p-4 shadow-sm sm:p-5">
 
                 <div className="flex items-center justify-between gap-3">
 
@@ -5049,7 +5049,7 @@ className={[
 
                   {currentDayUnavailable.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500">
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
                       Nenhum guia indisponível.
                     </p>
                   ) : (
@@ -5141,7 +5141,7 @@ className={[
           >
 
             <div
-              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:rounded-3xl sm:p-6"
+              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white dark:bg-black p-4 shadow-2xl sm:rounded-3xl sm:p-6"
               onClick={(
                 event
               ) =>
@@ -5153,7 +5153,7 @@ className={[
 
                 <div>
 
-                  <h3 className="text-lg font-extrabold capitalize text-gray-900 sm:text-xl">
+                  <h3 className="text-lg font-extrabold capitalize text-gray-900 dark:text-white sm:text-xl">
                     {
                       format(
                         new Date(
@@ -5168,7 +5168,7 @@ className={[
                     }
                   </h3>
 
-                  <p className="mt-1 text-xs font-medium text-gray-500 sm:text-sm">
+                  <p className="mt-1 text-xs font-medium text-gray-500 dark:text-gray-300 sm:text-sm">
                     Agenda do dia
                   </p>
 
@@ -5181,7 +5181,7 @@ className={[
                       null
                     )
                   }
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-base font-bold text-gray-700 transition hover:bg-gray-100 sm:h-9 sm:w-9 sm:rounded-xl sm:text-lg"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-base font-bold text-gray-700 dark:text-gray-200 transition hover:bg-gray-100 dark:hover:bg-gray-800 sm:h-9 sm:w-9 sm:rounded-xl sm:text-lg"
                 >
                   ✕
                 </button>
