@@ -15,9 +15,19 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Agenda de Guias | Way To Know Rio",
   description: "Sistema de gerenciamento de guias da Way To Know Rio",
+
   icons: {
     icon: "/icon.png",
+    apple: "/icon.png",
   },
+
+  appleWebApp: {
+    capable: true,
+    title: "Agenda de Guias",
+    statusBarStyle: "black-translucent",
+  },
+
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
