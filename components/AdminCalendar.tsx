@@ -6004,7 +6004,7 @@ className={[
                     Descrição
                   </label>
 
-                  <span className="text-xs font-medium text-gray-400">
+                  <span className="text-xs font-medium text-gray-400 dark:text-gray-500">
                     Negrito, itálico, sublinhado e listas
                   </span>
 
@@ -6031,7 +6031,7 @@ className={[
 
                 <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                   Endereço
-                  <span className="ml-1 font-medium text-gray-400">
+                  <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
                     (opcional)
                   </span>
                 </label>
@@ -6112,7 +6112,7 @@ className={[
 
                 </div>
 
-                <p className="mt-2 text-xs font-medium text-gray-500">
+                <p className="mt-2 text-xs font-medium text-gray-500 dark:text-gray-300">
                   Cor selecionada:{" "}
                   <strong>
                     {
