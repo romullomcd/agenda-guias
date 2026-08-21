@@ -5217,7 +5217,7 @@ className={[
 
                   {selectedDayEvents.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300">
                       Nenhum tour agendado para este dia.
                     </p>
                   ) : (
@@ -5242,7 +5242,7 @@ className={[
 
                           }}
 className={[
-  "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-bold text-gray-900 transition hover:opacity-90",
+  "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white transition hover:opacity-90",
   getColorClass(
     event.google_color_id ||
       "9"
@@ -5258,7 +5258,7 @@ className={[
                               }
                             </span>
 
-                            <span className="mt-0.5 block text-xs font-semibold text-gray-700">
+                            <span className="mt-0.5 block text-xs font-semibold text-gray-700 dark:text-gray-200">
 
                               {
                                 event.all_day
@@ -5303,7 +5303,7 @@ className={[
 
                   {selectedEscalated.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300">
                       Nenhum guia escalado para este dia.
                     </p>
                   ) : (
@@ -5338,7 +5338,7 @@ className={[
                               }
 
                             }}
-                            className="flex w-full items-center justify-between rounded-xl bg-[#f3e5a5] px-4 py-3 text-left text-sm font-bold text-[#806600] transition hover:bg-[#ead98c]"
+                            className="flex w-full items-center justify-between rounded-xl bg-[#f3e5a5] dark:bg-yellow-950 px-4 py-3 text-left text-sm font-bold text-[#806600] transition hover:bg-[#ead98c]"
                           >
 
                             <span className="flex min-w-0 items-center gap-2">
@@ -5385,7 +5385,7 @@ className={[
 
                   {selectedAvailable.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300">
                       Nenhum guia marcado como disponível.
                     </p>
                   ) : (
@@ -5420,7 +5420,7 @@ className={[
                               }
 
                             }}
-                            className="flex w-full items-center justify-between rounded-xl bg-green-50 px-4 py-3 text-left text-sm font-bold text-green-800 transition hover:bg-green-100"
+                            className="flex w-full items-center justify-between rounded-xl bg-green-50 dark:bg-green-950 px-4 py-3 text-left text-sm font-bold text-green-800 transition hover:bg-green-100"
                           >
 
                             <span className="flex min-w-0 items-center gap-2">
