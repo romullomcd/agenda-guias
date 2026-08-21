@@ -5420,7 +5420,7 @@ className={[
                               }
 
                             }}
-                            className="flex w-full items-center justify-between rounded-xl bg-green-50 dark:bg-green-950 px-4 py-3 text-left text-sm font-bold text-green-800 transition hover:bg-green-100"
+                            className="flex w-full items-center justify-between gap-3 rounded-xl bg-green-50 dark:bg-green-950 px-4 py-3 text-left transition hover:bg-green-100"
                           >
 
                             <span className="flex min-w-0 items-center gap-2">
@@ -5467,7 +5467,7 @@ className={[
 
                   {selectedUnavailable.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300">
                       Nenhum guia marcado como indisponível.
                     </p>
                   ) : (
