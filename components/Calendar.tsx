@@ -725,7 +725,7 @@ export default function Calendar() {
             }
           >
             <div
-              className="relative my-0 flex w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+              className="relative my-0 flex w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-black"
               style={{
                 maxHeight:
                   "calc(100dvh - max(16px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom)) - 16px)",
@@ -741,7 +741,7 @@ export default function Calendar() {
                  CABEÇALHO
               ================================================== */}
 
-              <div className="shrink-0 border-b border-gray-100 bg-white px-5 py-5 sm:px-6 sm:py-6">
+             <div className="shrink-0 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-black px-5 py-5 sm:px-6 sm:py-6">
 
                 <div className="flex w-full items-start gap-3">
 
@@ -751,7 +751,7 @@ export default function Calendar() {
                       Tour escalado
                     </span>
 
-                    <h3 className="mt-3 break-words text-xl font-extrabold leading-tight text-gray-900 sm:text-2xl">
+                   <h3 className="mt-3 break-words text-xl font-extrabold leading-tight text-gray-900 dark:text-white sm:text-2xl">
                       {
                         selectedTour.title
                       }
@@ -764,7 +764,7 @@ export default function Calendar() {
                     onClick={
                       closeTourModal
                     }
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-gray-500 transition hover:bg-gray-100 hover:text-gray-800"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-gray-500 dark:text-gray-300 transition hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-white"
                     aria-label="Fechar"
                   >
                     ✕
@@ -823,23 +823,23 @@ export default function Calendar() {
 
                   {/* DESCRIÇÃO */}
 
-                  <div className="rounded-2xl bg-gray-50 p-4">
+                  <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
 
-                    <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                    <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                       Descrição
                     </p>
 
                     {
                       selectedTour.description ? (
                         <div
-                          className="mt-2 break-words text-sm font-medium leading-7 text-gray-800 [&_b]:font-black [&_strong]:font-black [&_i]:italic [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1"
+                          className="mt-2 break-words text-sm font-medium leading-7 text-gray-800 dark:text-gray-100 [&_b]:font-black [&_strong]:font-black [&_i]:italic [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1"
                           dangerouslySetInnerHTML={{
                             __html:
                               selectedTour.description,
                           }}
                         />
                       ) : (
-                        <p className="mt-2 text-sm font-medium text-gray-500">
+                        <p className="mt-2 text-sm font-medium text-gray-500 dark:text-gray-300">
                           Nenhuma descrição informada.
                         </p>
                       )
@@ -849,13 +849,13 @@ export default function Calendar() {
 
                   {/* ENDEREÇO */}
 
-                  <div className="rounded-2xl bg-gray-50 p-4">
+                  <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
 
-                    <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                    <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                       Endereço
                     </p>
 
-                    <p className="mt-1 whitespace-pre-wrap break-words text-sm font-bold text-gray-800">
+                    <p className="mt-1 whitespace-pre-wrap break-words text-sm font-bold text-gray-800 dark:text-gray-100">
                       {
                         selectedTour.address ||
                         "Nenhum endereço informado."
@@ -868,13 +868,13 @@ export default function Calendar() {
 
                   {
                     selectedTour.additional_email && (
-                      <div className="rounded-2xl bg-gray-50 p-4">
+                      <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
 
-                        <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                        <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                           E-mail adicional
                         </p>
 
-                        <p className="mt-1 break-all text-sm font-bold text-gray-800">
+                        <p className="mt-1 break-all text-sm font-bold text-gray-800 dark:text-gray-100">
                           {
                             selectedTour.additional_email
                           }
@@ -926,13 +926,13 @@ export default function Calendar() {
 
   return (
     <>
-      <div className="mt-4 rounded-2xl bg-white p-3 shadow-sm sm:mt-6 sm:rounded-3xl sm:p-6">
+      <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-black sm:mt-6 sm:rounded-3xl sm:p-6">
 
         {/* ====================================================== */}
         {/* CABEÇALHO */}
         {/* ====================================================== */}
 
-        <div className="mb-4 flex items-center justify-between rounded-xl bg-gray-50 p-2 sm:mb-6 sm:rounded-2xl sm:p-3">
+        <div className="mb-4 flex items-center justify-between rounded-xl bg-gray-50 p-2 dark:bg-gray-900 sm:mb-6 sm:rounded-2xl sm:p-3">
 
           <button
             type="button"
@@ -944,13 +944,14 @@ export default function Calendar() {
                 )
               )
             }
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition dark:border-gray-700 dark:bg-black dark:text-white
+hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
             aria-label="Mês anterior"
           >
             ←
           </button>
 
-          <h4 className="text-base font-extrabold capitalize text-gray-900 sm:text-xl md:text-2xl">
+          <h4 className="text-base font-extrabold capitalize text-gray-900 dark:text-white sm:text-xl md:text-2xl">
             {
               monthName
             }
@@ -966,7 +967,8 @@ export default function Calendar() {
                 )
               )
             }
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition dark:border-gray-700 dark:bg-black dark:text-white
+hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
             aria-label="Próximo mês"
           >
             →
@@ -978,7 +980,7 @@ export default function Calendar() {
         {/* DIAS DA SEMANA */}
         {/* ====================================================== */}
 
-        <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-gray-700 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
+        <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-gray-700 dark:text-gray-200 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
 
           <div>
             Seg
@@ -1018,9 +1020,9 @@ export default function Calendar() {
           loading ? (
             <div className="py-10 text-center sm:py-12">
 
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c] sm:h-9 sm:w-9" />
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-[#e91e8c] sm:h-9 sm:w-9" />
 
-              <p className="mt-3 text-sm font-medium text-gray-600 sm:mt-4">
+              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300 sm:mt-4">
                 Carregando calendário...
               </p>
 
@@ -1058,8 +1060,8 @@ export default function Calendar() {
 
                       let dayClass =
                         sameMonth
-                          ? "border-gray-200 bg-white text-gray-900 hover:border-gray-300 hover:bg-gray-50"
-                          : "border-transparent bg-gray-100 text-gray-400";
+                          ? "border-gray-200 bg-white text-gray-900 dark:border-gray-700 dark:bg-black dark:text-white hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900"
+: "border-transparent bg-gray-100 text-gray-400 dark:bg-gray-900 dark:text-gray-500";
 
                       /* ==================================================
                          DISPONÍVEL
@@ -1168,7 +1170,7 @@ export default function Calendar() {
               {/* LEGENDA */}
               {/* ==================================================== */}
 
-              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 dark:border-gray-800 pt-4 text-xs font-semibold text-gray-700 dark:text-gray-200 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
 
                 <div className="flex items-center gap-1.5 sm:gap-2">
 
@@ -1202,7 +1204,7 @@ export default function Calendar() {
 
                 <div className="flex items-center gap-1.5 sm:gap-2">
 
-                  <span className="h-3 w-3 rounded-md border border-gray-300 bg-white sm:h-4 sm:w-4" />
+                  <span className="h-3 w-3 rounded-md border border-gray-300 bg-white dark:border-gray-700 dark:bg-black sm:h-4 sm:w-4" />
 
                   <span>
                     Não marcado
