@@ -62,7 +62,7 @@ export default function GuideRanking() {
   }, [currentMonth]);
 
   async function checkAccessAndLoadRanking() {
-    setLoading(true);
+    
     setAccessDenied(false);
 
     // ==========================================================

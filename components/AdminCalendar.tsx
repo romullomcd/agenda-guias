@@ -7,6 +7,8 @@ import {
   useState,
 } from "react";
 
+import { createPortal } from "react-dom";
+
 import type {
   MouseEvent as ReactMouseEvent,
 } from "react";
@@ -4589,120 +4591,10 @@ className={[
                             </div>
                           )}
 
-                          {escalated
-                            .slice(
-                              0,
-                              2
-                            )
-                            .map(
-                              (
-                                item
-                              ) => (
-                                <div
-                                  key={`escalated-${item.id}`}
-                                  className="truncate rounded bg-[#f3e5a5] px-0.5 py-0.5 text-[7px] font-bold leading-tight text-[#806600] sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                                >
-                                  {
-                                    getGuideFlags(
-                                      item.guide_id
-                                    )
-                                  }{" "}
-                                  {
-                                    getGuideName(
-                                      item.guide_id
-                                    )
-                                  }
-                                </div>
-                              )
-                            )}
+                        
+                          
 
-                          {escalated.length >
-                            2 && (
-                            <div className="px-0.5 text-[7px] font-bold text-[#806600] sm:text-xs">
-                              +
-                              {
-                                escalated.length -
-                                  2
-                              }{" "}
-                              escalados
-                            </div>
-                          )}
-
-                          {available
-                            .slice(
-                              0,
-                              2
-                            )
-                            .map(
-                              (
-                                item
-                              ) => (
-                                <div
-                                  key={`available-${item.id}`}
-                                  className="truncate rounded bg-green-100 px-0.5 py-0.5 text-[7px] font-semibold leading-tight text-green-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                                >
-                                  {
-                                    getGuideFlags(
-                                      item.guide_id
-                                    )
-                                  }{" "}
-                                  {
-                                    getGuideName(
-                                      item.guide_id
-                                    )
-                                  }
-                                </div>
-                              )
-                            )}
-
-                          {available.length >
-                            2 && (
-                            <div className="px-0.5 text-[7px] font-semibold text-green-700">
-                              +
-                              {
-                                available.length -
-                                  2
-                              }
-                            </div>
-                          )}
-
-                          {unavailable
-                            .slice(
-                              0,
-                              1
-                            )
-                            .map(
-                              (
-                                item
-                              ) => (
-                                <div
-                                  key={`unavailable-${item.id}`}
-                                  className="truncate rounded bg-red-100 px-0.5 py-0.5 text-[7px] font-semibold leading-tight text-red-800 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs"
-                                >
-                                  {
-                                    getGuideFlags(
-                                      item.guide_id
-                                    )
-                                  }{" "}
-                                  {
-                                    getGuideName(
-                                      item.guide_id
-                                    )
-                                  }
-                                </div>
-                              )
-                            )}
-
-                          {unavailable.length >
-                            1 && (
-                            <div className="px-0.5 text-[7px] font-semibold text-red-700">
-                              +
-                              {
-                                unavailable.length -
-                                  1
-                              }
-                            </div>
-                          )}
+                          
 
                         </div>
 
@@ -4716,24 +4608,24 @@ className={[
               <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
 
                 <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded bg-blue-100 ring-1 ring-blue-200 sm:h-4 sm:w-4" />
-                  Tour
-                </div>
+  <span className="h-3 w-3 rounded bg-[#dc2127] ring-1 ring-[#b91c1c] sm:h-4 sm:w-4" />
+  Tour sem guia/motorista
+</div>
 
-                <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded bg-[#f3e5a5] ring-1 ring-[#d6c36c] sm:h-4 sm:w-4" />
-                  Escalado
-                </div>
+<div className="flex items-center gap-1.5">
+  <span className="h-3 w-3 rounded bg-[#fbd75b] ring-1 ring-[#d4a900] sm:h-4 sm:w-4" />
+  Tour com guia e motorista
+</div>
 
-                <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded bg-green-100 ring-1 ring-green-200 sm:h-4 sm:w-4" />
-                  Disponível
-                </div>
+<div className="flex items-center gap-1.5">
+  <span className="h-3 w-3 rounded bg-[#5484ed] ring-1 ring-[#3b64c4] sm:h-4 sm:w-4" />
+  Tour Ilha Grande
+</div>
 
-                <div className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded bg-red-100 ring-1 ring-red-200 sm:h-4 sm:w-4" />
-                  Indisponível
-                </div>
+<div className="flex items-center gap-1.5">
+  <span className="h-3 w-3 rounded bg-[#ff887c] ring-1 ring-[#d96359] sm:h-4 sm:w-4" />
+  Tour Website
+</div>
 
               </div>
             </>
@@ -5132,7 +5024,7 @@ className={[
         calendarView ===
           "month" && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 backdrop-blur-sm sm:p-4"
+            className="fixed inset-0 z-[500] flex items-center justify-center bg-black/40 p-3 backdrop-blur-sm sm:p-4"
             onClick={() =>
               setSelectedDate(
                 null
@@ -5570,7 +5462,7 @@ className={[
 
       {selectedGuideDetails && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-[600] flex items-center justify-center bg-black/50 p-4"
           onClick={() => {
 
             if (
@@ -5794,9 +5686,11 @@ className={[
          MODAL CRIAR TOUR
       ====================================================== */}
 
-      {showTourForm && (
+      {showTourForm &&
+  typeof document !== "undefined" &&
+  createPortal(
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-[500] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           onClick={() => {
 
             if (
@@ -6373,16 +6267,20 @@ className={[
 
           </div>
 
-        </div>
-      )}
+                </div>,
+    document.body
+  )}
 
       {/* ======================================================
          MODAL TOUR
       ====================================================== */}
 
-      {selectedTourEvent && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+{selectedTourEvent &&
+  typeof document !== "undefined" &&
+  createPortal(
+    <div
+      className="fixed inset-0 z-[500] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+
           onClick={() => {
 
             if (
@@ -6691,18 +6589,21 @@ className={[
 
           </div>
 
-        </div>
-      )}
+                </div>,
+    document.body
+  )}
 
       {/* ======================================================
          MODAL EDITAR
       ====================================================== */}
 
-      {
-        showTourEdit &&
-        selectedTourEvent && (
-          <div
-            className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4"
+{
+  showTourEdit &&
+  selectedTourEvent &&
+  typeof document !== "undefined" &&
+  createPortal(
+    <div
+      className="fixed inset-0 z-[500] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
             onClick={() => {
 
               if (
@@ -7256,7 +7157,7 @@ className={[
                     onClick={
                       saveTourEdit
                     }
-                    className="w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-extrabold text-white shadow-md hover:bg-[#0f75bd] disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-extrabold text-white shadow-md hover:bg-[#0f75bd] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {
                       updating
@@ -7271,9 +7172,10 @@ className={[
 
             </div>
 
-          </div>
-        )
-      }
+                             </div>,
+        document.body
+      )
+    }
 
     </div>
   );

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   useEffect,
@@ -83,14 +83,14 @@ BANDEIRAS
 ============================================================ */
 
 const LANGUAGE_FLAGS: Record<string, string> = {
-  PortuguÃªs: "/flags/br.png",
-  InglÃªs: "/flags/us.png",
+  Português: "/flags/br.png",
+  Inglês: "/flags/us.png",
   Espanhol: "/flags/es.png",
-  FrancÃªs: "/flags/fr.png",
+  Francês: "/flags/fr.png",
   Italiano: "/flags/it.png",
-  AlemÃ£o: "/flags/de.png",
+  Alemão: "/flags/de.png",
   Mandarim: "/flags/cn.png",
-  JaponÃªs: "/flags/jp.png",
+  Japonês: "/flags/jp.png",
 };
 
 
@@ -177,7 +177,7 @@ function normalizeDescriptionHtml(
 }
 
 /* ============================================================
-SANITIZAÃ‡ÃƒO
+SANITIZAÇÃO
 ============================================================ */
 
 function sanitizeDescriptionHtml(
@@ -260,7 +260,7 @@ function sanitizeDescriptionHtml(
 }
 
 /* ============================================================
-DESCRIÃ‡ÃƒO â†’ HTML
+DESCRIÇÃO → HTML
 ============================================================ */
 
 function descriptionToHtml(
@@ -305,7 +305,7 @@ function descriptionToHtml(
 }
 
 /* ============================================================
-HTML â†’ TEXTO PURO
+HTML → TEXTO PURO
 ============================================================ */
 
 function htmlToPlainText(
@@ -408,6 +408,1834 @@ type RichTextEditorProps = {
   minHeight?: string;
 };
 
+function RichTextEditor({
+  value,
+  onChange,
+  disabled = false,
+  minHeight = "300px",
+}: RichTextEditorProps) {
+  const editorRef =
+    useRef<HTMLDivElement | null>(
+      null
+    );
+
+  const savedRangeRef =
+    useRef<Range | null>(
+      null
+    );
+
+  const initializedRef =
+    useRef(false);
+
+  const internalChangeRef =
+    useRef(false);
+
+  const [
+    isFocused,
+    setIsFocused,
+  ] = useState(false);
+
+  function saveSelection() {
+    const editor =
+      editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    const selection =
+      window.getSelection();
+
+    if (
+      !selection ||
+      selection.rangeCount ===
+        0
+    ) {
+      return;
+    }
+
+    const range =
+      selection.getRangeAt(0);
+
+    if (
+      !editor.contains(
+        range.commonAncestorContainer
+      )
+    ) {
+      return;
+    }
+
+    savedRangeRef.current =
+      range.cloneRange();
+  }
+
+  function restoreSelection() {
+    const editor =
+      editorRef.current;
+
+    const range =
+      savedRangeRef.current;
+
+    if (
+      !editor ||
+      !range
+    ) {
+      return false;
+    }
+
+    if (
+      !editor.contains(
+        range.startContainer
+      ) ||
+      !editor.contains(
+        range.endContainer
+      )
+    ) {
+      return false;
+    }
+
+    const selection =
+      window.getSelection();
+
+    if (!selection) {
+      return false;
+    }
+
+    try {
+      selection.removeAllRanges();
+
+      selection.addRange(
+        range
+      );
+
+      return true;
+    } catch (
+      error
+    ) {
+      console.error(
+        "Erro ao restaurar seleção:",
+        error
+      );
+
+      return false;
+    }
+  }
+
+  function syncValue() {
+    const editor =
+      editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    internalChangeRef.current =
+      true;
+
+    onChange(
+      editor.innerHTML
+    );
+  }
+
+  useEffect(() => {
+    const editor =
+      editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    if (
+      !initializedRef.current
+    ) {
+      editor.innerHTML =
+        descriptionToHtml(
+          value
+        );
+
+      initializedRef.current =
+        true;
+
+      return;
+    }
+
+    if (
+      internalChangeRef.current
+    ) {
+      internalChangeRef.current =
+        false;
+
+      return;
+    }
+
+    if (
+      document.activeElement ===
+      editor
+    ) {
+      return;
+    }
+
+    const html =
+      descriptionToHtml(
+        value
+      );
+
+    if (
+      editor.innerHTML !==
+      html
+    ) {
+      editor.innerHTML =
+        html;
+    }
+  }, [value]);
+
+  function fragmentIsCompletelyBold(
+    fragment: DocumentFragment
+  ) {
+    const walker =
+      document.createTreeWalker(
+        fragment,
+        NodeFilter.SHOW_TEXT
+      );
+
+    let foundText =
+      false;
+
+    let currentNode =
+      walker.nextNode();
+
+    while (
+      currentNode
+    ) {
+      const textNode =
+        currentNode as Text;
+
+      if (
+        textNode.nodeValue
+          ?.length
+      ) {
+        foundText =
+          true;
+
+        let parent =
+          textNode.parentElement;
+
+        let isBold =
+          false;
+
+        while (
+          parent
+        ) {
+          if (
+            parent.tagName ===
+              "STRONG" ||
+            parent.tagName ===
+              "B"
+          ) {
+            isBold =
+              true;
+
+            break;
+          }
+
+          parent =
+            parent.parentElement;
+        }
+
+        if (
+          !isBold
+        ) {
+          return false;
+        }
+      }
+
+      currentNode =
+        walker.nextNode();
+    }
+
+    return foundText;
+  }
+
+  function unwrapBoldFromFragment(
+    fragment: DocumentFragment
+  ) {
+    const elements =
+      Array.from(
+        fragment.querySelectorAll(
+          "strong, b"
+        )
+      );
+
+    elements.forEach(
+      (element) => {
+        const parent =
+          element.parentNode;
+
+        if (!parent) {
+          return;
+        }
+
+        while (
+          element.firstChild
+        ) {
+          parent.insertBefore(
+            element.firstChild,
+            element
+          );
+        }
+
+        parent.removeChild(
+          element
+        );
+      }
+    );
+  }
+
+  function toggleBold() {
+    if (disabled) {
+      return;
+    }
+
+    const editor =
+      editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    restoreSelection();
+
+    const selection =
+      window.getSelection();
+
+    if (
+      !selection ||
+      selection.rangeCount ===
+        0
+    ) {
+      return;
+    }
+
+    const range =
+      selection.getRangeAt(0);
+
+    if (
+      range.collapsed
+    ) {
+      return;
+    }
+
+    if (
+      !editor.contains(
+        range.commonAncestorContainer
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const preview =
+        range.cloneContents();
+
+      const completelyBold =
+        fragmentIsCompletelyBold(
+          preview
+        );
+
+      const fragment =
+        range.extractContents();
+
+      if (
+        completelyBold
+      ) {
+        unwrapBoldFromFragment(
+          fragment
+        );
+
+        range.insertNode(
+          fragment
+        );
+      } else {
+        const strong =
+          document.createElement(
+            "strong"
+          );
+
+        strong.appendChild(
+          fragment
+        );
+
+        range.insertNode(
+          strong
+        );
+
+        const newRange =
+          document.createRange();
+
+        newRange.selectNodeContents(
+          strong
+        );
+
+        selection.removeAllRanges();
+
+        selection.addRange(
+          newRange
+        );
+      }
+
+      saveSelection();
+
+      syncValue();
+    } catch (
+      error
+    ) {
+      console.error(
+        "❌ ERRO NO BOLD:",
+        error
+      );
+    }
+  }
+
+  function executeCommand(
+    command: string
+  ) {
+    if (disabled) {
+      return;
+    }
+
+    if (
+      command ===
+      "bold"
+    ) {
+      toggleBold();
+
+      return;
+    }
+
+    const editor =
+      editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    try {
+      restoreSelection();
+
+      document.execCommand(
+        command,
+        false
+      );
+
+      syncValue();
+
+      saveSelection();
+    } catch (
+      error
+    ) {
+      console.error(
+        `Erro ao executar ${command}:`,
+        error
+      );
+    }
+  }
+
+  function handleToolbarMouseDown(
+    event: ReactMouseEvent<HTMLButtonElement>,
+    command: string
+  ) {
+    event.preventDefault();
+
+    if (disabled) {
+      return;
+    }
+
+    saveSelection();
+
+    executeCommand(
+      command
+    );
+  }
+
+  function clearFormatting() {
+    if (disabled) {
+      return;
+    }
+
+    try {
+      restoreSelection();
+
+      document.execCommand(
+        "removeFormat",
+        false
+      );
+
+      document.execCommand(
+        "unlink",
+        false
+      );
+
+      syncValue();
+
+      saveSelection();
+    } catch (
+      error
+    ) {
+      console.error(
+        "Erro ao limpar formatação:",
+        error
+      );
+    }
+  }
+
+  return (
+    <div
+      className={[
+        "overflow-hidden rounded-2xl border-2 bg-white transition",
+        isFocused
+          ? "border-[#1687d9] ring-4 ring-blue-100"
+          : "border-gray-200",
+        disabled
+          ? "opacity-60"
+          : "",
+      ].join(" ")}
+    >
+      <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-2">
+
+        <button
+          type="button"
+          disabled={
+            disabled
+          }
+          onMouseDown={(event) =>
+            handleToolbarMouseDown(
+              event,
+              "bold"
+            )
+          }
+          title="Negrito"
+          className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 text-sm font-black text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <strong>
+            B
+          </strong>
+        </button>
+
+        <button
+          type="button"
+          disabled={
+            disabled
+          }
+          onMouseDown={(event) =>
+            handleToolbarMouseDown(
+              event,
+              "italic"
+            )
+          }
+          title="Itálico"
+          className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 text-sm font-bold italic text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <em>
+            I
+          </em>
+        </button>
+
+        <button
+          type="button"
+          disabled={
+            disabled
+          }
+          onMouseDown={(event) =>
+            handleToolbarMouseDown(
+              event,
+              "underline"
+            )
+          }
+          title="Sublinhado"
+          className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 text-sm font-bold text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span className="underline">
+            U
+          </span>
+        </button>
+
+        <div className="mx-1 h-6 w-px bg-gray-300" />
+
+        <button
+          type="button"
+          disabled={
+            disabled
+          }
+          onMouseDown={(event) =>
+            handleToolbarMouseDown(
+              event,
+              "insertUnorderedList"
+            )
+          }
+          title="Lista com marcadores"
+          className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 text-sm font-bold text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          ☷
+        </button>
+
+        <button
+          type="button"
+          disabled={
+            disabled
+          }
+          onMouseDown={(event) =>
+            handleToolbarMouseDown(
+              event,
+              "insertOrderedList"
+            )
+          }
+          title="Lista numerada"
+          className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-gray-200 bg-white px-2 text-sm font-bold text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          1.
+        </button>
+
+        <div className="mx-1 h-6 w-px bg-gray-300" />
+
+        <button
+          type="button"
+          disabled={
+            disabled
+          }
+          onMouseDown={(event) => {
+            event.preventDefault();
+
+            saveSelection();
+
+            clearFormatting();
+          }}
+          title="Limpar formatação"
+          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Limpar
+        </button>
+      </div>
+
+      <div
+        ref={editorRef}
+        contentEditable={
+          !disabled
+        }
+        suppressContentEditableWarning
+        role="textbox"
+        aria-multiline="true"
+        spellCheck
+        onInput={() => {
+          syncValue();
+
+          saveSelection();
+        }}
+        onKeyUp={() => {
+          saveSelection();
+        }}
+        onMouseUp={() => {
+          saveSelection();
+        }}
+        onFocus={() => {
+          setIsFocused(
+            true
+          );
+
+          saveSelection();
+        }}
+        onBlur={() => {
+          setIsFocused(
+            false
+          );
+
+          saveSelection();
+        }}
+        data-placeholder="Digite aqui as informações detalhadas do tour..."
+        className="min-h-[300px] w-full overflow-y-auto px-4 py-4 text-sm font-medium leading-7 text-gray-900 outline-none"
+        style={{
+          minHeight,
+        }}
+      />
+
+      <style jsx>{`
+        [contenteditable="true"]:empty:before {
+          content: attr(data-placeholder);
+          color: #9ca3af;
+          pointer-events: none;
+        }
+
+        [contenteditable="true"] ul {
+          list-style: disc;
+          padding-left: 1.5rem;
+        }
+
+        [contenteditable="true"] ol {
+          list-style: decimal;
+          padding-left: 1.5rem;
+        }
+
+        [contenteditable="true"] li {
+          margin: 0.25rem 0;
+        }
+
+        [contenteditable="true"] p {
+          margin: 0.35rem 0;
+        }
+
+        [contenteditable="true"] div {
+          min-height: 1.5rem;
+        }
+
+        [contenteditable="true"] br {
+          line-height: 1.7;
+        }
+
+        [contenteditable="true"] strong,
+        [contenteditable="true"] b {
+          font-weight: 800;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/* ============================================================
+COMPONENTE PRINCIPAL
+============================================================ */
+
+export default function AdminCalendar() {
+  const [
+    currentMonth,
+    setCurrentMonth,
+  ] = useState(
+    new Date()
+  );
+
+  const [
+    currentDay,
+    setCurrentDay,
+  ] = useState(
+    new Date()
+  );
+
+  const [
+    calendarView,
+    setCalendarView,
+  ] = useState<CalendarView>(
+    "month"
+  );
+
+  const [
+    launchTourWithoutGuide,
+    setLaunchTourWithoutGuide,
+  ] = useState(false);
+
+
+
+  const [
+    guides,
+    setGuides,
+  ] = useState<Guide[]>(
+    []
+  );
+
+  const [
+    availability,
+    setAvailability,
+  ] = useState<
+    Availability[]
+  >([]);
+
+  const [
+    tourEvents,
+    setTourEvents,
+  ] = useState<
+    TourEvent[]
+  >([]);
+
+  const [
+    guideSearch,
+    setGuideSearch,
+  ] = useState("");
+
+  const [
+    selectedDate,
+    setSelectedDate,
+  ] = useState<
+    string | null
+  >(null);
+
+  const [
+    tourFormDate,
+    setTourFormDate,
+  ] = useState<
+    string | null
+  >(null);
+
+  const [
+    tourFormAvailabilityId,
+    setTourFormAvailabilityId,
+  ] = useState<
+    number | null
+  >(null);
+
+  const [
+    selectedGuideDetails,
+    setSelectedGuideDetails,
+  ] = useState<
+    Guide | null
+  >(null);
+
+  const [
+    selectedGuideAvailability,
+    setSelectedGuideAvailability,
+  ] = useState<
+    Availability | null
+  >(null);
+
+  const [
+    selectedTourEvent,
+    setSelectedTourEvent,
+  ] = useState<
+    TourEvent | null
+  >(null);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    updating,
+    setUpdating,
+  ] = useState(false);
+
+  /* ============================================================
+  FORMULÁRIO CRIAÇÃO
+  ============================================================ */
+
+  const [
+    showTourForm,
+    setShowTourForm,
+  ] = useState(false);
+
+  const [
+    tourTitle,
+    setTourTitle,
+  ] = useState("");
+
+  const [
+    tourDescription,
+    setTourDescription,
+  ] = useState("");
+
+  const [
+    tourAddress,
+    setTourAddress,
+  ] = useState("");
+
+  const [
+    tourAllDay,
+    setTourAllDay,
+  ] = useState(true);
+
+  const [
+    tourStartTime,
+    setTourStartTime,
+  ] = useState("09:00");
+
+  const [
+    tourEndTime,
+    setTourEndTime,
+  ] = useState("10:00");
+
+  const [
+    tourGuideId,
+    setTourGuideId,
+  ] = useState("");
+
+  const [
+    tourAdditionalEmail,
+    setTourAdditionalEmail,
+  ] = useState("");
+
+const [
+  tourAdditionalEmail2,
+  setTourAdditionalEmail2,
+] = useState("");
+
+const [
+  tourColorId,
+  setTourColorId,
+] = useState("9");
+
+  /* ============================================================
+  EDIÇÃO
+  ============================================================ */
+
+  const [
+    showTourEdit,
+    setShowTourEdit,
+  ] = useState(false);
+
+  const [
+    editTourTitle,
+    setEditTourTitle,
+  ] = useState("");
+
+  const [
+    editTourDescription,
+    setEditTourDescription,
+  ] = useState("");
+
+  const [
+    editTourAddress,
+    setEditTourAddress,
+  ] = useState("");
+
+  const [
+    editTourAllDay,
+    setEditTourAllDay,
+  ] = useState(true);
+
+  const [
+    editTourStartTime,
+    setEditTourStartTime,
+  ] = useState("09:00");
+
+  const [
+    editTourEndTime,
+    setEditTourEndTime,
+  ] = useState("10:00");
+
+  const [
+    editTourGuideId,
+    setEditTourGuideId,
+  ] = useState("");
+
+  const [
+    editTourAdditionalEmail,
+    setEditTourAdditionalEmail,
+  ] = useState("");
+
+const [
+  editTourAdditionalEmail2,
+  setEditTourAdditionalEmail2,
+] = useState("");
+
+const [
+  editTourColorId,
+  setEditTourColorId,
+] = useState("9");
+
+  /* ============================================================
+  CARREGAMENTO
+  ============================================================ */
+
+  useEffect(() => {
+    loadData();
+  }, [
+    currentMonth,
+  ]);
+
+  /* ============================================================
+  REALTIME
+  ============================================================ */
+
+  useEffect(() => {
+    const channel =
+      supabase
+        .channel(
+          "admin-calendar-realtime"
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "INSERT",
+            schema:
+              "public",
+            table:
+              "availability",
+          },
+          (payload) => {
+            const newItem =
+              payload.new as Availability;
+
+            setAvailability(
+              (current) => {
+                const alreadyExists =
+                  current.some(
+                    (item) =>
+                      item.id ===
+                      newItem.id
+                  );
+
+                if (
+                  alreadyExists
+                ) {
+                  return current;
+                }
+
+                const firstDay =
+                  format(
+                    startOfMonth(
+                      currentMonth
+                    ),
+                    "yyyy-MM-dd"
+                  );
+
+                const lastDay =
+                  format(
+                    endOfMonth(
+                      currentMonth
+                    ),
+                    "yyyy-MM-dd"
+                  );
+
+                if (
+                  newItem.date <
+                    firstDay ||
+                  newItem.date >
+                    lastDay
+                ) {
+                  return current;
+                }
+
+                return [
+                  ...current,
+                  newItem,
+                ].sort(
+                  (a, b) =>
+                    a.date.localeCompare(
+                      b.date
+                    )
+                );
+              }
+            );
+          }
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "UPDATE",
+            schema:
+              "public",
+            table:
+              "availability",
+          },
+          (payload) => {
+            const updatedItem =
+              payload.new as Availability;
+
+            setAvailability(
+              (current) =>
+                current.map(
+                  (item) =>
+                    item.id ===
+                    updatedItem.id
+                      ? updatedItem
+                      : item
+                )
+            );
+
+            setSelectedGuideAvailability(
+              (current) =>
+                current &&
+                current.id ===
+                  updatedItem.id
+                  ? updatedItem
+                  : current
+            );
+          }
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "DELETE",
+            schema:
+              "public",
+            table:
+              "availability",
+          },
+          (payload) => {
+            const deletedItem =
+              payload.old as Availability;
+
+            setAvailability(
+              (current) =>
+                current.filter(
+                  (item) =>
+                    item.id !==
+                    deletedItem.id
+                )
+            );
+
+            setSelectedGuideAvailability(
+              (current) =>
+                current &&
+                current.id ===
+                  deletedItem.id
+                  ? null
+                  : current
+            );
+          }
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "INSERT",
+            schema:
+              "public",
+            table:
+              "tour_events",
+          },
+          (payload) => {
+            const newEvent =
+              payload.new as TourEvent;
+
+            const firstDay =
+              format(
+                startOfMonth(
+                  currentMonth
+                ),
+                "yyyy-MM-dd"
+              );
+
+            const lastDay =
+              format(
+                endOfMonth(
+                  currentMonth
+                ),
+                "yyyy-MM-dd"
+              );
+
+            if (
+              newEvent.date <
+                firstDay ||
+              newEvent.date >
+                lastDay
+            ) {
+              return;
+            }
+
+            setTourEvents(
+              (current) => {
+                const alreadyExists =
+                  current.some(
+                    (event) =>
+                      event.id ===
+                      newEvent.id
+                  );
+
+                if (
+                  alreadyExists
+                ) {
+                  return current;
+                }
+
+                return [
+                  ...current,
+                  newEvent,
+                ].sort(
+                  (a, b) =>
+                    a.date.localeCompare(
+                      b.date
+                    )
+                );
+              }
+            );
+          }
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "UPDATE",
+            schema:
+              "public",
+            table:
+              "tour_events",
+          },
+          (payload) => {
+            const updatedEvent =
+              payload.new as TourEvent;
+
+            setTourEvents(
+              (current) =>
+                current.map(
+                  (event) =>
+                    event.id ===
+                      updatedEvent.id
+                      ? updatedEvent
+                      : event
+                )
+            );
+
+            setSelectedTourEvent(
+              (current) =>
+                current &&
+                current.id ===
+                  updatedEvent.id
+                  ? updatedEvent
+                  : current
+            );
+          }
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event:
+              "DELETE",
+            schema:
+              "public",
+            table:
+              "tour_events",
+          },
+          (payload) => {
+            const deletedEvent =
+              payload.old as TourEvent;
+
+            setTourEvents(
+              (current) =>
+                current.filter(
+                  (event) =>
+                    event.id !==
+                    deletedEvent.id
+                )
+            );
+
+            setSelectedTourEvent(
+              (current) =>
+                current &&
+                current.id ===
+                  deletedEvent.id
+                  ? null
+                  : current
+            );
+          }
+        )
+
+        .subscribe(
+          (status) => {
+            console.log(
+              "📡 ADMIN CALENDAR REALTIME:",
+              status
+            );
+          }
+        );
+
+    return () => {
+      supabase.removeChannel(
+        channel
+      );
+    };
+  }, [
+    currentMonth,
+  ]);
+
+  /* ============================================================
+  CARREGAR DADOS
+  ============================================================ */
+
+  async function loadData() {
+    setLoading(
+      true
+    );
+
+    const firstDay =
+      format(
+        startOfMonth(
+          currentMonth
+        ),
+        "yyyy-MM-dd"
+      );
+
+    const lastDay =
+      format(
+        endOfMonth(
+          currentMonth
+        ),
+        "yyyy-MM-dd"
+      );
+
+    const [
+      guidesResult,
+      availabilityResult,
+      tourEventsResult,
+    ] =
+      await Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            "id, name, active, languages, phone"
+          )
+          .eq(
+            "role",
+            "guide"
+          )
+          .order(
+            "name"
+          ),
+
+        supabase
+          .from("availability")
+          .select(
+            "id, guide_id, date, status"
+          )
+          .gte(
+            "date",
+            firstDay
+          )
+          .lte(
+            "date",
+            lastDay
+          )
+          .order(
+            "date"
+          ),
+
+        supabase
+          .from("tour_events")
+.select(
+  "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, google_color_id, calendar_event_id, status, created_at, updated_at"
+)
+
+          .gte(
+            "date",
+            firstDay
+          )
+          .lte(
+            "date",
+            lastDay
+          )
+          .order(
+            "date"
+          ),
+      ]);
+
+    if (
+      guidesResult.error
+    ) {
+      console.error(
+        "ERRO AO CARREGAR GUIAS:",
+        guidesResult.error
+      );
+    } else {
+      const {
+        data: {
+          session,
+        },
+      } =
+        await supabase.auth.getSession();
+
+      const guidesWithDetails =
+        await Promise.all(
+          (
+            guidesResult.data ||
+            []
+          ).map(
+            async (
+              guide
+            ) => {
+              if (
+                !session
+              ) {
+                return {
+                  ...guide,
+                  languages:
+                    guide.languages ||
+                    [],
+                  phone:
+                    guide.phone ||
+                    "",
+                  email:
+                    "",
+                  pix_key:
+                    "",
+                };
+              }
+
+              try {
+                const response =
+                  await fetch(
+                    `/api/guides/${guide.id}`,
+                    {
+                      method:
+                        "GET",
+
+                      headers: {
+                        Authorization:
+                          `Bearer ${session.access_token}`,
+                      },
+                    }
+                  );
+
+                const result =
+                  await response.json();
+
+                return {
+                  ...guide,
+                  languages:
+                    guide.languages ||
+                    [],
+                  phone:
+                    guide.phone ||
+                    "",
+                  email:
+                    result.email ||
+                    "",
+                  pix_key:
+                    result.pix_key ||
+                    result.pix ||
+                    result.pixKey ||
+                    "",
+                };
+              } catch (
+                error
+              ) {
+                console.error(
+                  `Erro ao buscar detalhes do guia ${guide.id}:`,
+                  error
+                );
+
+                return {
+                  ...guide,
+                  languages:
+                    guide.languages ||
+                    [],
+                  phone:
+                    guide.phone ||
+                    "",
+                  email:
+                    "",
+                  pix_key:
+                    "",
+                };
+              }
+            }
+          )
+        );
+
+      setGuides(
+        guidesWithDetails
+      );
+    }
+
+    if (
+      availabilityResult.error
+    ) {
+      console.error(
+        "ERRO AO CARREGAR DISPONIBILIDADES:",
+        availabilityResult.error
+      );
+    } else {
+      setAvailability(
+        availabilityResult.data ||
+          []
+      );
+    }
+
+    if (
+      tourEventsResult.error
+    ) {
+      console.error(
+        "ERRO AO CARREGAR TOURS:",
+        tourEventsResult.error
+      );
+    } else {
+      setTourEvents(
+        tourEventsResult.data ||
+          []
+      );
+    }
+
+    setLoading(
+      false
+    );
+  }
+
+  /* ============================================================
+  BUSCA
+  ============================================================ */
+
+  const normalizedSearch =
+    guideSearch
+      .trim()
+      .toLowerCase();
+
+  const filteredGuides =
+    useMemo(() => {
+      if (
+        !normalizedSearch
+      ) {
+        return guides;
+      }
+
+      return guides.filter(
+        (guide) =>
+          guide.name
+            .toLowerCase()
+            .includes(
+              normalizedSearch
+            )
+      );
+    }, [
+      guides,
+      normalizedSearch,
+    ]);
+
+  /* ============================================================
+  MAPA
+  ============================================================ */
+
+  const guideMap =
+    useMemo(
+      () =>
+        new Map(
+          guides.map(
+            (guide) => [
+              guide.id,
+              guide,
+            ]
+          )
+        ),
+      [guides]
+    );
+
+  /* ============================================================
+  GUIAS DISPONÍVEIS PARA TROCAR
+  ============================================================ */
+
+  const availableGuidesForTourEdit =
+    useMemo(() => {
+      if (
+        !selectedTourEvent
+      ) {
+        return [];
+      }
+
+      const availableGuideIds =
+        new Set(
+          availability
+            .filter(
+              (item) =>
+                item.date ===
+                  selectedTourEvent.date &&
+                item.status ===
+                  "available"
+            )
+            .map(
+              (item) =>
+                item.guide_id
+            )
+        );
+
+      return guides.filter(
+        (guide) =>
+          guide.active &&
+          availableGuideIds.has(
+            guide.id
+          )
+      );
+    }, [
+      availability,
+      guides,
+      selectedTourEvent,
+    ]);
+
+  /* ============================================================
+  DISPONIBILIDADE FILTRADA
+  ============================================================ */
+
+  const filteredAvailability =
+    useMemo(() => {
+      if (
+        !normalizedSearch
+      ) {
+        return availability;
+      }
+
+      const matchingGuideIds =
+        new Set(
+          filteredGuides.map(
+            (guide) =>
+              guide.id
+          )
+        );
+
+      return availability.filter(
+        (item) =>
+          matchingGuideIds.has(
+            item.guide_id
+          )
+      );
+    }, [
+      availability,
+      filteredGuides,
+      normalizedSearch,
+    ]);
+
+  /* ============================================================
+  TOURS FILTRADOS
+  ============================================================ */
+
+  const filteredTourEvents =
+    useMemo(() => {
+      if (
+        !normalizedSearch
+      ) {
+        return tourEvents;
+      }
+
+      const matchingGuideIds =
+        new Set(
+          filteredGuides.map(
+            (guide) =>
+              guide.id
+          )
+        );
+
+      return tourEvents.filter(
+        (event) =>
+          event.guide_id ===
+            null ||
+          matchingGuideIds.has(
+            event.guide_id
+          )
+      );
+    }, [
+      tourEvents,
+      filteredGuides,
+      normalizedSearch,
+    ]);
+
+  /* ============================================================
+  CALENDÁRIO
+  ============================================================ */
+
+  const calendarStart =
+    startOfWeek(
+      startOfMonth(
+        currentMonth
+      ),
+      {
+        weekStartsOn: 1,
+      }
+    );
+
+  const calendarEnd =
+    endOfWeek(
+      endOfMonth(
+        currentMonth
+      ),
+      {
+        weekStartsOn: 1,
+      }
+    );
+
+  const days =
+    eachDayOfInterval({
+      start:
+        calendarStart,
+      end:
+        calendarEnd,
+    });
+
+  /* ============================================================
+  SELECTED DAY
+  ============================================================ */
+
+  const selectedDayData =
+    selectedDate
+      ? filteredAvailability.filter(
+          (item) =>
+            item.date ===
+            selectedDate
+        )
+      : [];
+
+  const selectedAvailable =
+    selectedDayData.filter(
+      (item) =>
+        item.status ===
+        "available"
+    );
+
+  const selectedUnavailable =
+    selectedDayData.filter(
+      (item) =>
+        item.status ===
+        "unavailable"
+    );
+
+  const selectedEscalated =
+    selectedDayData.filter(
+      (item) =>
+        item.status ===
+        "escalated"
+    );
+
+  const selectedDayEvents =
+    selectedDate
+      ? filteredTourEvents.filter(
+          (event) =>
+            event.date ===
+              selectedDate &&
+            event.status ===
+              "scheduled"
+        )
+      : [];
+
+  /* ============================================================
+  HELPERS
+  ============================================================ */
+
+  function getDayAvailability(
+    date: string
+  ) {
+    return filteredAvailability.filter(
+      (item) =>
+        item.date ===
+        date
+    );
+  }
+
+  function getDayTourEvents(
+    date: string
+  ) {
+    return filteredTourEvents.filter(
+      (event) =>
+        event.date ===
+          date &&
+        event.status ===
+          "scheduled"
+    );
+  }
+
+  function getGuideName(
+    guideId: string | null
+  ) {
+    if (!guideId) {
+      return "Sem guia";
+    }
+
+    return (
+      guideMap.get(
+        guideId
+      )?.name ||
+      "Guia"
+    );
+  }
+
+  function getGuideFlags(
+    guideId: string | null
+  ) {
+    if (!guideId) {
+      return null;
+    }
+
+    const guide =
+      guideMap.get(
+        guideId
+      );
+
+    if (
+      !guide?.languages ||
+      guide.languages.length ===
+        0
+    ) {
+      return null;
+    }
+
+    return (
+      <span className="inline-flex items-center gap-0.5 align-middle">
+
+        {guide.languages.map(
+          (language) => {
+            const flag =
+              LANGUAGE_FLAGS[
+                language
+              ];
+
+            if (!flag) {
+              return null;
+            }
+
+            return (
+              <img
+                key={`${guideId}-${language}`}
+                src={
+                  flag
+                }
+                alt={
+                  language
+                }
+                title={
+                  language
+                }
+                className="inline-block h-2.5 w-4 rounded-sm object-cover sm:h-4 sm:w-6"
+              />
+            );
+          }
+        )}
+
+      </span>
+    );
+  }
+
+  function formatGuidePhone(
+    value: string
+  ) {
+    const numbers =
+      value.replace(
+        /\D/g,
+        ""
+      );
+
+    if (
+      numbers.length ===
+      11
+    ) {
+      return `(${numbers.slice(
+        0,
+        2
+      )}) ${numbers.slice(
+        2,
+        7
+      )}-${numbers.slice(
+        7
+      )}`;
+    }
+
+    if (
+      numbers.length ===
+      10
+    ) {
+      return `(${numbers.slice(
+        0,
+        2
+      )}) ${numbers.slice(
+        2,
+        6
+      )}-${numbers.slice(
+        6
+      )}`;
+    }
+
+    return value;
+  }
+
+
 function getColorName(
   colorId:
     | string
@@ -492,7 +2320,7 @@ function getColorClass(
       !session?.access_token
     ) {
       throw new Error(
-        "Sua sessÃ£o expirou. FaÃ§a login novamente."
+        "Sua sessão expirou. Faça login novamente."
       );
     }
 
@@ -532,7 +2360,7 @@ function getColorClass(
     ) {
       throw new Error(
         result?.error ||
-          "NÃ£o foi possÃ­vel sincronizar com o Google Calendar."
+          "Não foi possível sincronizar com o Google Calendar."
       );
     }
 
@@ -557,7 +2385,7 @@ function getColorClass(
 
     if (!guide) {
       alert(
-        "Guia nÃ£o encontrado."
+        "Guia não encontrado."
       );
 
       return;
@@ -628,13 +2456,13 @@ setTourAdditionalEmail2(
   }
 
   /* ============================================================
-  LANÃ‡AR TOUR PELO DIA â€” SEM GUIA OBRIGATÃ“RIO
+  LANÇAR TOUR PELO DIA — SEM GUIA OBRIGATÓRIO
   ============================================================ */
 
   function openTourFormFromDay() {
     if (!selectedDate) {
       alert(
-        "Selecione um dia antes de lanÃ§ar o tour."
+        "Selecione um dia antes de lançar o tour."
       );
 
       return;
@@ -698,7 +2526,7 @@ setTourAdditionalEmail2(
 
     /*
      * Fecha o modal do dia antes de abrir
-     * o formulÃ¡rio de lanÃ§amento.
+     * o formulário de lançamento.
      */
     setSelectedDate(
       null
@@ -726,7 +2554,7 @@ setTourAdditionalEmail2(
       !escalationDate
     ) {
       alert(
-        "NÃ£o foi possÃ­vel identificar o dia da escala."
+        "Não foi possível identificar o dia da escala."
       );
 
       return;
@@ -742,7 +2570,7 @@ if (
   !availabilityId
 ) {
   alert(
-    "NÃ£o foi possÃ­vel identificar a disponibilidade do guia."
+    "Não foi possível identificar a disponibilidade do guia."
   );
 
   return;
@@ -753,7 +2581,7 @@ if (
   !guide
 ) {
   alert(
-    "Selecione um guia vÃ¡lido."
+    "Selecione um guia válido."
   );
 
   return;
@@ -763,7 +2591,7 @@ if (
       !tourTitle.trim()
     ) {
       alert(
-        "Informe o tÃ­tulo do tour."
+        "Informe o título do tour."
       );
 
       return;
@@ -774,7 +2602,7 @@ if (
       !guide?.email
     ) {
       alert(
-        "Este guia nÃ£o possui e-mail cadastrado."
+        "Este guia não possui e-mail cadastrado."
       );
 
       return;
@@ -786,7 +2614,7 @@ if (
         tourEndTime
     ) {
       alert(
-        "O horÃ¡rio de tÃ©rmino deve ser maior que o horÃ¡rio de inÃ­cio."
+        "O horário de término deve ser maior que o horário de início."
       );
 
       return;
@@ -895,12 +2723,12 @@ calendar_event_id:
         !newEvent
       ) {
         console.error(
-          "âŒ ERRO AO CRIAR TOUR:",
+          "❌ ERRO AO CRIAR TOUR:",
           eventError
         );
 
         throw new Error(
-          "NÃ£o foi possÃ­vel criar o tour no banco de dados."
+          "Não foi possível criar o tour no banco de dados."
         );
       }
 
@@ -969,7 +2797,7 @@ colorId:
         !googleEventId
       ) {
         throw new Error(
-          "O Google criou o evento, mas nÃ£o retornou o ID."
+          "O Google criou o evento, mas não retornou o ID."
         );
       }
 
@@ -1032,7 +2860,7 @@ colorId:
           );
 
         throw new Error(
-          "O evento foi criado no Google, mas nÃ£o foi possÃ­vel salvar o vÃ­nculo no sistema."
+          "O evento foi criado no Google, mas não foi possível salvar o vínculo no sistema."
         );
       }
 
@@ -1041,8 +2869,8 @@ colorId:
 
    /* ========================================================
    ESCALAR GUIA
-   SÃ³ executa no fluxo normal de escala.
-   No modo "LanÃ§ar tour" sem guia, nÃ£o existe
+   Só executa no fluxo normal de escala.
+   No modo "Lançar tour" sem guia, não existe
    disponibilidade para escalar.
 ======================================================== */
 
@@ -1077,7 +2905,7 @@ if (
     !escalatedAvailability
   ) {
     console.error(
-      "âŒ ERRO AO ESCALAR DISPONIBILIDADE:",
+      "❌ ERRO AO ESCALAR DISPONIBILIDADE:",
       availabilityError
     );
 
@@ -1108,7 +2936,7 @@ if (
       );
 
     throw new Error(
-      "O tour foi criado, mas nÃ£o foi possÃ­vel escalar o guia."
+      "O tour foi criado, mas não foi possível escalar o guia."
     );
   }
 }
@@ -1186,14 +3014,14 @@ if (
 
       alert(
         launchTourWithoutGuide
-          ? "âœ… Tour lanÃ§ado com sucesso no sistema e no Google Calendar, sem guia."
-          : "âœ… Tour criado, guia escalado e evento enviado para o Google Calendar."
+          ? "✅ Tour lançado com sucesso no sistema e no Google Calendar, sem guia."
+          : "✅ Tour criado, guia escalado e evento enviado para o Google Calendar."
       );
     } catch (
       error: any
     ) {
       console.error(
-        "âŒ ERRO AO CRIAR TOUR:",
+        "❌ ERRO AO CRIAR TOUR:",
         error
       );
 
@@ -1264,7 +3092,7 @@ if (
         tourSearchError
       ) {
         throw new Error(
-          "NÃ£o foi possÃ­vel localizar o tour dessa escala."
+          "Não foi possível localizar o tour dessa escala."
         );
       }
 
@@ -1312,7 +3140,7 @@ if (
         });
       }
 
-      /* SUPABASE â€” DEIXA TOUR SEM GUIA */
+      /* SUPABASE — DEIXA TOUR SEM GUIA */
 
       if (
         tourEvent
@@ -1348,7 +3176,7 @@ if (
           !updatedTour
         ) {
           throw new Error(
-            "O Google foi atualizado, mas nÃ£o foi possÃ­vel deixar o tour sem guia no sistema."
+            "O Google foi atualizado, mas não foi possível deixar o tour sem guia no sistema."
           );
         }
 
@@ -1403,7 +3231,7 @@ if (
         !updatedAvailability
       ) {
         throw new Error(
-          "NÃ£o foi possÃ­vel liberar o guia."
+          "Não foi possível liberar o guia."
         );
       }
 
@@ -1428,20 +3256,20 @@ if (
 
       alert(
         tourEvent
-          ? "âœ… Guia removido da escala. O tour continua no sistema e no Google Calendar sem guia."
-          : "âœ… Escala removida e guia liberado."
+          ? "✅ Guia removido da escala. O tour continua no sistema e no Google Calendar sem guia."
+          : "✅ Escala removida e guia liberado."
       );
     } catch (
       error: any
     ) {
       console.error(
-        "âŒ ERRO AO REMOVER ESCALA:",
+        "❌ ERRO AO REMOVER ESCALA:",
         error
       );
 
       alert(
         error?.message ||
-          "NÃ£o foi possÃ­vel remover a escala."
+          "Não foi possível remover a escala."
       );
     } finally {
       setUpdating(
@@ -1451,7 +3279,7 @@ if (
   }
 
   /* ============================================================
-  ABRIR EDIÃ‡ÃƒO
+  ABRIR EDIÇÃO
   ============================================================ */
 
   function openTourEdit(
@@ -1506,7 +3334,7 @@ setEditTourAdditionalEmail2(
   }
 
   /* ============================================================
-  SALVAR EDIÃ‡ÃƒO
+  SALVAR EDIÇÃO
   ============================================================ */
 
   async function saveTourEdit() {
@@ -1528,7 +3356,7 @@ setEditTourAdditionalEmail2(
       !newGuide
     ) {
       alert(
-        "Selecione um guia vÃ¡lido."
+        "Selecione um guia válido."
       );
 
       return;
@@ -1538,7 +3366,7 @@ setEditTourAdditionalEmail2(
       !editTourTitle.trim()
     ) {
       alert(
-        "Informe o tÃ­tulo do tour."
+        "Informe o título do tour."
       );
 
       return;
@@ -1549,7 +3377,7 @@ setEditTourAdditionalEmail2(
       !newGuide?.email
     ) {
       alert(
-        "O guia selecionado nÃ£o possui e-mail cadastrado."
+        "O guia selecionado não possui e-mail cadastrado."
       );
 
       return;
@@ -1561,7 +3389,7 @@ setEditTourAdditionalEmail2(
         editTourEndTime
     ) {
       alert(
-        "O horÃ¡rio de tÃ©rmino deve ser maior que o horÃ¡rio de inÃ­cio."
+        "O horário de término deve ser maior que o horário de início."
       );
 
       return;
@@ -1622,7 +3450,7 @@ setEditTourAdditionalEmail2(
           newGuideAvailabilityError
         ) {
           throw new Error(
-            "NÃ£o foi possÃ­vel verificar a disponibilidade do novo guia."
+            "Não foi possível verificar a disponibilidade do novo guia."
           );
         }
 
@@ -1630,7 +3458,7 @@ setEditTourAdditionalEmail2(
           !newGuideAvailability
         ) {
           throw new Error(
-            "O novo guia nÃ£o possui disponibilidade registrada para este dia."
+            "O novo guia não possui disponibilidade registrada para este dia."
           );
         }
 
@@ -1639,7 +3467,7 @@ setEditTourAdditionalEmail2(
           "available"
         ) {
           throw new Error(
-            "O novo guia nÃ£o estÃ¡ disponÃ­vel para este dia."
+            "O novo guia não está disponível para este dia."
           );
         }
 
@@ -1680,7 +3508,7 @@ setEditTourAdditionalEmail2(
           oldAvailabilityError
         ) {
           throw new Error(
-            "NÃ£o foi possÃ­vel localizar a disponibilidade do guia anterior."
+            "Não foi possível localizar a disponibilidade do guia anterior."
           );
         }
 
@@ -1690,7 +3518,7 @@ setEditTourAdditionalEmail2(
             | null;
       }
 
-      /* DESCRIÃ‡ÃƒO */
+      /* DESCRIÇÃO */
 
       const normalizedDescription =
         sanitizeDescriptionHtml(
@@ -1831,7 +3659,7 @@ google_color_id:
         !data
       ) {
         throw new Error(
-          "NÃ£o foi possÃ­vel atualizar o tour no sistema."
+          "Não foi possível atualizar o tour no sistema."
         );
       }
 
@@ -1864,7 +3692,7 @@ google_color_id:
             oldAvailabilityUpdateError
           ) {
             throw new Error(
-              "O tour foi atualizado, mas nÃ£o foi possÃ­vel liberar o guia anterior."
+              "O tour foi atualizado, mas não foi possível liberar o guia anterior."
             );
           }
 
@@ -1908,7 +3736,7 @@ google_color_id:
             newAvailabilityUpdateError
           ) {
             throw new Error(
-              "O tour foi atualizado, mas nÃ£o foi possÃ­vel escalar o novo guia."
+              "O tour foi atualizado, mas não foi possível escalar o novo guia."
             );
           }
 
@@ -1951,21 +3779,21 @@ google_color_id:
       alert(
         newGuide
           ? guideChanged
-            ? "âœ… Tour atualizado e guia trocado com sucesso."
-            : "âœ… Tour atualizado e sincronizado com o Google Calendar."
-          : "âœ… Tour atualizado e deixado sem guia."
+            ? "✅ Tour atualizado e guia trocado com sucesso."
+            : "✅ Tour atualizado e sincronizado com o Google Calendar."
+          : "✅ Tour atualizado e deixado sem guia."
       );
     } catch (
       error: any
     ) {
       console.error(
-        "âŒ ERRO AO EDITAR TOUR:",
+        "❌ ERRO AO EDITAR TOUR:",
         error
       );
 
       alert(
         error?.message ||
-          "NÃ£o foi possÃ­vel atualizar o tour."
+          "Não foi possível atualizar o tour."
       );
     } finally {
       setUpdating(
@@ -1983,7 +3811,7 @@ google_color_id:
   ) {
     const confirmed =
       window.confirm(
-        `Deseja realmente cancelar o tour "${event.title}"? Ele serÃ¡ removido da agenda do Google e do sistema.`
+        `Deseja realmente cancelar o tour "${event.title}"? Ele será removido da agenda do Google e do sistema.`
       );
 
     if (
@@ -2057,7 +3885,7 @@ google_color_id:
             availabilityError
           ) {
             throw new Error(
-              "O evento foi removido do Google, mas nÃ£o foi possÃ­vel liberar o guia."
+              "O evento foi removido do Google, mas não foi possível liberar o guia."
             );
           }
 
@@ -2096,7 +3924,7 @@ google_color_id:
         deleteError
       ) {
         throw new Error(
-          "O evento foi removido do Google, mas nÃ£o foi possÃ­vel removÃª-lo do sistema."
+          "O evento foi removido do Google, mas não foi possível removê-lo do sistema."
         );
       }
 
@@ -2114,19 +3942,19 @@ google_color_id:
       );
 
       alert(
-        "âœ… Tour cancelado, removido do Google Calendar e guia liberado."
+        "✅ Tour cancelado, removido do Google Calendar e guia liberado."
       );
     } catch (
       error: any
     ) {
       console.error(
-        "âŒ ERRO AO CANCELAR TOUR:",
+        "❌ ERRO AO CANCELAR TOUR:",
         error
       );
 
       alert(
         error?.message ||
-          "NÃ£o foi possÃ­vel cancelar o tour."
+          "Não foi possível cancelar o tour."
       );
     } finally {
       setUpdating(
@@ -2406,18 +4234,18 @@ google_color_id:
   ============================================================ */
 
   return (
-    <div className="mt-4 rounded-2xl bg-white p-3 shadow-sm sm:mt-6 sm:rounded-3xl sm:p-6">
+    <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-black sm:mt-6 sm:rounded-3xl sm:p-6">
 
-      {/* CABEÃ‡ALHO */}
+      {/* CABEÇALHO */}
 
       <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:gap-5 md:flex-row md:items-center md:justify-between">
 
         <div>
-          <h3 className="text-lg font-extrabold text-gray-900 sm:text-2xl">
+          <h3 className="text-lg font-extrabold text-gray-900 dark:text-white sm:text-2xl">
             Agenda dos Guias
           </h3>
 
-          <p className="mt-1 text-xs font-medium text-gray-600 sm:text-sm">
+          <p className="mt-1 text-xs font-medium text-gray-600 dark:text-gray-300 sm:text-sm">
             Visualize a disponibilidade, escalas e tours.
           </p>
         </div>
@@ -2437,7 +4265,7 @@ google_color_id:
               )
             }
             placeholder="Buscar guia pelo nome..."
-            className="w-full rounded-lg border-2 border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-100 sm:rounded-xl"
+            className="w-full rounded-lg border-2 border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm font-semibold text-gray-800 dark:border-gray-700 dark:bg-black dark:text-gray-100 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-100 sm:rounded-xl"
           />
 
           {guideSearch && (
@@ -2448,9 +4276,9 @@ google_color_id:
                   ""
                 )
               }
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 hover:text-gray-700"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
             >
-              âœ•
+              ✕
             </button>
           )}
         </div>
@@ -2489,11 +4317,11 @@ google_color_id:
         </div>
       )}
 
-      {/* MÃŠS / DIA */}
+      {/* MÊS / DIA */}
 
-      <div className="mb-4 flex flex-col gap-3 rounded-xl bg-gray-50 p-2 sm:flex-row sm:items-center sm:justify-between sm:rounded-2xl sm:p-3">
+      <div className="mb-4 flex flex-col gap-3 rounded-xl bg-gray-50 dark:bg-gray-900 p-2 sm:flex-row sm:items-center sm:justify-between sm:rounded-2xl sm:p-3">
 
-        <div className="flex rounded-xl border border-gray-200 bg-white p-1">
+        <div className="flex rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-black p-1">
 
           <button
             type="button"
@@ -2505,10 +4333,10 @@ google_color_id:
               calendarView ===
               "month"
                 ? "bg-[#1687d9] text-white shadow-sm"
-                : "text-gray-600 hover:bg-gray-100",
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
             ].join(" ")}
           >
-            ðŸ“… MÃªs
+            📅 Mês
           </button>
 
           <button
@@ -2521,10 +4349,10 @@ google_color_id:
               calendarView ===
               "day"
                 ? "bg-[#1687d9] text-white shadow-sm"
-                : "text-gray-600 hover:bg-gray-100",
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
             ].join(" ")}
           >
-            ðŸ“Œ Dia
+            📌 Dia
           </button>
 
         </div>
@@ -2536,7 +4364,7 @@ google_color_id:
             onClick={
               goToday
             }
-            className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-extrabold text-gray-700 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
+            className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-black px-4 py-2 text-sm font-extrabold text-gray-700 dark:text-gray-200 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
           >
             Hoje
           </button>
@@ -2544,9 +4372,9 @@ google_color_id:
 
       </div>
 
-      {/* NAVEGAÃ‡ÃƒO */}
+      {/* NAVEGAÇÃO */}
 
-      <div className="mb-4 flex items-center justify-between rounded-xl bg-gray-50 p-2 sm:mb-6 sm:rounded-2xl sm:p-3">
+      <div className="mb-4 flex items-center justify-between rounded-xl bg-gray-50 dark:bg-gray-900 p-2 sm:mb-6 sm:rounded-2xl sm:p-3">
 
         <button
           type="button"
@@ -2556,22 +4384,22 @@ google_color_id:
               ? goPreviousMonth
               : goPreviousDay
           }
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white dark:border-gray-700 dark:bg-black text-lg font-extrabold text-gray-900 dark:text-white shadow-sm transition hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
         >
-          â†
+          ←
         </button>
 
         <div className="min-w-0 px-2 text-center">
 
           {calendarView ===
           "month" ? (
-            <h4 className="px-2 text-base font-extrabold capitalize text-gray-900 sm:text-2xl">
+            <h4 className="px-2 text-base font-extrabold capitalize text-gray-900 dark:text-white sm:text-2xl">
               {
                 monthName
               }
             </h4>
           ) : (
-            <h4 className="break-words px-2 text-sm font-extrabold capitalize text-gray-900 sm:text-xl">
+            <h4 className="break-words px-2 text-sm font-extrabold capitalize text-gray-900 dark:text-white sm:text-xl">
               {
                 dayName
               }
@@ -2588,9 +4416,9 @@ google_color_id:
               ? goNextMonth
               : goNextDay
           }
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white dark:border-gray-700 dark:bg-black text-lg font-extrabold text-gray-900 dark:text-white shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
         >
-          â†’
+          →
         </button>
 
       </div>
@@ -2600,7 +4428,7 @@ google_color_id:
       {loading ? (
         <div className="py-10 text-center sm:py-12">
 
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c] sm:h-9 sm:w-9" />
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-[#e91e8c] sm:h-9 sm:w-9" />
 
           <p className="mt-3 text-xs font-medium text-gray-600 sm:mt-4 sm:text-sm">
             Carregando agenda...
@@ -2610,20 +4438,20 @@ google_color_id:
       ) : (
         <>
           {/* ====================================================
-             MODO MÃŠS
+             MODO MÊS
           ==================================================== */}
 
           {calendarView ===
             "month" && (
             <>
-              <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[8px] font-extrabold uppercase tracking-wide text-gray-800 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
+              <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[8px] font-extrabold uppercase tracking-wide text-gray-800 dark:text-gray-200 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
 
                 <div>Seg</div>
                 <div>Ter</div>
                 <div>Qua</div>
                 <div>Qui</div>
                 <div>Sex</div>
-                <div>SÃ¡b</div>
+                <div>Sáb</div>
                 <div>Dom</div>
 
               </div>
@@ -2695,8 +4523,8 @@ google_color_id:
                           "min-h-[58px] overflow-hidden rounded-lg border p-1 text-left transition",
                           "sm:min-h-32 sm:rounded-xl sm:p-2",
                           !sameMonth
-                            ? "cursor-default border-transparent bg-gray-100 text-gray-400"
-                            : "border-gray-200 bg-white hover:border-[#1687d9] hover:shadow-md",
+  ? "cursor-default border-transparent bg-gray-100 dark:bg-gray-900 text-gray-400 dark:text-gray-500"
+  : "border-gray-200 dark:border-gray-700 bg-white dark:bg-black hover:border-[#1687d9] hover:shadow-md",
                         ].join(
                           " "
                         )}
@@ -2706,8 +4534,8 @@ google_color_id:
                           className={[
                             "mb-1 text-right text-[9px] font-extrabold sm:mb-2 sm:text-sm",
                             sameMonth
-                              ? "text-gray-900"
-                              : "text-gray-400",
+  ? "text-gray-900 dark:text-white"
+  : "text-gray-400 dark:text-gray-500",
                           ].join(
                             " "
                           )}
@@ -2734,14 +4562,14 @@ google_color_id:
                                 <div
                                   key={`event-${event.id}`}
 className={[
-  "truncate rounded px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-gray-900 sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
+  "truncate rounded px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-gray-900 dark:text-white sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
   getColorClass(
     event.google_color_id ||
       "9"
   ),
 ].join(" ")}
                                 >
-                                  ðŸ“…{" "}
+                                  📅{" "}
                                   {
                                     event.title
                                   }
@@ -2899,12 +4727,12 @@ className={[
 
                 <div className="flex items-center gap-1.5">
                   <span className="h-3 w-3 rounded bg-green-100 ring-1 ring-green-200 sm:h-4 sm:w-4" />
-                  DisponÃ­vel
+                  Disponível
                 </div>
 
                 <div className="flex items-center gap-1.5">
                   <span className="h-3 w-3 rounded bg-red-100 ring-1 ring-red-200 sm:h-4 sm:w-4" />
-                  IndisponÃ­vel
+                  Indisponível
                 </div>
 
               </div>
@@ -2933,12 +4761,12 @@ className={[
 
               </div>
 
-              <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:p-5">
+              <div className="rounded-2xl border border-blue-100 bg-white dark:border-blue-900 dark:bg-black p-4 shadow-sm sm:p-5">
 
                 <div className="flex items-center justify-between gap-3">
 
                   <h4 className="text-sm font-extrabold text-blue-700 sm:text-base">
-                    ðŸ“… Tours
+                    📅 Tours
                   </h4>
 
                   <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-extrabold text-blue-700">
@@ -2953,7 +4781,7 @@ className={[
 
                   {currentDayEvents.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500">
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
                       Nenhum tour agendado para este dia.
                     </p>
                   ) : (
@@ -2982,13 +4810,13 @@ className={[
 
                           <div className="min-w-0">
 
-                            <p className="truncate text-sm font-extrabold text-gray-900">
+                            <p className="truncate text-sm font-extrabold text-gray-900 dark:text-white">
                               {
                                 event.title
                               }
                             </p>
 
-                            <p className="mt-1 truncate text-xs font-semibold text-gray-700">
+                            <p className="mt-1 truncate text-xs font-semibold text-gray-700 dark:text-gray-200">
 
                               {
                                 event.all_day
@@ -2996,7 +4824,7 @@ className={[
                                   : `${event.start_time || "09:00"} - ${event.end_time || "10:00"}`
                               }
 
-                              {" â€¢ "}
+                              {" • "}
 
                               {
                                 getGuideName(
@@ -3008,8 +4836,8 @@ className={[
 
                           </div>
 
-                          <span className="shrink-0 text-gray-700">
-                            â†’
+                          <span className="shrink-0 text-gray-700 dark:text-gray-200">
+                            →
                           </span>
 
                         </button>
@@ -3021,12 +4849,12 @@ className={[
 
               </div>
 
-              <div className="rounded-2xl border border-yellow-100 bg-white p-4 shadow-sm sm:p-5">
+              <div className="rounded-2xl border border-yellow-100 bg-white dark:border-yellow-900 dark:bg-black p-4 shadow-sm sm:p-5">
 
                 <div className="flex items-center justify-between gap-3">
 
                   <h4 className="text-sm font-extrabold text-[#806600] sm:text-base">
-                    ðŸŸ¡ Escalados
+                    🟡 Escalados
                   </h4>
 
                   <span className="rounded-full bg-[#f3e5a5] px-2.5 py-1 text-xs font-extrabold text-[#806600]">
@@ -3041,7 +4869,7 @@ className={[
 
                   {currentDayEscalated.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500">
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
                       Nenhum guia escalado.
                     </p>
                   ) : (
@@ -3098,7 +4926,7 @@ className={[
                             </span>
 
                             <span className="shrink-0 text-[#806600]">
-                              â†’
+                              →
                             </span>
 
                           </button>
@@ -3111,12 +4939,12 @@ className={[
 
               </div>
 
-              <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm sm:p-5">
+              <div className="rounded-2xl border border-green-100 bg-white dark:border-green-900 dark:bg-black p-4 shadow-sm sm:p-5">
 
                 <div className="flex items-center justify-between gap-3">
 
                   <h4 className="text-sm font-extrabold text-green-700 sm:text-base">
-                    ðŸŸ¢ DisponÃ­veis
+                    🟢 Disponíveis
                   </h4>
 
                   <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-extrabold text-green-700">
@@ -3131,8 +4959,8 @@ className={[
 
                   {currentDayAvailable.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500">
-                      Nenhum guia disponÃ­vel.
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
+                      Nenhum guia disponível.
                     </p>
                   ) : (
                     currentDayAvailable.map(
@@ -3166,7 +4994,7 @@ className={[
                               }
 
                             }}
-                            className="flex w-full items-center justify-between gap-3 rounded-xl bg-green-50 px-4 py-3 text-left transition hover:bg-green-100"
+                            className="flex w-full items-center justify-between gap-3 rounded-xl bg-green-50 dark:bg-green-950 px-4 py-3 text-left transition hover:bg-green-100"
                           >
 
                             <span className="flex min-w-0 items-center gap-2">
@@ -3177,7 +5005,7 @@ className={[
                                 )
                               }
 
-                              <span className="truncate text-sm font-extrabold text-green-800">
+                              <span className="truncate text-sm font-extrabold text-green-800 dark:text-white">
                                 {
                                   getGuideName(
                                     item.guide_id
@@ -3187,8 +5015,8 @@ className={[
 
                             </span>
 
-                            <span className="shrink-0 text-green-600">
-                              â†’
+                            <span className="shrink-0 text-green-600 dark:text-white">
+                              →
                             </span>
 
                           </button>
@@ -3201,12 +5029,12 @@ className={[
 
               </div>
 
-              <div className="rounded-2xl border border-red-100 bg-white p-4 shadow-sm sm:p-5">
+              <div className="rounded-2xl border border-red-100 bg-white dark:border-red-900 dark:bg-black p-4 shadow-sm sm:p-5">
 
                 <div className="flex items-center justify-between gap-3">
 
                   <h4 className="text-sm font-extrabold text-red-700 sm:text-base">
-                    ðŸ”´ IndisponÃ­veis
+                    🔴 Indisponíveis
                   </h4>
 
                   <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-extrabold text-red-700">
@@ -3221,8 +5049,8 @@ className={[
 
                   {currentDayUnavailable.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-500">
-                      Nenhum guia indisponÃ­vel.
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
+                      Nenhum guia indisponível.
                     </p>
                   ) : (
                     currentDayUnavailable.map(
@@ -3278,7 +5106,7 @@ className={[
                             </span>
 
                             <span className="shrink-0 text-red-600">
-                              â†’
+                              →
                             </span>
 
                           </button>
@@ -3313,7 +5141,7 @@ className={[
           >
 
             <div
-              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:rounded-3xl sm:p-6"
+              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-black p-4 shadow-2xl sm:rounded-3xl sm:p-6"
               onClick={(
                 event
               ) =>
@@ -3325,7 +5153,7 @@ className={[
 
                 <div>
 
-                  <h3 className="text-lg font-extrabold capitalize text-gray-900 sm:text-xl">
+                  <h3 className="text-lg font-extrabold capitalize text-gray-900 dark:text-white sm:text-xl">
                     {
                       format(
                         new Date(
@@ -3340,7 +5168,7 @@ className={[
                     }
                   </h3>
 
-                  <p className="mt-1 text-xs font-medium text-gray-500 sm:text-sm">
+                  <p className="mt-1 text-xs font-medium text-gray-500 dark:text-gray-300 sm:text-sm">
                     Agenda do dia
                   </p>
 
@@ -3353,9 +5181,9 @@ className={[
                       null
                     )
                   }
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-base font-bold text-gray-700 transition hover:bg-gray-100 sm:h-9 sm:w-9 sm:rounded-xl sm:text-lg"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-base font-bold text-gray-700 dark:text-gray-200 transition hover:bg-gray-100 dark:hover:bg-gray-800 sm:h-9 sm:w-9 sm:rounded-xl sm:text-lg"
                 >
-                  âœ•
+                  ✕
                 </button>
 
               </div>
@@ -3367,7 +5195,7 @@ className={[
                 <div className="flex items-center justify-between gap-3">
 
                   <h4 className="text-sm font-extrabold text-blue-700 sm:text-base">
-                    ðŸ“… Tours
+                    📅 Tours
                   </h4>
 
                   <button
@@ -3380,7 +5208,7 @@ className={[
                     }
                     className="shrink-0 rounded-xl bg-[#1687d9] px-3 py-2 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#0f75bd] disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm"
                   >
-                    âž• LanÃ§ar tour
+                    ➕ Lançar tour
                   </button>
 
                 </div>
@@ -3389,7 +5217,7 @@ className={[
 
                   {selectedDayEvents.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300">
                       Nenhum tour agendado para este dia.
                     </p>
                   ) : (
@@ -3414,7 +5242,7 @@ className={[
 
                           }}
 className={[
-  "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-bold text-gray-900 transition hover:opacity-90",
+  "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-bold text-gray-900 dark:text-white transition hover:opacity-90",
   getColorClass(
     event.google_color_id ||
       "9"
@@ -3430,7 +5258,7 @@ className={[
                               }
                             </span>
 
-                            <span className="mt-0.5 block text-xs font-semibold text-gray-700">
+                            <span className="mt-0.5 block text-xs font-semibold text-gray-700 dark:text-gray-200">
 
                               {
                                 event.all_day
@@ -3438,7 +5266,7 @@ className={[
                                   : `${event.start_time || "09:00"} - ${event.end_time || "10:00"}`
                               }
 
-                              {" â€¢ "}
+                              {" • "}
 
                               {
                                 getGuideName(
@@ -3451,7 +5279,7 @@ className={[
                           </span>
 
                           <span className="ml-3">
-                            â†’
+                            →
                           </span>
 
                         </button>
@@ -3468,14 +5296,14 @@ className={[
               <div className="mt-5 sm:mt-6">
 
                 <h4 className="text-sm font-extrabold text-[#806600] sm:text-base">
-                  ðŸŸ¡ Escalados
+                  🟡 Escalados
                 </h4>
 
                 <div className="mt-2 space-y-2">
 
                   {selectedEscalated.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300">
                       Nenhum guia escalado para este dia.
                     </p>
                   ) : (
@@ -3510,7 +5338,7 @@ className={[
                               }
 
                             }}
-                            className="flex w-full items-center justify-between rounded-xl bg-[#f3e5a5] px-4 py-3 text-left text-sm font-bold text-[#806600] transition hover:bg-[#ead98c]"
+                            className="flex w-full items-center justify-between rounded-xl bg-[#f3e5a5] dark:bg-yellow-950 px-4 py-3 text-left text-sm font-bold text-[#806600] transition hover:bg-[#ead98c]"
                           >
 
                             <span className="flex min-w-0 items-center gap-2">
@@ -3532,7 +5360,7 @@ className={[
                             </span>
 
                             <span>
-                              â†’
+                              →
                             </span>
 
                           </button>
@@ -3545,20 +5373,20 @@ className={[
 
               </div>
 
-              {/* DISPONÃVEIS */}
+              {/* DISPONÍVEIS */}
 
               <div className="mt-5 sm:mt-6">
 
                 <h4 className="text-sm font-extrabold text-green-700 sm:text-base">
-                  ðŸŸ¢ DisponÃ­veis
+                  🟢 Disponíveis
                 </h4>
 
                 <div className="mt-2 space-y-2">
 
                   {selectedAvailable.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
-                      Nenhum guia marcado como disponÃ­vel.
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300">
+                      Nenhum guia marcado como disponível.
                     </p>
                   ) : (
                     selectedAvailable.map(
@@ -3592,7 +5420,7 @@ className={[
                               }
 
                             }}
-                            className="flex w-full items-center justify-between rounded-xl bg-green-50 px-4 py-3 text-left text-sm font-bold text-green-800 transition hover:bg-green-100"
+                            className="flex w-full items-center justify-between gap-3 rounded-xl bg-green-50 dark:bg-green-950 px-4 py-3 text-left transition hover:bg-green-100"
                           >
 
                             <span className="flex min-w-0 items-center gap-2">
@@ -3614,7 +5442,7 @@ className={[
                             </span>
 
                             <span className="text-green-600">
-                              â†’
+                              →
                             </span>
 
                           </button>
@@ -3627,20 +5455,20 @@ className={[
 
               </div>
 
-              {/* INDISPONÃVEIS */}
+              {/* INDISPONÍVEIS */}
 
               <div className="mt-5 sm:mt-6">
 
                 <h4 className="text-sm font-extrabold text-red-700 sm:text-base">
-                  ðŸ”´ IndisponÃ­veis
+                  🔴 Indisponíveis
                 </h4>
 
                 <div className="mt-2 space-y-2">
 
                   {selectedUnavailable.length ===
                   0 ? (
-                    <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
-                      Nenhum guia marcado como indisponÃ­vel.
+                    <p className="rounded-xl bg-gray-50 dark:bg-gray-900 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300">
+                      Nenhum guia marcado como indisponível.
                     </p>
                   ) : (
                     selectedUnavailable.map(
@@ -3696,7 +5524,7 @@ className={[
                             </span>
 
                             <span className="text-red-600">
-                              â†’
+                              →
                             </span>
 
                           </button>
@@ -3761,7 +5589,7 @@ className={[
         >
 
           <div
-            className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+            className="w-full max-w-md overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-black"
             onClick={(
               event
             ) =>
@@ -3769,11 +5597,11 @@ className={[
             }
           >
 
-            <div className="flex items-start justify-between border-b border-gray-100 p-6">
+            <div className="flex items-start justify-between border-b border-gray-100 dark:border-gray-800 p-6">
 
               <div>
 
-                <h3 className="flex flex-wrap items-center gap-2 text-xl font-extrabold text-gray-900">
+                <h3 className="flex flex-wrap items-center gap-2 text-xl font-extrabold text-gray-900 dark:text-white">
 
                   {
                     getGuideFlags(
@@ -3789,7 +5617,7 @@ className={[
 
                 </h3>
 
-                <p className="mt-1 text-sm font-medium text-gray-500">
+                <p className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-300">
                   Guia
                 </p>
 
@@ -3811,49 +5639,49 @@ className={[
                   );
 
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 disabled:opacity-50"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 dark:text-gray-300 transition hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-white disabled:opacity-50"
               >
-                âœ•
+                ✕
               </button>
 
             </div>
 
             <div className="space-y-4 p-6">
 
-              <div className="rounded-2xl bg-gray-50 p-4">
+              <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
 
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                   E-mail
                 </p>
 
-                <p className="mt-1 break-all text-sm font-bold text-gray-800">
+                <p className="mt-1 break-all text-sm font-bold text-gray-800 dark:text-gray-100">
                   {
                     selectedGuideDetails.email ||
-                    "NÃ£o informado"
+                    "Não informado"
                   }
                 </p>
 
               </div>
 
-              <div className="rounded-2xl bg-gray-50 p-4">
+              <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
 
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                   Telefone
                 </p>
 
-                <p className="mt-1 text-sm font-bold text-gray-800">
+                <p className="mt-1 text-sm font-bold text-gray-800 dark:text-gray-100">
                   {
                     selectedGuideDetails.phone
                       ? formatGuidePhone(
                           selectedGuideDetails.phone
                         )
-                      : "NÃ£o informado"
+                      : "Não informado"
                   }
                 </p>
 
               </div>
 
-              <div className="rounded-2xl bg-green-50 p-4 ring-1 ring-green-100">
+              <div className="rounded-2xl bg-green-50 dark:bg-green-950 p-4 ring-1 ring-green-100 dark:ring-green-900">
 
                 <p className="text-xs font-bold uppercase tracking-wide text-green-600">
                   Chave PIX
@@ -3861,10 +5689,10 @@ className={[
 
                 <div className="mt-1 flex items-center justify-between gap-3">
 
-                  <p className="break-all text-sm font-bold text-gray-800">
+                  <p className="break-all text-sm font-bold text-gray-800 dark:text-gray-100">
                     {
                       selectedGuideDetails.pix_key ||
-                      "NÃ£o informado"
+                      "Não informado"
                     }
                   </p>
 
@@ -3883,7 +5711,7 @@ className={[
                           );
 
                         }}
-                        className="shrink-0 rounded-lg bg-white px-3 py-2 text-xs font-extrabold text-green-700 shadow-sm ring-1 ring-green-200 transition hover:bg-green-100"
+                        className="shrink-0 rounded-lg bg-white dark:bg-black px-3 py-2 text-xs font-extrabold text-green-700 shadow-sm ring-1 ring-green-200 transition hover:bg-green-100"
                       >
                         Copiar
                       </button>
@@ -3907,7 +5735,7 @@ className={[
                     }
                     className="w-full rounded-xl bg-[#c9aa00] px-4 py-3 font-extrabold text-white shadow-md transition hover:bg-[#b59600] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    ðŸŸ¡ Escalar para este dia
+                    🟡 Escalar para este dia
                   </button>
                 )
               }
@@ -3928,7 +5756,7 @@ className={[
                     {
                       updating
                         ? "Removendo..."
-                        : "â†©ï¸ Remover escala"
+                        : "↩️ Remover escala"
                     }
                   </button>
                 )
@@ -3991,7 +5819,7 @@ className={[
         >
 
           <div
-            className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+            className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-black"
             onClick={(
               event
             ) =>
@@ -3999,22 +5827,22 @@ className={[
             }
           >
 
-            <div className="border-b border-gray-100 p-6">
+            <div className="border-b border-gray-100 dark:border-gray-800 p-6">
 
               <div className="flex items-start justify-between">
 
                 <div>
 
-                  <h3 className="text-xl font-extrabold text-gray-900">
+                  <h3 className="text-xl font-extrabold text-gray-900 dark:text-white">
                     {launchTourWithoutGuide
-                      ? "ðŸ“… LanÃ§ar tour"
-                      : "ðŸŸ¡ Escalar guia"}
+                      ? "📅 Lançar tour"
+                      : "🟡 Escalar guia"}
                   </h3>
 
-                  <p className="mt-1 text-sm font-medium text-gray-500">
+                  <p className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-300">
                     {launchTourWithoutGuide
-                      ? "Crie o tour diretamente neste dia. O guia Ã© opcional."
-                      : "Crie o tour que ficarÃ¡ na agenda e no Google Calendar."}
+                      ? "Crie o tour diretamente neste dia. O guia é opcional."
+                      : "Crie o tour que ficará na agenda e no Google Calendar."}
                   </p>
 
                 </div>
@@ -4039,9 +5867,9 @@ className={[
                     );
 
                   }}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 transition hover:bg-gray-100"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 dark:text-gray-300 transition hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
-                  âœ•
+                  ✕
                 </button>
 
               </div>
@@ -4082,7 +5910,7 @@ className={[
 
               <div>
 
-                <label className="text-sm font-extrabold text-gray-800">
+                <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                   Guia
                 </label>
 
@@ -4100,7 +5928,7 @@ className={[
                   disabled={
                     updating
                   }
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
                 >
 
 <option value="">
@@ -4125,7 +5953,7 @@ className={[
                           }
                           {
                             guide.email
-                              ? ` â€” ${guide.email}`
+                              ? ` — ${guide.email}`
                               : ""
                           }
                         </option>
@@ -4141,8 +5969,8 @@ className={[
 
               <div>
 
-                <label className="text-sm font-extrabold text-gray-800">
-                  TÃ­tulo do tour
+                <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+                  Título do tour
                 </label>
 
                 <input
@@ -4161,23 +5989,23 @@ className={[
                     updating
                   }
                   placeholder="Ex.: City Tour Rio"
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                 />
 
               </div>
 
-              {/* DESCRIÃ‡ÃƒO */}
+              {/* DESCRIÇÃO */}
 
               <div>
 
                 <div className="mb-2 flex items-center justify-between gap-3">
 
-                  <label className="text-sm font-extrabold text-gray-800">
-                    DescriÃ§Ã£o
+                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+                    Descrição
                   </label>
 
-                  <span className="text-xs font-medium text-gray-400">
-                    Negrito, itÃ¡lico, sublinhado e listas
+                  <span className="text-xs font-medium text-gray-400 dark:text-gray-500">
+                    Negrito, itálico, sublinhado e listas
                   </span>
 
                 </div>
@@ -4197,13 +6025,13 @@ className={[
 
               </div>
 
-              {/* ENDEREÃ‡O */}
+              {/* ENDEREÇO */}
 
               <div>
 
-                <label className="text-sm font-extrabold text-gray-800">
-                  EndereÃ§o
-                  <span className="ml-1 font-medium text-gray-400">
+                <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+                  Endereço
+                  <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
                     (opcional)
                   </span>
                 </label>
@@ -4223,8 +6051,8 @@ className={[
                   disabled={
                     updating
                   }
-                  placeholder="Ex.: Av. AtlÃ¢ntica, 1702 - Copacabana"
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                  placeholder="Ex.: Av. Atlântica, 1702 - Copacabana"
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                 />
 
               </div>
@@ -4235,7 +6063,7 @@ className={[
 
               <div>
 
-                <label className="text-sm font-extrabold text-gray-800">
+                <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                   Cor do evento
                 </label>
 
@@ -4274,7 +6102,7 @@ className={[
                         {tourColorId ===
                           color.id && (
                           <span className="text-lg font-black text-white drop-shadow">
-                            âœ“
+                            ✓
                           </span>
                         )}
 
@@ -4284,7 +6112,7 @@ className={[
 
                 </div>
 
-                <p className="mt-2 text-xs font-medium text-gray-500">
+                <p className="mt-2 text-xs font-medium text-gray-500 dark:text-gray-300">
                   Cor selecionada:{" "}
                   <strong>
                     {
@@ -4300,7 +6128,7 @@ className={[
 
               {/* DIA INTEIRO */}
 
-              <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 p-4">
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 dark:bg-gray-900 p-4">
 
                 <input
                   type="checkbox"
@@ -4322,27 +6150,27 @@ className={[
 
                 <span>
 
-                  <span className="block text-sm font-extrabold text-gray-800">
-                    Dia inteiro
-                  </span>
+                  <span className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+  Dia inteiro
+</span>
 
-                  <span className="block text-xs font-medium text-gray-500">
-                    O evento ocuparÃ¡ o dia inteiro na agenda.
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-300">
+                    O evento ocupará o dia inteiro na agenda.
                   </span>
 
                 </span>
 
               </label>
 
-              {/* HORÃRIOS */}
+              {/* HORÁRIOS */}
 
               {!tourAllDay && (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
                   <div>
 
-                    <label className="text-sm font-extrabold text-gray-800">
-                      HorÃ¡rio de inÃ­cio
+                    <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+                      Horário de início
                     </label>
 
                     <input
@@ -4360,15 +6188,15 @@ className={[
                       disabled={
                         updating
                       }
-                      className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                      className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
                     />
 
                   </div>
 
                   <div>
 
-                    <label className="text-sm font-extrabold text-gray-800">
-                      HorÃ¡rio de tÃ©rmino
+                    <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+                      Horário de término
                     </label>
 
                     <input
@@ -4386,7 +6214,7 @@ className={[
                       disabled={
                         updating
                       }
-                      className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                      className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
                     />
 
                   </div>
@@ -4398,9 +6226,9 @@ className={[
 
               <div>
 
-                <label className="text-sm font-extrabold text-gray-800">
+                <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                   E-mail adicional
-                  <span className="ml-1 font-medium text-gray-400">
+                  <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
                     (opcional)
                   </span>
                 </label>
@@ -4421,7 +6249,7 @@ className={[
                     updating
                   }
                   placeholder="cliente@email.com"
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                 />
 
               </div>
@@ -4429,9 +6257,9 @@ className={[
 
 <div className="mt-4">
 
-  <label className="text-sm font-extrabold text-gray-800">
+  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
     E-mail adicional 2
-    <span className="ml-1 font-medium text-gray-400">
+    <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
       (opcional)
     </span>
   </label>
@@ -4452,7 +6280,7 @@ className={[
       updating
     }
     placeholder="cliente2@email.com"
-    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
   />
 
 </div>
@@ -4464,7 +6292,7 @@ className={[
                   <div className="rounded-xl bg-green-50 p-4">
 
                     <p className="text-xs font-bold uppercase tracking-wide text-green-600">
-                      E-mail que receberÃ¡ o convite
+                      E-mail que receberá o convite
                     </p>
 
                     <p className="mt-1 break-all text-sm font-bold text-green-900">
@@ -4472,7 +6300,7 @@ className={[
                         guideMap.get(
                           tourGuideId
                         )?.email ||
-                        "NÃ£o informado"
+                        "Não informado"
                       }
                     </p>
 
@@ -4491,7 +6319,7 @@ className={[
                 )
               }
 
-              {/* BOTÃ•ES */}
+              {/* BOTÕES */}
 
               <div className="flex flex-col gap-3 sm:flex-row">
 
@@ -4515,7 +6343,7 @@ className={[
                     );
 
                   }}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-extrabold text-gray-700 transition hover:bg-gray-50"
+                  className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 px-4 py-3 text-sm font-extrabold text-gray-700 dark:text-gray-200 transition hover:bg-gray-50 dark:hover:bg-gray-900"
                 >
                   Cancelar
                 </button>
@@ -4534,7 +6362,7 @@ className={[
                     updating
                       ? "Sincronizando..."
                       : launchTourWithoutGuide
-                      ? "LanÃ§ar tour"
+                      ? "Lançar tour"
                       : "Criar tour e escalar"
                   }
                 </button>
@@ -4569,7 +6397,7 @@ className={[
         >
 
           <div
-            className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white shadow-2xl"
+            className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-black"
             onClick={(
               event
             ) =>
@@ -4577,7 +6405,7 @@ className={[
             }
           >
 
-            <div className="border-b border-gray-100 p-6">
+            <div className="border-b border-gray-100 dark:border-gray-800 p-6">
 
               <div className="flex items-start justify-between gap-4">
 
@@ -4587,7 +6415,7 @@ className={[
                     Tour agendado
                   </span>
 
-                  <h3 className="mt-2 break-words text-xl font-extrabold text-gray-900">
+                  <h3 className="mt-2 break-words text-xl font-extrabold text-gray-900 dark:text-white">
                     {
                       selectedTourEvent.title
                     }
@@ -4605,9 +6433,9 @@ className={[
                       null
                     )
                   }
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-gray-500 transition hover:bg-gray-100"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg font-bold text-gray-500 dark:text-gray-300 transition hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
-                  âœ•
+                  ✕
                 </button>
 
               </div>
@@ -4618,13 +6446,13 @@ className={[
 
               {/* DATA */}
 
-              <div className="rounded-2xl bg-gray-50 p-4">
+              <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
 
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                   Data
                 </p>
 
-                <p className="mt-1 text-sm font-extrabold capitalize text-gray-800">
+                <p className="mt-1 text-sm font-extrabold capitalize text-gray-800 dark:text-gray-100">
                   {
                     format(
                       new Date(
@@ -4639,12 +6467,12 @@ className={[
                   }
                 </p>
 
-                <p className="mt-1 text-xs font-semibold text-gray-500">
+                <p className="mt-1 text-xs font-semibold text-gray-500 dark:text-gray-300">
 
                   {
                     selectedTourEvent.all_day
                       ? "Dia inteiro"
-                      : `${selectedTourEvent.start_time || "09:00"} Ã s ${selectedTourEvent.end_time || "10:00"}`
+                      : `${selectedTourEvent.start_time || "09:00"} às ${selectedTourEvent.end_time || "10:00"}`
                   }
 
                 </p>
@@ -4653,7 +6481,7 @@ className={[
 
               {/* GUIA */}
 
-              <div className="rounded-2xl bg-yellow-50 p-4">
+              <div className="rounded-2xl bg-yellow-50 dark:bg-yellow-950 p-4">
 
                 <div className="flex items-start justify-between gap-3">
 
@@ -4663,7 +6491,7 @@ className={[
                       Guia escalado
                     </p>
 
-                    <p className="mt-1 flex items-center gap-2 text-sm font-extrabold text-gray-800">
+                    <p className="mt-1 flex items-center gap-2 text-sm font-extrabold text-gray-800 dark:text-gray-100">
 
                       {
                         getGuideFlags(
@@ -4679,7 +6507,7 @@ className={[
 
                     </p>
 
-                    <p className="mt-1 break-all text-xs font-semibold text-gray-500">
+                    <p className="mt-1 break-all text-xs font-semibold text-gray-500 dark:text-gray-300">
                       {
                         selectedTourEvent.guide_email ||
                         "Nenhum guia selecionado"
@@ -4698,49 +6526,49 @@ className={[
                         selectedTourEvent
                       )
                     }
-                    className="shrink-0 rounded-xl border-2 border-yellow-200 bg-white px-3 py-2 text-xs font-extrabold text-yellow-800 transition hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="shrink-0 rounded-xl border-2 border-yellow-200 bg-white dark:bg-black px-3 py-2 text-xs font-extrabold text-yellow-800 transition hover:bg-yellow-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    ðŸ”„ Trocar guia
+                    🔄 Trocar guia
                   </button>
 
                 </div>
 
               </div>
 
-              {/* DESCRIÃ‡ÃƒO */}
+              {/* DESCRIÇÃO */}
 
-              <div className="rounded-2xl bg-gray-50 p-4">
+              <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
 
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                  DescriÃ§Ã£o
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                  Descrição
                 </p>
 
                 <div
-                  className="mt-2 break-words text-sm font-medium leading-7 text-gray-800 [&_b]:font-black [&_strong]:font-black [&_i]:italic [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1"
+                  className="mt-2 break-words text-sm font-medium leading-7 text-gray-800 dark:text-gray-100 [&_b]:font-black [&_strong]:font-black [&_i]:italic [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1"
                   dangerouslySetInnerHTML={{
                     __html:
                       selectedTourEvent.description
                         ? sanitizeDescriptionHtml(
                             selectedTourEvent.description
                           )
-                        : "<span class='text-gray-500'>Nenhuma descriÃ§Ã£o informada.</span>",
+                        : "<span class='text-gray-500 dark:text-gray-300'>Nenhuma descrição informada.</span>",
                   }}
                 />
 
               </div>
 
-              {/* ENDEREÃ‡O */}
+              {/* ENDEREÇO */}
 
-              <div className="rounded-2xl bg-gray-50 p-4">
+              <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
 
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                  EndereÃ§o
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                  Endereço
                 </p>
 
-                <p className="mt-1 whitespace-pre-wrap break-words text-sm font-bold text-gray-800">
+                <p className="mt-1 whitespace-pre-wrap break-words text-sm font-bold text-gray-800 dark:text-gray-100">
                   {
                     selectedTourEvent.address ||
-                    "Nenhum endereÃ§o informado."
+                    "Nenhum endereço informado."
                   }
                 </p>
 
@@ -4750,13 +6578,13 @@ className={[
 
                             {/* EMAIL */}
 
-              <div className="rounded-2xl bg-gray-50 p-4">
+              <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
 
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                   E-mail adicional
                 </p>
 
-                <div className="mt-1 space-y-1 text-sm font-bold text-gray-800">
+                <div className="mt-1 space-y-1 text-sm font-bold text-gray-800 dark:text-gray-100">
 
                   {
                     selectedTourEvent.additional_email ||
@@ -4804,7 +6632,7 @@ className={[
                   {
                     selectedTourEvent.calendar_event_id
                       ? "Evento sincronizado com o Google Calendar."
-                      : "Evento ainda nÃ£o sincronizado."
+                      : "Evento ainda não sincronizado."
                   }
                 </p>
 
@@ -4822,7 +6650,7 @@ className={[
                 }
                 className="w-full rounded-xl bg-[#1687d9] px-4 py-3 text-sm font-extrabold text-white shadow-md transition hover:bg-[#0f75bd]"
               >
-                âœï¸ Editar tour
+                ✏️ Editar tour
               </button>
 
               <button
@@ -4840,7 +6668,7 @@ className={[
                 {
                   updating
                     ? "Cancelando..."
-                    : "âŒ Cancelar tour"
+                    : "❌ Cancelar tour"
                 }
               </button>
 
@@ -4889,7 +6717,7 @@ className={[
           >
 
             <div
-              className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+              className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-black"
               onClick={(
                 event
               ) =>
@@ -4897,18 +6725,18 @@ className={[
               }
             >
 
-              <div className="border-b border-gray-100 p-6">
+              <div className="border-b border-gray-100 dark:border-gray-800 p-6">
 
                 <div className="flex items-start justify-between">
 
                   <div>
 
-                    <h3 className="text-xl font-extrabold text-gray-900">
-                      âœï¸ Editar tour
+                    <h3 className="text-xl font-extrabold text-gray-900 dark:text-white">
+                      ✏️ Editar tour
                     </h3>
 
-                    <p className="mt-1 text-sm font-medium text-gray-500">
-                      Altere as informaÃ§Ãµes e, se necessÃ¡rio, coloque outro guia.
+                    <p className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-300">
+                      Altere as informações e, se necessário, coloque outro guia.
                     </p>
 
                   </div>
@@ -4923,9 +6751,9 @@ className={[
                         false
                       )
                     }
-                    className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 hover:bg-gray-100"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-bold text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
-                    âœ•
+                    ✕
                   </button>
 
                 </div>
@@ -4936,7 +6764,7 @@ className={[
 
                 {/* GUIA */}
 
-                <div className="rounded-2xl border-2 border-yellow-100 bg-yellow-50 p-4">
+                <div className="rounded-2xl border-2 border-yellow-100 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950 p-4">
 
                   <label className="text-sm font-extrabold text-yellow-900">
                     Guia escalado
@@ -4956,7 +6784,7 @@ className={[
                     disabled={
                       updating
                     }
-                    className="mt-2 w-full rounded-xl border-2 border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#c9aa00]"
+                    className="mt-2 w-full rounded-xl border-2 border-yellow-200 bg-white dark:bg-black px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100 outline-none focus:border-[#c9aa00]"
                   >
 
                     <option value="">
@@ -4982,7 +6810,7 @@ className={[
                             )?.name
                           }
 
-                          {" â€” "}
+                          {" — "}
 
                           {
                             guideMap.get(
@@ -4997,7 +6825,7 @@ className={[
                       )
                     }
 
-                    {/* SOMENTE DISPONÃVEIS */}
+                    {/* SOMENTE DISPONÍVEIS */}
 
                     {
                       availableGuidesForTourEdit
@@ -5023,7 +6851,7 @@ className={[
                               }
                               {
                                 guide.email
-                                  ? ` â€” ${guide.email}`
+                                  ? ` — ${guide.email}`
                                   : ""
                               }
                             </option>
@@ -5034,12 +6862,12 @@ className={[
                   </select>
 
                   <p className="mt-2 text-xs font-medium text-yellow-800">
-                    Somente guias disponÃ­veis neste dia aparecem para substituiÃ§Ã£o.
+                    Somente guias disponíveis neste dia aparecem para substituição.
                   </p>
 
                   {
                     editTourGuideId && (
-                      <div className="mt-3 rounded-xl bg-white p-3 ring-1 ring-yellow-200">
+                      <div className="mt-3 rounded-xl bg-white dark:bg-black p-3 ring-1 ring-yellow-200">
 
                         <p className="text-xs font-bold uppercase tracking-wide text-yellow-600">
                           E-mail do guia selecionado
@@ -5050,7 +6878,7 @@ className={[
                             guideMap.get(
                               editTourGuideId
                             )?.email ||
-                            "NÃ£o informado"
+                            "Não informado"
                           }
                         </p>
 
@@ -5060,12 +6888,12 @@ className={[
 
                 </div>
 
-                {/* TÃTULO */}
+                {/* TÍTULO */}
 
                 <div>
 
-                  <label className="text-sm font-extrabold text-gray-800">
-                    TÃ­tulo
+                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+                    Título
                   </label>
 
                   <input
@@ -5083,23 +6911,23 @@ className={[
                     disabled={
                       updating
                     }
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                   />
 
                 </div>
 
-                {/* DESCRIÃ‡ÃƒO */}
+                {/* DESCRIÇÃO */}
 
                 <div>
 
                   <div className="mb-2 flex items-center justify-between gap-3">
 
-                    <label className="text-sm font-extrabold text-gray-800">
-                      DescriÃ§Ã£o
+                    <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+                      Descrição
                     </label>
 
-                    <span className="text-xs font-medium text-gray-400">
-                      Negrito, itÃ¡lico, sublinhado e listas
+                    <span className="text-xs font-medium text-gray-400 dark:text-gray-500">
+                      Negrito, itálico, sublinhado e listas
                     </span>
 
                   </div>
@@ -5119,13 +6947,13 @@ className={[
 
                 </div>
 
-                {/* ENDEREÃ‡O */}
+                {/* ENDEREÇO */}
 
                 <div>
 
-                  <label className="text-sm font-extrabold text-gray-800">
-                    EndereÃ§o
-                    <span className="ml-1 font-medium text-gray-400">
+                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+                    Endereço
+                    <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
                       (opcional)
                     </span>
                   </label>
@@ -5145,8 +6973,8 @@ className={[
                     disabled={
                       updating
                     }
-                    placeholder="Ex.: Av. AtlÃ¢ntica, 1702 - Copacabana"
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                    placeholder="Ex.: Av. Atlântica, 1702 - Copacabana"
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                   />
 
                 </div>
@@ -5156,7 +6984,7 @@ className={[
 
                 <div>
 
-                  <label className="text-sm font-extrabold text-gray-800">
+                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                     Cor do evento
                   </label>
 
@@ -5195,7 +7023,7 @@ className={[
                           {editTourColorId ===
                             color.id && (
                             <span className="text-lg font-black text-white drop-shadow">
-                              âœ“
+                              ✓
                             </span>
                           )}
 
@@ -5205,7 +7033,7 @@ className={[
 
                   </div>
 
-                  <p className="mt-2 text-xs font-medium text-gray-500">
+                  <p className="mt-2 text-xs font-medium text-gray-500 dark:text-gray-300">
                     Cor selecionada:{" "}
                     <strong>
                       {
@@ -5222,7 +7050,7 @@ className={[
 
                 {/* DIA INTEIRO */}
 
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 p-4">
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-gray-50 dark:bg-gray-900 p-4">
 
                   <input
                     type="checkbox"
@@ -5244,7 +7072,7 @@ className={[
 
                   <span>
 
-                    <span className="block text-sm font-extrabold text-gray-800">
+                    <span className="block text-sm font-extrabold text-gray-800 dark:text-gray-100">
                       Dia inteiro
                     </span>
 
@@ -5252,15 +7080,15 @@ className={[
 
                 </label>
 
-                {/* HORÃRIOS */}
+                {/* HORÁRIOS */}
 
                 {!editTourAllDay && (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
                     <div>
 
-                      <label className="text-sm font-extrabold text-gray-800">
-                        HorÃ¡rio de inÃ­cio
+                      <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+                        Horário de início
                       </label>
 
                       <input
@@ -5278,15 +7106,15 @@ className={[
                         disabled={
                           updating
                         }
-                        className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                        className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                       />
 
                     </div>
 
                     <div>
 
-                      <label className="text-sm font-extrabold text-gray-800">
-                        HorÃ¡rio de tÃ©rmino
+                      <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+                        Horário de término
                       </label>
 
                       <input
@@ -5316,7 +7144,7 @@ className={[
 
                 <div>
 
-                  <label className="text-sm font-extrabold text-gray-800">
+                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
                     E-mail adicional
                   </label>
 
@@ -5336,14 +7164,14 @@ className={[
                       updating
                     }
                     placeholder="cliente@email.com"
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                   />
 
                 </div>
 
 <div className="mt-4">
 
-  <label className="text-sm font-extrabold text-gray-800">
+  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
     E-mail adicional 2
     <span className="ml-1 font-medium text-gray-400">
       (opcional)
@@ -5366,7 +7194,7 @@ className={[
       updating
     }
     placeholder="cliente2@email.com"
-    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
   />
 
 </div>
@@ -5376,15 +7204,15 @@ className={[
                 <div className="rounded-xl bg-green-50 p-4">
 
                   <p className="text-xs font-bold uppercase tracking-wide text-green-600">
-                    SincronizaÃ§Ã£o Google
+                    Sincronização Google
                   </p>
 
                   <p className="mt-1 text-sm font-semibold text-green-900">
 
                     {
                       selectedTourEvent.calendar_event_id
-                        ? "Este tour estÃ¡ vinculado ao evento do Google Calendar."
-                        : "Este tour ainda nÃ£o possui vÃ­nculo com o Google Calendar."
+                        ? "Este tour está vinculado ao evento do Google Calendar."
+                        : "Este tour ainda não possui vínculo com o Google Calendar."
                     }
 
                   </p>
@@ -5394,14 +7222,14 @@ className={[
                     {
                       editTourAllDay
                         ? "Dia inteiro"
-                        : `${editTourStartTime} Ã s ${editTourEndTime}`
+                        : `${editTourStartTime} às ${editTourEndTime}`
                     }
 
                   </p>
 
                 </div>
 
-                {/* BOTÃ•ES */}
+                {/* BOTÕES */}
 
                 <div className="flex flex-col gap-3 sm:flex-row">
 
@@ -5415,7 +7243,7 @@ className={[
                         false
                       )
                     }
-                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-extrabold text-gray-700 hover:bg-gray-50"
+                    className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 px-4 py-3 text-sm font-extrabold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900"
                   >
                     Cancelar
                   </button>
@@ -5433,7 +7261,7 @@ className={[
                     {
                       updating
                         ? "Sincronizando..."
-                        : "Salvar alteraÃ§Ãµes"
+                        : "Salvar alterações"
                     }
                   </button>
 
