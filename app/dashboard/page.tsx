@@ -24,6 +24,9 @@ type Notification = {
 export default function Dashboard() {
   const menuRef = useRef<HTMLDivElement>(null);
 
+const notificationRef =
+  useRef<HTMLDivElement>(null);
+
   const [profile, setProfile] =
     useState<Profile | null>(null);
 
@@ -61,17 +64,40 @@ useEffect(() => {
 }, [theme]);
 
 
+
+
+  // ============================================================
+  // NOTIFICAÇÕES
+  // ============================================================
+
+  const [notifications, setNotifications] =
+    useState<Notification[]>([]);
+
+  const [showNotifications, setShowNotifications] =
+    useState(false);
+
 useEffect(() => {
-  if (!showMenu) {
+  if (!showMenu && !showNotifications) {
     return;
   }
 
   function handleClickOutside(event: MouseEvent) {
+    const target = event.target as Node;
+
     if (
+      showMenu &&
       menuRef.current &&
-      !menuRef.current.contains(event.target as Node)
+      !menuRef.current.contains(target)
     ) {
       setShowMenu(false);
+    }
+
+    if (
+      showNotifications &&
+      notificationRef.current &&
+      !notificationRef.current.contains(target)
+    ) {
+      setShowNotifications(false);
     }
   }
 
@@ -86,18 +112,10 @@ useEffect(() => {
       handleClickOutside
     );
   };
-}, [showMenu]);
-
-
-  // ============================================================
-  // NOTIFICAÇÕES
-  // ============================================================
-
-  const [notifications, setNotifications] =
-    useState<Notification[]>([]);
-
-  const [showNotifications, setShowNotifications] =
-    useState(false);
+}, [
+  showMenu,
+  showNotifications,
+]);
 
   // ============================================================
   // MODAL DE NOTIFICAÇÃO
@@ -1447,7 +1465,11 @@ transition hover:bg-yellow-50 hover:text-yellow-600"
             {/* SINO - SOMENTE GUIA */}
 
             {!isAdmin && (
-              <div className="relative z-[100]">
+             
+ <div
+  ref={notificationRef}
+  className="relative z-[100]"
+>
 
                 <button
                   type="button"
