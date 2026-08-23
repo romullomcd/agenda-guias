@@ -1330,6 +1330,285 @@ const [
   setEditTourColorId,
 ] = useState("9");
 
+
+  // ============================================================
+  // CONTATOS GOOGLE - AUTOCOMPLETE
+  // ============================================================
+
+type GoogleContact = {
+  name: string;
+  email: string;
+  photo: string | null;
+};
+
+  const [
+    googleContacts,
+    setGoogleContacts,
+  ] = useState<GoogleContact[]>([]);
+
+  const [
+    googleContactsLoading,
+    setGoogleContactsLoading,
+  ] = useState(false);
+
+  const [
+    activeContactField,
+    setActiveContactField,
+  ] = useState<
+    | "tourAdditionalEmail"
+    | "tourAdditionalEmail2"
+    | "editTourAdditionalEmail"
+    | "editTourAdditionalEmail2"
+    | null
+  >(null);
+
+  const [
+    contactSearchQuery,
+    setContactSearchQuery,
+  ] = useState("");
+
+  useEffect(() => {
+    if (
+      !activeContactField ||
+      contactSearchQuery.trim().length < 2
+    ) {
+      setGoogleContacts([]);
+      setGoogleContactsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const timer = setTimeout(
+      async () => {
+        try {
+          setGoogleContactsLoading(true);
+
+          const {
+            data: {
+              session,
+            },
+          } =
+            await supabase.auth.getSession();
+
+          if (
+            !session?.access_token
+          ) {
+            if (!cancelled) {
+              setGoogleContacts([]);
+            }
+
+            return;
+          }
+
+          const response =
+            await fetch(
+              `/api/google/contacts?q=${encodeURIComponent(
+                contactSearchQuery.trim()
+              )}`,
+              {
+                method: "GET",
+                headers: {
+                  Authorization:
+                    `Bearer ${session.access_token}`,
+                },
+                cache: "no-store",
+              }
+            );
+
+          const result =
+            await response
+              .json()
+              .catch(
+                () => ({})
+              );
+
+          if (
+            !cancelled &&
+            response.ok
+          ) {
+            setGoogleContacts(
+              Array.isArray(
+                result.contacts
+              )
+                ? result.contacts
+                : []
+            );
+          }
+
+          if (
+            !cancelled &&
+            !response.ok
+          ) {
+            setGoogleContacts([]);
+          }
+        } catch (error) {
+          console.error(
+            "ERRO AO BUSCAR CONTATOS GOOGLE:",
+            error
+          );
+
+          if (!cancelled) {
+            setGoogleContacts([]);
+          }
+        } finally {
+          if (!cancelled) {
+            setGoogleContactsLoading(
+              false
+            );
+          }
+        }
+      },
+      300
+    );
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    activeContactField,
+    contactSearchQuery,
+  ]);
+
+  useEffect(() => {
+    function handleOutsideClick(
+      event: MouseEvent
+    ) {
+      const target =
+        event.target as HTMLElement;
+
+      if (
+        !target.closest(
+          "[data-google-contact-autocomplete]"
+        )
+      ) {
+        setActiveContactField(null);
+        setGoogleContacts([]);
+      }
+    }
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick
+      );
+    };
+  }, []);
+
+  function handleAdditionalEmailChange(
+    field:
+      | "tourAdditionalEmail"
+      | "tourAdditionalEmail2"
+      | "editTourAdditionalEmail"
+      | "editTourAdditionalEmail2",
+    value: string
+  ) {
+    if (
+      field ===
+      "tourAdditionalEmail"
+    ) {
+      setTourAdditionalEmail(
+        value
+      );
+    }
+
+    if (
+      field ===
+      "tourAdditionalEmail2"
+    ) {
+      setTourAdditionalEmail2(
+        value
+      );
+    }
+
+    if (
+      field ===
+      "editTourAdditionalEmail"
+    ) {
+      setEditTourAdditionalEmail(
+        value
+      );
+    }
+
+    if (
+      field ===
+      "editTourAdditionalEmail2"
+    ) {
+      setEditTourAdditionalEmail2(
+        value
+      );
+    }
+
+    setActiveContactField(
+      field
+    );
+
+    setContactSearchQuery(
+      value
+    );
+  }
+
+  function selectGoogleContact(
+    field:
+      | "tourAdditionalEmail"
+      | "tourAdditionalEmail2"
+      | "editTourAdditionalEmail"
+      | "editTourAdditionalEmail2",
+    contact: GoogleContact
+  ) {
+    if (
+      field ===
+      "tourAdditionalEmail"
+    ) {
+      setTourAdditionalEmail(
+        contact.email
+      );
+    }
+
+    if (
+      field ===
+      "tourAdditionalEmail2"
+    ) {
+      setTourAdditionalEmail2(
+        contact.email
+      );
+    }
+
+    if (
+      field ===
+      "editTourAdditionalEmail"
+    ) {
+      setEditTourAdditionalEmail(
+        contact.email
+      );
+    }
+
+    if (
+      field ===
+      "editTourAdditionalEmail2"
+    ) {
+      setEditTourAdditionalEmail2(
+        contact.email
+      );
+    }
+
+    setContactSearchQuery(
+      contact.email
+    );
+
+    setActiveContactField(
+      null
+    );
+
+    setGoogleContacts([]);
+  }
+
   /* ============================================================
   CARREGAMENTO
   ============================================================ */
@@ -6116,40 +6395,127 @@ className={[
                 </div>
               )}
 
-              {/* EMAIL */}
+           {/* EMAIL */}
 
-              <div>
+<div
+  className="relative"
+  data-google-contact-autocomplete
+>
 
-                <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
-                  E-mail adicional
-                  <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
-                    (opcional)
-                  </span>
-                </label>
+  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+    E-mail adicional
+    <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
+      (opcional)
+    </span>
+  </label>
 
-                <input
-                  type="email"
-                  value={
-                    tourAdditionalEmail
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setTourAdditionalEmail(
-                      event.target.value
-                    )
-                  }
-                  disabled={
-                    updating
-                  }
-                  placeholder="cliente@email.com"
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
-                />
+  <input
+    type="email"
+    value={
+      tourAdditionalEmail
+    }
+    onFocus={() => {
+      setActiveContactField(
+        "tourAdditionalEmail"
+      );
 
-              </div>
+      setContactSearchQuery(
+        tourAdditionalEmail
+      );
+    }}
+    onChange={(
+      event
+    ) =>
+      handleAdditionalEmailChange(
+        "tourAdditionalEmail",
+        event.target.value
+      )
+    }
+    disabled={
+      updating
+    }
+    placeholder="cliente@email.com"
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
+  />
+
+  {activeContactField ===
+    "tourAdditionalEmail" &&
+    (
+      googleContactsLoading ||
+      googleContacts.length > 0
+    ) && (
+      <div className="absolute left-0 right-0 top-full z-[1000] mt-2 max-h-64 overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+
+        {googleContactsLoading && (
+          <div className="px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
+            Buscando contatos...
+          </div>
+        )}
+
+        {!googleContactsLoading &&
+          googleContacts.map(
+            (contact) => (
+              <button
+                key={`${contact.email}-${contact.name}`}
+                type="button"
+                onMouseDown={(
+                  event
+                ) => {
+                  event.preventDefault();
+
+                  selectGoogleContact(
+                    "tourAdditionalEmail",
+                    contact
+                  );
+                }}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#1687d9] text-sm font-extrabold text-white">
+  {contact.photo ? (
+    <img
+      src={contact.photo}
+      alt=""
+      className="h-full w-full object-cover"
+    />
+  ) : (
+    contact.name
+      ? contact.name
+          .charAt(0)
+          .toUpperCase()
+      : "@"
+  )}
+</div>
+
+                <div className="min-w-0">
+
+                  <p className="truncate text-sm font-extrabold text-gray-900 dark:text-white">
+                    {contact.name ||
+                      "Contato"}
+                  </p>
+
+                  <p className="truncate text-xs text-gray-500 dark:text-gray-300">
+                    {contact.email}
+                  </p>
+
+                </div>
+
+              </button>
+            )
+          )}
+
+      </div>
+    )}
+
+</div>
 
 
-<div className="mt-4">
+{/* EMAIL ADICIONAL 2 */}
+
+<div
+  className="relative mt-4"
+  data-google-contact-autocomplete
+>
 
   <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
     E-mail adicional 2
@@ -6163,10 +6529,20 @@ className={[
     value={
       tourAdditionalEmail2
     }
+    onFocus={() => {
+      setActiveContactField(
+        "tourAdditionalEmail2"
+      );
+
+      setContactSearchQuery(
+        tourAdditionalEmail2
+      );
+    }}
     onChange={(
       event
     ) =>
-      setTourAdditionalEmail2(
+      handleAdditionalEmailChange(
+        "tourAdditionalEmail2",
         event.target.value
       )
     }
@@ -6176,6 +6552,75 @@ className={[
     placeholder="cliente2@email.com"
     className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
   />
+
+  {activeContactField ===
+    "tourAdditionalEmail2" &&
+    (
+      googleContactsLoading ||
+      googleContacts.length > 0
+    ) && (
+      <div className="absolute left-0 right-0 top-full z-[1000] mt-2 max-h-64 overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+
+        {googleContactsLoading && (
+          <div className="px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
+            Buscando contatos...
+          </div>
+        )}
+
+        {!googleContactsLoading &&
+          googleContacts.map(
+            (contact) => (
+              <button
+                key={`${contact.email}-${contact.name}`}
+                type="button"
+                onMouseDown={(
+                  event
+                ) => {
+                  event.preventDefault();
+
+                  selectGoogleContact(
+                    "tourAdditionalEmail2",
+                    contact
+                  );
+                }}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+
+               <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#1687d9] text-sm font-extrabold text-white">
+  {contact.photo ? (
+    <img
+      src={contact.photo}
+      alt=""
+      className="h-full w-full object-cover"
+    />
+  ) : (
+    contact.name
+      ? contact.name
+          .charAt(0)
+          .toUpperCase()
+      : "@"
+  )}
+</div>
+
+                <div className="min-w-0">
+
+                  <p className="truncate text-sm font-extrabold text-gray-900 dark:text-white">
+                    {contact.name ||
+                      "Contato"}
+                  </p>
+
+                  <p className="truncate text-xs text-gray-500 dark:text-gray-300">
+                    {contact.email}
+                  </p>
+
+                </div>
+
+              </button>
+            )
+          )}
+
+      </div>
+    )}
 
 </div>
 
@@ -7041,40 +7486,131 @@ className={[
                   </div>
                 )}
 
-                {/* EMAIL */}
+               {/* EMAIL */}
 
-                <div>
+<div
+  className="relative"
+  data-google-contact-autocomplete
+>
 
-                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
-                    E-mail adicional
-                  </label>
+  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+    E-mail adicional
+    <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
+      (opcional)
+    </span>
+  </label>
 
-                  <input
-                    type="email"
-                    value={
-                      editTourAdditionalEmail
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setEditTourAdditionalEmail(
-                        event.target.value
-                      )
-                    }
-                    disabled={
-                      updating
-                    }
-                    placeholder="cliente@email.com"
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
-                  />
+  <input
+    type="email"
+    value={
+      editTourAdditionalEmail
+    }
+    onFocus={() => {
+      setActiveContactField(
+        "editTourAdditionalEmail"
+      );
+
+      setContactSearchQuery(
+        editTourAdditionalEmail
+      );
+    }}
+    onChange={(
+      event
+    ) =>
+      handleAdditionalEmailChange(
+        "editTourAdditionalEmail",
+        event.target.value
+      )
+    }
+    disabled={
+      updating
+    }
+    placeholder="cliente@email.com"
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
+  />
+
+  {activeContactField ===
+    "editTourAdditionalEmail" &&
+    (
+      googleContactsLoading ||
+      googleContacts.length > 0
+    ) && (
+      <div className="absolute left-0 right-0 top-full z-[1000] mt-2 max-h-64 overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+
+        {googleContactsLoading && (
+          <div className="px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
+            Buscando contatos...
+          </div>
+        )}
+
+        {!googleContactsLoading &&
+          googleContacts.map(
+            (contact) => (
+              <button
+                key={`${contact.email}-${contact.name}`}
+                type="button"
+                onMouseDown={(
+                  event
+                ) => {
+                  event.preventDefault();
+
+                  selectGoogleContact(
+                    "editTourAdditionalEmail",
+                    contact
+                  );
+                }}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+
+               <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#1687d9] text-sm font-extrabold text-white">
+  {contact.photo ? (
+    <img
+      src={contact.photo}
+      alt=""
+      className="h-full w-full object-cover"
+    />
+  ) : (
+    contact.name
+      ? contact.name
+          .charAt(0)
+          .toUpperCase()
+      : "@"
+  )}
+</div>
+
+                <div className="min-w-0">
+
+                  <p className="truncate text-sm font-extrabold text-gray-900 dark:text-white">
+                    {contact.name ||
+                      "Contato"}
+                  </p>
+
+                  <p className="truncate text-xs text-gray-500 dark:text-gray-300">
+                    {contact.email}
+                  </p>
 
                 </div>
 
-<div className="mt-4">
+              </button>
+            )
+          )}
+
+      </div>
+    )}
+
+</div>
+
+
+{/* EMAIL ADICIONAL 2 */}
+
+<div
+  className="relative mt-4"
+  data-google-contact-autocomplete
+>
 
   <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
     E-mail adicional 2
-    <span className="ml-1 font-medium text-gray-400">
+    <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
       (opcional)
     </span>
   </label>
@@ -7084,10 +7620,20 @@ className={[
     value={
       editTourAdditionalEmail2
     }
+    onFocus={() => {
+      setActiveContactField(
+        "editTourAdditionalEmail2"
+      );
+
+      setContactSearchQuery(
+        editTourAdditionalEmail2
+      );
+    }}
     onChange={(
       event
     ) =>
-      setEditTourAdditionalEmail2(
+      handleAdditionalEmailChange(
+        "editTourAdditionalEmail2",
         event.target.value
       )
     }
@@ -7097,6 +7643,75 @@ className={[
     placeholder="cliente2@email.com"
     className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
   />
+
+  {activeContactField ===
+    "editTourAdditionalEmail2" &&
+    (
+      googleContactsLoading ||
+      googleContacts.length > 0
+    ) && (
+      <div className="absolute left-0 right-0 top-full z-[1000] mt-2 max-h-64 overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+
+        {googleContactsLoading && (
+          <div className="px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
+            Buscando contatos...
+          </div>
+        )}
+
+        {!googleContactsLoading &&
+          googleContacts.map(
+            (contact) => (
+              <button
+                key={`${contact.email}-${contact.name}`}
+                type="button"
+                onMouseDown={(
+                  event
+                ) => {
+                  event.preventDefault();
+
+                  selectGoogleContact(
+                    "editTourAdditionalEmail2",
+                    contact
+                  );
+                }}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+
+               <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#1687d9] text-sm font-extrabold text-white">
+  {contact.photo ? (
+    <img
+      src={contact.photo}
+      alt=""
+      className="h-full w-full object-cover"
+    />
+  ) : (
+    contact.name
+      ? contact.name
+          .charAt(0)
+          .toUpperCase()
+      : "@"
+  )}
+</div>
+
+                <div className="min-w-0">
+
+                  <p className="truncate text-sm font-extrabold text-gray-900 dark:text-white">
+                    {contact.name ||
+                      "Contato"}
+                  </p>
+
+                  <p className="truncate text-xs text-gray-500 dark:text-gray-300">
+                    {contact.email}
+                  </p>
+
+                </div>
+
+              </button>
+            )
+          )}
+
+      </div>
+    )}
 
 </div>
 

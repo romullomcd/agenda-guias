@@ -12,11 +12,33 @@ type LoginUser = {
   last_sign_in_at: string | null;
 };
 
+type Theme = "light" | "dark";
+
 export default function AdminLogins() {
-  const [users, setUsers] = useState<LoginUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [accessDenied, setAccessDenied] = useState(false);
-  const [search, setSearch] = useState("");
+  const [users, setUsers] =
+    useState<LoginUser[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [accessDenied, setAccessDenied] =
+    useState(false);
+
+  const [search, setSearch] =
+    useState("");
+
+  // ============================================================
+  // APLICAR TEMA
+  // ============================================================
+
+  function applyTheme(
+    theme: Theme
+  ) {
+    document.documentElement.classList.toggle(
+      "dark",
+      theme === "dark"
+    );
+  }
 
   // ============================================================
   // VERIFICAR ACESSO + CARREGAR LOGINS
@@ -61,7 +83,7 @@ export default function AdminLogins() {
     }
 
     // ==========================================================
-    // VERIFICAR ROLE
+    // VERIFICAR ROLE + TEMA
     // ==========================================================
 
     const {
@@ -69,7 +91,7 @@ export default function AdminLogins() {
       error: profileError,
     } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, theme")
       .eq("id", user.id)
       .single();
 
@@ -83,6 +105,17 @@ export default function AdminLogins() {
       setLoading(false);
       return;
     }
+
+    // ==========================================================
+    // APLICAR TEMA SALVO NO BANCO
+    // ==========================================================
+
+    const savedTheme: Theme =
+      profile?.theme === "dark"
+        ? "dark"
+        : "light";
+
+    applyTheme(savedTheme);
 
     // ==========================================================
     // NÃO É ADMIN
@@ -295,13 +328,13 @@ export default function AdminLogins() {
 
   if (!loading && accessDenied) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f7fb] px-5">
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f7fb] px-5 dark:bg-black">
 
         <div className="pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full bg-[#e91e8c] opacity-[0.08] blur-3xl" />
 
         <div className="pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#1687d9] opacity-[0.08] blur-3xl" />
 
-        <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-xl">
+        <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900">
 
           <div className="flex h-1">
             <div className="flex-1 bg-[#e91e8c]" />
@@ -311,15 +344,15 @@ export default function AdminLogins() {
 
           <div className="p-8 text-center sm:p-10">
 
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-red-50 text-4xl">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-red-50 text-4xl dark:bg-red-950/40">
               🔒
             </div>
 
-            <h1 className="mt-6 text-2xl font-extrabold text-gray-900">
+            <h1 className="mt-6 text-2xl font-extrabold text-gray-900 dark:text-white">
               Acesso restrito
             </h1>
 
-            <p className="mt-3 text-sm leading-6 text-gray-500">
+            <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-300">
               Esta página é exclusiva para administradores da Agenda de Guias.
             </p>
 
@@ -348,13 +381,13 @@ export default function AdminLogins() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb]">
+      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] dark:bg-black">
 
         <div className="text-center">
 
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c]" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c] dark:border-gray-700" />
 
-          <p className="mt-4 text-sm font-semibold text-gray-500">
+          <p className="mt-4 text-sm font-semibold text-gray-500 dark:text-gray-300">
             Verificando acesso...
           </p>
 
@@ -369,7 +402,7 @@ export default function AdminLogins() {
   // ============================================================
 
   return (
-    <main className="min-h-screen bg-[#f7f7fb]">
+    <main className="min-h-screen bg-[#f7f7fb] dark:bg-black">
 
       {/* ====================================================== */}
       {/* DECORAÇÃO */}
@@ -385,7 +418,7 @@ export default function AdminLogins() {
       {/* HEADER */}
       {/* ====================================================== */}
 
-      <header className="relative z-10 border-b border-gray-100 bg-white">
+      <header className="relative z-10 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-black">
 
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6">
 
@@ -405,11 +438,11 @@ export default function AdminLogins() {
 
             <div>
 
-              <h1 className="text-lg font-extrabold leading-tight text-gray-900 sm:text-xl">
+              <h1 className="text-lg font-extrabold leading-tight text-gray-900 dark:text-white sm:text-xl">
                 Agenda de Guias
               </h1>
 
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-300">
                 Controle de acessos
               </p>
 
@@ -425,7 +458,7 @@ export default function AdminLogins() {
               window.location.href =
                 "/dashboard";
             }}
-            className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:px-4"
+            className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition dark:border-gray-700 dark:text-gray-300 hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:hover:bg-gray-900 sm:px-4"
           >
             ← Voltar
           </button>
@@ -454,27 +487,27 @@ export default function AdminLogins() {
         {/* TÍTULO */}
         {/* ==================================================== */}
 
-        <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
+        <div className="mb-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
 
           <div className="p-6 sm:p-8">
 
             <div className="flex items-center gap-4">
 
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-3xl">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-3xl dark:bg-blue-950/40">
                 🔐
               </div>
 
               <div>
 
-                <p className="text-sm font-medium text-gray-400">
+                <p className="text-sm font-medium text-gray-400 dark:text-gray-500">
                   Administração
                 </p>
 
-                <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-gray-900">
+                <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
                   Últimos acessos
                 </h2>
 
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-300 sm:text-base">
                   Acompanhe quando cada usuário acessou a Agenda de Guias pela última vez.
                 </p>
 
@@ -490,7 +523,7 @@ export default function AdminLogins() {
         {/* CARD */}
         {/* ==================================================== */}
 
-        <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+        <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
 
           {/* FAIXA */}
 
@@ -510,7 +543,7 @@ export default function AdminLogins() {
 
             <div className="mb-6">
 
-              <label className="mb-2 block text-sm font-bold text-gray-700">
+              <label className="mb-2 block text-sm font-bold text-gray-700 dark:text-gray-200">
                 Pesquisar usuário
               </label>
 
@@ -529,7 +562,7 @@ export default function AdminLogins() {
                     )
                   }
                   placeholder="Digite o nome ou e-mail..."
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3.5 pl-12 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3.5 pl-12 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:bg-gray-900 dark:focus:ring-blue-950"
                 />
 
                 {search && (
@@ -538,7 +571,7 @@ export default function AdminLogins() {
                     onClick={() =>
                       setSearch("")
                     }
-                    className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                    className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
                     aria-label="Limpar pesquisa"
                   >
                     ✕
@@ -547,7 +580,7 @@ export default function AdminLogins() {
 
               </div>
 
-              <p className="mt-2 text-xs text-gray-400">
+              <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
                 {search
                   ? `Pesquisando por "${search}"`
                   : "Mostrando os 10 usuários com acesso mais recente."}
@@ -562,17 +595,17 @@ export default function AdminLogins() {
             {filteredUsers.length ===
             0 ? (
 
-              <div className="rounded-2xl bg-gray-50 px-5 py-12 text-center">
+              <div className="rounded-2xl bg-gray-50 px-5 py-12 text-center dark:bg-gray-800">
 
                 <div className="text-4xl">
                   🔎
                 </div>
 
-                <h3 className="mt-4 text-lg font-extrabold text-gray-800">
+                <h3 className="mt-4 text-lg font-extrabold text-gray-800 dark:text-white">
                   Nenhum usuário encontrado
                 </h3>
 
-                <p className="mt-2 text-sm font-medium text-gray-500">
+                <p className="mt-2 text-sm font-medium text-gray-500 dark:text-gray-300">
                   Tente pesquisar por outro nome ou e-mail.
                 </p>
 
@@ -596,18 +629,18 @@ export default function AdminLogins() {
                     return (
                       <div
                         key={user.id}
-                        className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-4 transition hover:border-blue-100 hover:bg-gray-50 sm:flex-row sm:items-center sm:p-5"
+                        className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-4 transition hover:border-blue-100 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-blue-900 dark:hover:bg-gray-800 sm:flex-row sm:items-center sm:p-5"
                       >
 
                         {/* POSIÇÃO */}
 
                         <div className="flex items-center gap-3 sm:w-[55px] sm:shrink-0 sm:flex-col sm:gap-1">
 
-                          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-sm font-extrabold text-[#1687d9]">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-sm font-extrabold text-[#1687d9] dark:bg-blue-950/40">
                             {index + 1}
                           </div>
 
-                          <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400 sm:hidden">
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 sm:hidden">
                             posição
                           </span>
 
@@ -636,12 +669,12 @@ export default function AdminLogins() {
 
                             <div className="min-w-0">
 
-                              <p className="truncate text-sm font-extrabold text-gray-900 sm:text-base">
+                              <p className="truncate text-sm font-extrabold text-gray-900 dark:text-white sm:text-base">
                                 {user.name ||
                                   "Sem nome"}
                               </p>
 
-                              <p className="mt-1 truncate text-xs text-gray-500 sm:text-sm">
+                              <p className="mt-1 truncate text-xs text-gray-500 dark:text-gray-300 sm:text-sm">
                                 {user.email ||
                                   "E-mail não informado"}
                               </p>
@@ -653,8 +686,8 @@ export default function AdminLogins() {
                                 "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide",
                                 user.role ===
                                   "admin"
-                                  ? "bg-blue-50 text-[#1687d9]"
-                                  : "bg-pink-50 text-[#e91e8c]",
+                                  ? "bg-blue-50 text-[#1687d9] dark:bg-blue-950/40"
+                                  : "bg-pink-50 text-[#e91e8c] dark:bg-pink-950/40",
                               ].join(" ")}
                             >
                               {user.role ===
@@ -671,8 +704,8 @@ export default function AdminLogins() {
                               className={[
                                 "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold",
                                 user.active
-                                  ? "bg-green-50 text-green-700"
-                                  : "bg-red-50 text-red-600",
+                                  ? "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300"
+                                  : "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300",
                               ].join(" ")}
                             >
                               <span>
@@ -687,7 +720,7 @@ export default function AdminLogins() {
                             </span>
 
                             {relative && (
-                              <span className="text-[10px] font-medium text-gray-400">
+                              <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">
                                 {relative}
                               </span>
                             )}
@@ -698,13 +731,13 @@ export default function AdminLogins() {
 
                         {/* ÚLTIMO LOGIN */}
 
-                        <div className="border-t border-gray-100 pt-3 text-left sm:w-[190px] sm:shrink-0 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0 sm:text-right">
+                        <div className="border-t border-gray-100 pt-3 text-left dark:border-gray-700 sm:w-[190px] sm:shrink-0 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0 sm:text-right">
 
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                             Último login
                           </p>
 
-                          <p className="mt-1 text-sm font-extrabold text-gray-900">
+                          <p className="mt-1 text-sm font-extrabold text-gray-900 dark:text-white">
                             {user.last_sign_in_at
                               ? formatLastLogin(
                                   user.last_sign_in_at
@@ -732,7 +765,7 @@ export default function AdminLogins() {
               onClick={() =>
                 loadLogins()
               }
-              className="mt-5 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-extrabold text-gray-700 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
+              className="mt-5 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-extrabold text-gray-700 transition dark:border-gray-700 dark:bg-black dark:text-gray-200 hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:hover:bg-gray-900"
             >
               🔄 Atualizar acessos
             </button>
@@ -757,11 +790,11 @@ export default function AdminLogins() {
 
           </div>
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             © 2026 Way To Know Rio
           </p>
 
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
             Desenvolvido por{" "}
             <span className="font-semibold text-[#e91e8c]">
               Machado's

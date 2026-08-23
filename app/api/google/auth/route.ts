@@ -106,7 +106,7 @@ export async function GET(request: Request) {
       access_type: "offline",
       prompt: "consent",
       scope:
-        "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/contacts.other.readonly",
       state: user.id,
     });
 

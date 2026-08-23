@@ -11,6 +11,7 @@ type Profile = {
   phone: string;
   languages: string[];
   pix_key: string;
+  theme: "light" | "dark";
 };
 
 const LANGUAGES = [
@@ -92,6 +93,19 @@ export default function PerfilPage() {
     useState("");
 
   // ============================================
+  // APLICAR TEMA
+  // ============================================
+
+  function applyTheme(
+    theme: "light" | "dark"
+  ) {
+    document.documentElement.classList.toggle(
+      "dark",
+      theme === "dark"
+    );
+  }
+
+  // ============================================
   // FORMATA TELEFONE
   // ============================================
 
@@ -150,6 +164,10 @@ export default function PerfilPage() {
         return;
       }
 
+      // ------------------------------------------
+      // PERFIL
+      // ------------------------------------------
+
       const response = await fetch(
         "/api/profile",
         {
@@ -173,10 +191,46 @@ export default function PerfilPage() {
         return;
       }
 
-      setProfile(result);
+      // ------------------------------------------
+      // TEMA DIRETO DO BANCO
+      // ------------------------------------------
+
+      const {
+        data: themeData,
+        error: themeError,
+      } = await supabase
+        .from("profiles")
+        .select("theme")
+        .eq("id", session.user.id)
+        .single();
+
+      if (themeError) {
+        console.error(
+          "ERRO AO CARREGAR TEMA:",
+          themeError
+        );
+      }
+
+      const savedTheme =
+        themeData?.theme === "dark"
+          ? "dark"
+          : "light";
+
+      applyTheme(savedTheme);
+
+      // ------------------------------------------
+      // SALVAR PERFIL NO ESTADO
+      // ------------------------------------------
+
+      setProfile({
+        ...result,
+        theme: savedTheme,
+      });
 
       setPhone(
-        formatPhone(result.phone || "")
+        formatPhone(
+          result.phone || ""
+        )
       );
 
       setPixKey(
@@ -322,15 +376,26 @@ export default function PerfilPage() {
         return;
       }
 
-      setMessage(
-        result.message ||
-          "Perfil atualizado com sucesso!"
-      );
+      const passwordChanged =
+  password.length > 0;
 
-      setPassword("");
-      setConfirmPassword("");
+if (passwordChanged) {
+  await supabase.auth.signOut();
 
-      await loadProfile();
+  window.location.href = "/";
+
+  return;
+}
+
+setMessage(
+  result.message ||
+    "Perfil atualizado com sucesso!"
+);
+
+setPassword("");
+setConfirmPassword("");
+
+await loadProfile();
     } catch (error) {
       console.error(error);
 
@@ -348,12 +413,12 @@ export default function PerfilPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] px-5">
+      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] px-5 dark:bg-black">
         <div className="text-center">
 
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c]" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c] dark:border-gray-700" />
 
-          <p className="mt-4 text-sm font-semibold text-gray-500">
+          <p className="mt-4 text-sm font-semibold text-gray-500 dark:text-gray-300">
             Carregando seu perfil...
           </p>
 
@@ -368,19 +433,19 @@ export default function PerfilPage() {
 
   if (!profile) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] px-5">
+      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] px-5 dark:bg-black">
 
-        <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-xl">
+        <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-xl dark:border dark:border-gray-800 dark:bg-gray-900">
 
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-3xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-3xl dark:bg-red-950/40">
             ⚠️
           </div>
 
-          <h1 className="mt-5 text-xl font-extrabold text-gray-900">
+          <h1 className="mt-5 text-xl font-extrabold text-gray-900 dark:text-white">
             Não foi possível carregar seu perfil
           </h1>
 
-          <p className="mt-3 text-sm text-red-600">
+          <p className="mt-3 text-sm text-red-600 dark:text-red-400">
             {error ||
               "Ocorreu um erro inesperado."}
           </p>
@@ -407,7 +472,7 @@ export default function PerfilPage() {
   // ============================================
 
   return (
-    <main className="min-h-screen bg-[#f7f7fb]">
+    <main className="min-h-screen bg-[#f7f7fb] dark:bg-black">
 
       {/* FUNDO */}
 
@@ -417,7 +482,7 @@ export default function PerfilPage() {
 
       {/* HEADER */}
 
-      <header className="relative z-10 border-b border-gray-100 bg-white">
+      <header className="relative z-10 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-black">
 
         <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-4 sm:px-6">
 
@@ -435,11 +500,11 @@ export default function PerfilPage() {
 
             <div>
 
-              <h1 className="text-lg font-extrabold leading-tight text-gray-900 sm:text-xl">
+              <h1 className="text-lg font-extrabold leading-tight text-gray-900 dark:text-white sm:text-xl">
                 Meu Perfil
               </h1>
 
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-300">
                 Dados da sua conta
               </p>
 
@@ -453,7 +518,7 @@ export default function PerfilPage() {
               window.location.href =
                 "/dashboard";
             }}
-            className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:px-4"
+            className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition dark:border-gray-700 dark:text-gray-300 hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:hover:bg-gray-900 sm:px-4"
           >
             ← Voltar
           </button>
@@ -474,29 +539,29 @@ export default function PerfilPage() {
 
         {/* TÍTULO */}
 
-        <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
+        <div className="mb-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
 
           <div className="p-6 sm:p-8">
 
             <div className="flex items-center gap-4">
 
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-3xl">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-3xl dark:bg-blue-950/40">
                 👤
               </div>
 
               <div>
 
-                <p className="text-sm font-medium text-gray-400">
+                <p className="text-sm font-medium text-gray-400 dark:text-gray-500">
                   {isAdmin
                     ? "Administrador"
                     : "Guia"}
                 </p>
 
-                <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-gray-900">
+                <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
                   Meu perfil
                 </h2>
 
-                <p className="mt-3 text-sm leading-6 text-gray-500 sm:text-base">
+                <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-300 sm:text-base">
                   Consulte seus dados e mantenha suas informações atualizadas.
                 </p>
 
@@ -511,7 +576,7 @@ export default function PerfilPage() {
         {/* MENSAGEM */}
 
         {message && (
-          <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 font-semibold text-green-700">
+          <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 font-semibold text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
             {message}
           </div>
         )}
@@ -519,7 +584,7 @@ export default function PerfilPage() {
         {/* ERRO */}
 
         {error && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
             {error}
           </div>
         )}
@@ -528,7 +593,7 @@ export default function PerfilPage() {
 
         <form
           onSubmit={saveProfile}
-          className="overflow-hidden rounded-3xl bg-white shadow-sm"
+          className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
         >
 
           <div className="h-1 bg-[#1687d9]" />
@@ -539,11 +604,11 @@ export default function PerfilPage() {
 
             <div>
 
-              <h3 className="text-lg font-extrabold text-gray-900">
+              <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">
                 Dados pessoais
               </h3>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
                 Algumas informações são somente para visualização.
               </p>
 
@@ -555,7 +620,7 @@ export default function PerfilPage() {
 
               <div>
 
-                <label className="mb-2 block text-sm font-bold text-gray-800">
+                <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-100">
                   Nome
                 </label>
 
@@ -563,7 +628,7 @@ export default function PerfilPage() {
                   type="text"
                   value={profile.name}
                   readOnly
-                  className="w-full cursor-not-allowed rounded-xl border-2 border-gray-200 bg-gray-50 px-4 py-3 font-medium text-gray-600 outline-none"
+                  className="w-full cursor-not-allowed rounded-xl border-2 border-gray-200 bg-gray-50 px-4 py-3 font-medium text-gray-600 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
                 />
 
               </div>
@@ -572,7 +637,7 @@ export default function PerfilPage() {
 
               <div>
 
-                <label className="mb-2 block text-sm font-bold text-gray-800">
+                <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-100">
                   E-mail
                 </label>
 
@@ -580,7 +645,7 @@ export default function PerfilPage() {
                   type="email"
                   value={profile.email}
                   readOnly
-                  className="w-full cursor-not-allowed rounded-xl border-2 border-gray-200 bg-gray-50 px-4 py-3 font-medium text-gray-600 outline-none"
+                  className="w-full cursor-not-allowed rounded-xl border-2 border-gray-200 bg-gray-50 px-4 py-3 font-medium text-gray-600 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
                 />
 
               </div>
@@ -590,7 +655,7 @@ export default function PerfilPage() {
               {!isAdmin && (
                 <div>
 
-                  <label className="mb-2 block text-sm font-bold text-gray-800">
+                  <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-100">
                     Telefone
                   </label>
 
@@ -606,7 +671,7 @@ export default function PerfilPage() {
                     }
                     maxLength={15}
                     placeholder="(21) 99999-9999"
-                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50"
+                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950"
                   />
 
                 </div>
@@ -617,7 +682,7 @@ export default function PerfilPage() {
               {!isAdmin && (
                 <div>
 
-                  <label className="mb-2 block text-sm font-bold text-gray-800">
+                  <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-100">
                     Chave PIX
                   </label>
 
@@ -630,10 +695,10 @@ export default function PerfilPage() {
                       )
                     }
                     placeholder="CPF, CNPJ, telefone, e-mail ou chave aleatória"
-                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50"
+                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950"
                   />
 
-                  <p className="mt-2 text-xs font-medium text-gray-400">
+                  <p className="mt-2 text-xs font-medium text-gray-400 dark:text-gray-500">
                     Chave utilizada para receber pagamentos.
                   </p>
 
@@ -645,7 +710,7 @@ export default function PerfilPage() {
               {!isAdmin && (
                 <div>
 
-                  <label className="mb-3 block text-sm font-bold text-gray-800">
+                  <label className="mb-3 block text-sm font-bold text-gray-800 dark:text-gray-100">
                     Idiomas
                   </label>
 
@@ -667,8 +732,8 @@ export default function PerfilPage() {
                             className={[
                               "cursor-pointer rounded-xl border-2 p-3 text-sm font-medium transition",
                               selected
-                                ? "border-[#e91e8c] bg-pink-50 font-bold text-[#c91678]"
-                                : "border-gray-200 bg-white text-gray-700 hover:border-[#1687d9] hover:bg-blue-50",
+                                ? "border-[#e91e8c] bg-pink-50 font-bold text-[#c91678] dark:bg-pink-950/30 dark:text-pink-300"
+                                : "border-gray-200 bg-white text-gray-700 dark:border-gray-700 dark:bg-black dark:text-gray-200 hover:border-[#1687d9] hover:bg-blue-50 dark:hover:bg-gray-900",
                             ].join(" ")}
                           >
 
@@ -715,13 +780,13 @@ export default function PerfilPage() {
 
               {/* SENHA */}
 
-              <div className="border-t border-gray-100 pt-6">
+              <div className="border-t border-gray-100 pt-6 dark:border-gray-800">
 
-                <h3 className="text-lg font-extrabold text-gray-900">
+                <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">
                   Segurança
                 </h3>
 
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
                   {isAdmin
                     ? "Altere a senha da sua conta de administrador."
                     : "Altere a senha utilizada para entrar na sua conta."}
@@ -733,7 +798,7 @@ export default function PerfilPage() {
 
                   <div>
 
-                    <label className="mb-2 block text-sm font-bold text-gray-800">
+                    <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-100">
                       Nova senha
                     </label>
 
@@ -747,7 +812,8 @@ export default function PerfilPage() {
                       }
                       minLength={6}
                       placeholder="Mínimo 6 caracteres"
-                      className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50"
+                      autoComplete="new-password"
+                      className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950 [color-scheme:light] dark:[color-scheme:dark] autofill:bg-black"
                     />
 
                   </div>
@@ -756,7 +822,7 @@ export default function PerfilPage() {
 
                   <div>
 
-                    <label className="mb-2 block text-sm font-bold text-gray-800">
+                    <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-100">
                       Confirmar nova senha
                     </label>
 
@@ -772,14 +838,15 @@ export default function PerfilPage() {
                       }
                       minLength={6}
                       placeholder="Digite novamente"
-                      className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50"
+                      autoComplete="new-password"
+                      className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950"
                     />
 
                   </div>
 
                 </div>
 
-                <p className="mt-3 text-xs font-medium text-gray-400">
+                <p className="mt-3 text-xs font-medium text-gray-400 dark:text-gray-500">
                   Deixe os campos vazios caso não queira alterar a senha.
                 </p>
 
@@ -817,11 +884,11 @@ export default function PerfilPage() {
 
           </div>
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             © 2026 Way To Know Rio
           </p>
 
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
             Desenvolvido por{" "}
             <span className="font-semibold text-[#e91e8c]">
               Machado's

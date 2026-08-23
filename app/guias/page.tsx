@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -14,6 +13,8 @@ type Guide = {
   email: string;
   pix_key: string;
 };
+
+type Theme = "light" | "dark";
 
 const LANGUAGES = [
   {
@@ -90,6 +91,21 @@ export default function GuiasPage() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  // ============================================================
+  // TEMA
+  // ============================================================
+
+  function applyTheme(theme: Theme) {
+    document.documentElement.classList.toggle(
+      "dark",
+      theme === "dark"
+    );
+  }
+
+  // ============================================================
+  // ACESSO
+  // ============================================================
+
   useEffect(() => {
     checkAccess();
   }, []);
@@ -143,7 +159,7 @@ export default function GuiasPage() {
     const { data: profile, error: profileError } =
       await supabase
         .from("profiles")
-        .select("role")
+        .select("role, theme")
         .eq("id", user.id)
         .single();
 
@@ -158,6 +174,16 @@ export default function GuiasPage() {
       return;
     }
 
+    // ==========================================================
+    // APLICAR TEMA SALVO NO BANCO
+    // ==========================================================
+
+    applyTheme(
+      profile?.theme === "dark"
+        ? "dark"
+        : "light"
+    );
+
     if (profile?.role !== "admin") {
       setIsAdmin(false);
       setAccessDenied(true);
@@ -171,6 +197,10 @@ export default function GuiasPage() {
 
     await loadGuides();
   }
+
+  // ============================================================
+  // CARREGAR GUIAS
+  // ============================================================
 
   async function loadGuides() {
     setLoading(true);
@@ -188,9 +218,11 @@ export default function GuiasPage() {
 
       if (guidesError) {
         console.error(guidesError);
+
         setError(
           "Não foi possível carregar os guias."
         );
+
         setLoading(false);
         return;
       }
@@ -203,6 +235,7 @@ export default function GuiasPage() {
         setError(
           "Sua sessão expirou. Faça login novamente."
         );
+
         setLoading(false);
         return;
       }
@@ -244,10 +277,14 @@ export default function GuiasPage() {
         })
       );
 
-      setGuides(guidesWithEmail);
+      setGuides(
+        guidesWithEmail as Guide[]
+      );
+
       setCurrentPage(1);
     } catch (loadError) {
       console.error(loadError);
+
       setError(
         "Não foi possível carregar os guias."
       );
@@ -256,10 +293,16 @@ export default function GuiasPage() {
     setLoading(false);
   }
 
+  // ============================================================
+  // IDIOMAS
+  // ============================================================
+
   function toggleLanguage(language: string) {
     setLanguages((current) =>
       current.includes(language)
-        ? current.filter((item) => item !== language)
+        ? current.filter(
+            (item) => item !== language
+          )
         : [...current, language]
     );
   }
@@ -275,6 +318,10 @@ export default function GuiasPage() {
       }
     );
   }
+
+  // ============================================================
+  // FORMULÁRIO
+  // ============================================================
 
   function clearForm() {
     setName("");
@@ -355,6 +402,10 @@ export default function GuiasPage() {
 
     scrollToForm();
   }
+
+  // ============================================================
+  // CRIAR GUIA
+  // ============================================================
 
   async function createGuide(
     event: React.FormEvent
@@ -440,6 +491,10 @@ export default function GuiasPage() {
 
     await loadGuides();
   }
+
+  // ============================================================
+  // ATUALIZAR GUIA
+  // ============================================================
 
   async function updateGuide(
     event: React.FormEvent
@@ -534,6 +589,10 @@ export default function GuiasPage() {
     await loadGuides();
   }
 
+  // ============================================================
+  // ATIVAR / DESATIVAR
+  // ============================================================
+
   async function toggleGuide(guide: Guide) {
     setError("");
     setMessage("");
@@ -583,6 +642,10 @@ export default function GuiasPage() {
     await loadGuides();
   }
 
+  // ============================================================
+  // DELETAR
+  // ============================================================
+
   async function deleteGuide(guide: Guide) {
     const confirmed = window.confirm(
       `Tem certeza que deseja deletar o guia "${guide.name}"?\n\nEssa ação não poderá ser desfeita.`
@@ -605,6 +668,7 @@ export default function GuiasPage() {
         setError(
           "Sua sessão expirou. Faça login novamente."
         );
+
         setDeletingGuideId(null);
         return;
       }
@@ -619,13 +683,16 @@ export default function GuiasPage() {
         }
       );
 
-      const responseText = await response.text();
+      const responseText =
+        await response.text();
 
       let result: any = {};
 
       if (responseText) {
         try {
-          result = JSON.parse(responseText);
+          result = JSON.parse(
+            responseText
+          );
         } catch {
           result = {};
         }
@@ -636,6 +703,7 @@ export default function GuiasPage() {
           result.error ||
             "Não foi possível deletar o guia."
         );
+
         setDeletingGuideId(null);
         return;
       }
@@ -657,6 +725,10 @@ export default function GuiasPage() {
       setDeletingGuideId(null);
     }
   }
+
+  // ============================================================
+  // FILTRO + PAGINAÇÃO
+  // ============================================================
 
   const filteredGuides = useMemo(() => {
     const searchValue = search
@@ -708,7 +780,10 @@ export default function GuiasPage() {
       startIndex,
       startIndex + ITEMS_PER_PAGE
     );
-  }, [filteredGuides, currentPage]);
+  }, [
+    filteredGuides,
+    currentPage,
+  ]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -718,31 +793,46 @@ export default function GuiasPage() {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
-  }, [currentPage, totalPages]);
+  }, [
+    currentPage,
+    totalPages,
+  ]);
+
+  // ============================================================
+  // VERIFICANDO ACESSO
+  // ============================================================
 
   if (checkingAccess) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] px-5">
-        <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c]" />
+      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] px-5 dark:bg-black">
 
-          <p className="mt-4 text-sm font-semibold text-gray-500">
+        <div className="text-center">
+
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c] dark:border-gray-700" />
+
+          <p className="mt-4 text-sm font-semibold text-gray-500 dark:text-gray-300">
             Verificando acesso...
           </p>
+
         </div>
+
       </main>
     );
   }
 
+  // ============================================================
+  // ACESSO NEGADO
+  // ============================================================
+
   if (accessDenied || !isAdmin) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f7fb] px-5">
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f7fb] px-5 dark:bg-black">
 
         <div className="pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full bg-[#e91e8c] opacity-[0.08] blur-3xl" />
 
         <div className="pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#1687d9] opacity-[0.08] blur-3xl" />
 
-        <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-xl">
+        <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900">
 
           <div className="flex h-1">
             <div className="flex-1 bg-[#e91e8c]" />
@@ -752,15 +842,15 @@ export default function GuiasPage() {
 
           <div className="p-8 text-center sm:p-10">
 
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-red-50 text-4xl">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-red-50 text-4xl dark:bg-red-950/40">
               🔒
             </div>
 
-            <h1 className="mt-6 text-2xl font-extrabold text-gray-900">
+            <h1 className="mt-6 text-2xl font-extrabold text-gray-900 dark:text-white">
               Acesso restrito
             </h1>
 
-            <p className="mt-3 text-sm leading-6 text-gray-500">
+            <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-300">
               Esta página é exclusiva para administradores da Agenda de Guias.
             </p>
 
@@ -783,8 +873,14 @@ export default function GuiasPage() {
     );
   }
 
+  // ============================================================
+  // PÁGINA
+  // ============================================================
+
   return (
-    <main className="min-h-screen bg-[#f7f7fb]">
+    <main className="min-h-screen bg-[#f7f7fb] dark:bg-black">
+
+      {/* FUNDO */}
 
       <div className="pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full bg-[#e91e8c] opacity-[0.08] blur-3xl" />
 
@@ -792,7 +888,9 @@ export default function GuiasPage() {
 
       <div className="pointer-events-none fixed left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-[#ffd21c] opacity-[0.04] blur-3xl" />
 
-      <header className="relative z-10 border-b border-gray-100 bg-white">
+      {/* HEADER */}
+
+      <header className="relative z-10 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-black">
 
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6">
 
@@ -810,11 +908,11 @@ export default function GuiasPage() {
 
             <div>
 
-              <h1 className="text-lg font-extrabold leading-tight text-gray-900 sm:text-xl">
+              <h1 className="text-lg font-extrabold leading-tight text-gray-900 dark:text-white sm:text-xl">
                 Agenda de Guias
               </h1>
 
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-300">
                 Gerenciamento de guias
               </p>
 
@@ -823,11 +921,12 @@ export default function GuiasPage() {
           </div>
 
           <button
+            type="button"
             onClick={() => {
               window.location.href =
                 "/dashboard";
             }}
-            className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:px-4"
+            className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition dark:border-gray-700 dark:text-gray-300 hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:hover:bg-gray-900 sm:px-4"
           >
             ← Voltar
           </button>
@@ -842,9 +941,13 @@ export default function GuiasPage() {
 
       </header>
 
+      {/* CONTEÚDO */}
+
       <section className="relative z-10 mx-auto max-w-7xl px-5 py-7 sm:px-6 sm:py-9">
 
-        <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
+        {/* TÍTULO */}
+
+        <div className="mb-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
 
           <div className="p-6 sm:p-8">
 
@@ -852,21 +955,21 @@ export default function GuiasPage() {
 
               <div className="flex items-center gap-4">
 
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-3xl">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-3xl dark:bg-blue-950/40">
                   👥
                 </div>
 
                 <div>
 
-                  <p className="text-sm font-medium text-gray-400">
+                  <p className="text-sm font-medium text-gray-400 dark:text-gray-500">
                     Administração
                   </p>
 
-                  <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-gray-900">
+                  <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
                     Gerenciamento de guias
                   </h2>
 
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base">
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-300 sm:text-base">
                     Cadastre, edite e gerencie os guias que fazem parte da equipe.
                   </p>
 
@@ -874,7 +977,7 @@ export default function GuiasPage() {
 
               </div>
 
-              <div className="w-fit rounded-2xl bg-blue-50 px-4 py-3 text-[#1687d9]">
+              <div className="w-fit rounded-2xl bg-blue-50 px-4 py-3 text-[#1687d9] dark:bg-blue-950/40">
 
                 <p className="text-xs font-semibold uppercase tracking-wider">
                   Equipe
@@ -895,6 +998,8 @@ export default function GuiasPage() {
 
         </div>
 
+        {/* PESQUISA + ADICIONAR */}
+
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
           <div className="relative w-full sm:max-w-md">
@@ -907,10 +1012,12 @@ export default function GuiasPage() {
               type="text"
               value={search}
               onChange={(e) =>
-                setSearch(e.target.value)
+                setSearch(
+                  e.target.value
+                )
               }
               placeholder="Buscar por nome, e-mail ou telefone..."
-              className="w-full rounded-xl border-2 border-gray-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50"
+              className="w-full rounded-xl border-2 border-gray-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950"
             />
 
             {search && (
@@ -919,7 +1026,7 @@ export default function GuiasPage() {
                 onClick={() =>
                   setSearch("")
                 }
-                className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 transition hover:text-gray-700"
+                className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 transition hover:text-gray-700 dark:hover:text-gray-200"
               >
                 ✕
               </button>
@@ -928,6 +1035,7 @@ export default function GuiasPage() {
           </div>
 
           <button
+            type="button"
             onClick={
               showForm
                 ? clearForm
@@ -943,7 +1051,7 @@ export default function GuiasPage() {
         </div>
 
         {!loading && search && (
-          <div className="mb-4 text-sm font-medium text-gray-500">
+          <div className="mb-4 text-sm font-medium text-gray-500 dark:text-gray-400">
             {filteredGuides.length === 0
               ? "Nenhum guia encontrado."
               : `${filteredGuides.length} ${
@@ -954,10 +1062,12 @@ export default function GuiasPage() {
           </div>
         )}
 
+        {/* FORMULÁRIO */}
+
         {showForm && (
           <div
             ref={formRef}
-            className="mb-6 scroll-mt-5 overflow-hidden rounded-3xl bg-white shadow-sm"
+            className="mb-6 scroll-mt-5 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
           >
 
             <div className="h-1 bg-[#1687d9]" />
@@ -966,19 +1076,19 @@ export default function GuiasPage() {
 
               <div className="flex items-center gap-4">
 
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-2xl">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-2xl dark:bg-blue-950/40">
                   👤
                 </div>
 
                 <div>
 
-                  <h3 className="text-lg font-bold text-gray-900 sm:text-xl">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white sm:text-xl">
                     {editingGuide
                       ? "Editar guia"
                       : "Novo guia"}
                   </h3>
 
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
                     {editingGuide
                       ? "Atualize os dados do guia."
                       : "Cadastre um novo guia na equipe."}
@@ -999,7 +1109,7 @@ export default function GuiasPage() {
 
                 <div>
 
-                  <label className="mb-2 block text-sm font-bold text-gray-800">
+                  <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-100">
                     Nome
                   </label>
 
@@ -1011,7 +1121,7 @@ export default function GuiasPage() {
                       )
                     }
                     required
-                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50"
+                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950"
                     placeholder="Nome do guia"
                   />
 
@@ -1019,7 +1129,7 @@ export default function GuiasPage() {
 
                 <div>
 
-                  <label className="mb-2 block text-sm font-bold text-gray-800">
+                  <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-100">
                     E-mail
                   </label>
 
@@ -1032,7 +1142,7 @@ export default function GuiasPage() {
                       )
                     }
                     required
-                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50"
+                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950"
                     placeholder="guia@email.com"
                   />
 
@@ -1040,7 +1150,7 @@ export default function GuiasPage() {
 
                 <div>
 
-                  <label className="mb-2 block text-sm font-bold text-gray-800">
+                  <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-100">
                     Telefone
                   </label>
 
@@ -1055,11 +1165,11 @@ export default function GuiasPage() {
                       )
                     }
                     maxLength={15}
-                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50"
+                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950"
                     placeholder="(21) 99999-9999"
                   />
 
-                  <p className="mt-2 text-xs font-medium text-gray-400">
+                  <p className="mt-2 text-xs font-medium text-gray-400 dark:text-gray-500">
                     Você pode digitar somente os números.
                   </p>
 
@@ -1067,7 +1177,7 @@ export default function GuiasPage() {
 
                 <div>
 
-                  <label className="mb-2 block text-sm font-bold text-gray-800">
+                  <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-100">
                     Chave PIX
                   </label>
 
@@ -1075,13 +1185,15 @@ export default function GuiasPage() {
                     type="text"
                     value={pixKey}
                     onChange={(e) =>
-                      setPixKey(e.target.value)
+                      setPixKey(
+                        e.target.value
+                      )
                     }
-                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50"
+                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950"
                     placeholder="CPF, CNPJ, telefone, e-mail ou chave aleatória"
                   />
 
-                  <p className="mt-2 text-xs font-medium text-gray-400">
+                  <p className="mt-2 text-xs font-medium text-gray-400 dark:text-gray-500">
                     Chave utilizada para pagamentos ao guia.
                   </p>
 
@@ -1089,7 +1201,7 @@ export default function GuiasPage() {
 
                 <div>
 
-                  <label className="mb-2 block text-sm font-bold text-gray-800">
+                  <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-100">
                     {editingGuide
                       ? "Nova senha"
                       : "Senha inicial"}
@@ -1105,7 +1217,12 @@ export default function GuiasPage() {
                     }
                     required={!editingGuide}
                     minLength={6}
-                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50"
+                    autoComplete={
+                      editingGuide
+                        ? "new-password"
+                        : "new-password"
+                    }
+                    className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950 [color-scheme:light] dark:[color-scheme:dark]"
                     placeholder={
                       editingGuide
                         ? "Deixe vazio para manter a senha atual"
@@ -1114,7 +1231,7 @@ export default function GuiasPage() {
                   />
 
                   {editingGuide && (
-                    <p className="mt-2 text-xs font-medium text-gray-500">
+                    <p className="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400">
                       Preencha somente se quiser trocar a senha.
                     </p>
                   )}
@@ -1123,7 +1240,7 @@ export default function GuiasPage() {
 
                 <div>
 
-                  <label className="mb-3 block text-sm font-bold text-gray-800">
+                  <label className="mb-3 block text-sm font-bold text-gray-800 dark:text-gray-100">
                     Idiomas
                   </label>
 
@@ -1139,8 +1256,8 @@ export default function GuiasPage() {
                             languages.includes(
                               language.value
                             )
-                              ? "border-[#e91e8c] bg-pink-50 font-bold text-[#c91678]"
-                              : "border-gray-200 bg-white text-gray-700 hover:border-[#1687d9] hover:bg-blue-50",
+                              ? "border-[#e91e8c] bg-pink-50 font-bold text-[#c91678] dark:bg-pink-950/30 dark:text-pink-300"
+                              : "border-gray-200 bg-white text-gray-700 dark:border-gray-700 dark:bg-black dark:text-gray-200 hover:border-[#1687d9] hover:bg-blue-50 dark:hover:bg-gray-900",
                           ].join(" ")}
                         >
 
@@ -1197,19 +1314,23 @@ export default function GuiasPage() {
           </div>
         )}
 
+        {/* MENSAGENS */}
+
         {message && (
-          <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 font-semibold text-green-700">
+          <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 font-semibold text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
             {message}
           </div>
         )}
 
         {error && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
             {error}
           </div>
         )}
 
-        <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+        {/* LISTA */}
+
+        <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
 
           <div className="flex h-1">
             <div className="flex-1 bg-[#e91e8c]" />
@@ -1221,9 +1342,9 @@ export default function GuiasPage() {
 
             <div className="p-10 text-center">
 
-              <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c]" />
+              <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c] dark:border-gray-700" />
 
-              <p className="mt-4 text-sm font-medium text-gray-500">
+              <p className="mt-4 text-sm font-medium text-gray-500 dark:text-gray-300">
                 Carregando guias...
               </p>
 
@@ -1233,19 +1354,19 @@ export default function GuiasPage() {
 
             <div className="p-10 text-center">
 
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-50 text-2xl">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-50 text-2xl dark:bg-yellow-950/40">
                 {search
                   ? "🔎"
                   : "👤"}
               </div>
 
-              <p className="mt-4 font-bold text-gray-700">
+              <p className="mt-4 font-bold text-gray-700 dark:text-gray-200">
                 {search
                   ? "Nenhum guia encontrado."
                   : "Nenhum guia cadastrado ainda."}
               </p>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {search
                   ? "Tente buscar por outro nome, e-mail ou telefone."
                   : "Clique em “Adicionar guia” para começar."}
@@ -1255,21 +1376,21 @@ export default function GuiasPage() {
 
           ) : (
 
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
 
               {paginatedGuides.map(
                 (guide) => (
 
                   <div
                     key={guide.id}
-                    className="flex flex-col gap-5 p-6 transition hover:bg-gray-50 md:flex-row md:items-center md:justify-between"
+                    className="flex flex-col gap-5 p-6 transition hover:bg-gray-50 dark:hover:bg-gray-800/70 md:flex-row md:items-center md:justify-between"
                   >
 
                     <div className="min-w-0">
 
                       <div className="flex items-center gap-3">
 
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 font-extrabold text-[#1687d9]">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 font-extrabold text-[#1687d9] dark:bg-blue-950/40">
                           {guide.name
                             .charAt(0)
                             .toUpperCase()}
@@ -1277,11 +1398,11 @@ export default function GuiasPage() {
 
                         <div className="min-w-0">
 
-                          <h3 className="font-extrabold text-gray-900">
+                          <h3 className="font-extrabold text-gray-900 dark:text-white">
                             {guide.name}
                           </h3>
 
-                          <p className="mt-0.5 text-sm font-medium text-gray-500">
+                          <p className="mt-0.5 text-sm font-medium text-gray-500 dark:text-gray-400">
                             Guia
                           </p>
 
@@ -1292,13 +1413,13 @@ export default function GuiasPage() {
                       <div className="mt-3 space-y-1">
 
                         {guide.email && (
-                          <p className="truncate text-sm font-medium text-gray-500">
+                          <p className="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
                             📧 {guide.email}
                           </p>
                         )}
 
                         {guide.phone && (
-                          <p className="text-sm font-medium text-gray-500">
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                             📱{" "}
                             {formatPhone(
                               guide.phone
@@ -1307,7 +1428,7 @@ export default function GuiasPage() {
                         )}
 
                         {guide.pix_key && (
-                          <p className="truncate text-sm font-medium text-gray-500">
+                          <p className="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
                             💰 PIX: {guide.pix_key}
                           </p>
                         )}
@@ -1329,7 +1450,7 @@ export default function GuiasPage() {
                               return (
                                 <span
                                   key={language}
-                                  className="inline-flex items-center gap-2 rounded-full bg-yellow-50 px-3 py-1.5 text-xs font-bold text-yellow-700 ring-1 ring-yellow-200"
+                                  className="inline-flex items-center gap-2 rounded-full bg-yellow-50 px-3 py-1.5 text-xs font-bold text-yellow-700 ring-1 ring-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-300 dark:ring-yellow-800"
                                 >
 
                                   {languageData.flag ? (
@@ -1355,7 +1476,7 @@ export default function GuiasPage() {
 
                         ) : (
 
-                          <span className="text-xs font-medium text-gray-400">
+                          <span className="text-xs font-medium text-gray-400 dark:text-gray-500">
                             Nenhum idioma informado
                           </span>
 
@@ -1370,8 +1491,8 @@ export default function GuiasPage() {
                       <span
                         className={`rounded-full px-3 py-1.5 text-sm font-extrabold ${
                           guide.active
-                            ? "bg-green-100 text-green-700 ring-1 ring-green-200"
-                            : "bg-red-100 text-red-700 ring-1 ring-red-200"
+                            ? "bg-green-100 text-green-700 ring-1 ring-green-200 dark:bg-green-950/40 dark:text-green-300 dark:ring-green-800"
+                            : "bg-red-100 text-red-700 ring-1 ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-800"
                         }`}
                       >
                         {guide.active
@@ -1386,7 +1507,7 @@ export default function GuiasPage() {
                             guide
                           )
                         }
-                        className="rounded-xl border-2 border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
+                        className="rounded-xl border-2 border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 transition dark:border-gray-700 dark:bg-black dark:text-gray-200 hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:hover:bg-gray-900"
                       >
                         ✏️ Editar
                       </button>
@@ -1400,7 +1521,7 @@ export default function GuiasPage() {
                         }
                         className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${
                           guide.active
-                            ? "border-2 border-red-200 bg-white text-red-600 hover:bg-red-50"
+                            ? "border-2 border-red-200 bg-white text-red-600 hover:bg-red-50 dark:border-red-900 dark:bg-black dark:text-red-400 dark:hover:bg-red-950/40"
                             : "bg-[#e91e8c] text-white shadow-sm shadow-pink-200 hover:bg-[#d91880]"
                         }`}
                       >
@@ -1437,19 +1558,21 @@ export default function GuiasPage() {
 
           )}
 
+          {/* PAGINAÇÃO */}
+
           {!loading &&
             filteredGuides.length >
               ITEMS_PER_PAGE && (
 
-              <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
+              <div className="border-t border-gray-100 px-5 py-4 dark:border-gray-800 sm:px-6">
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
-                  <p className="text-sm font-medium text-gray-500">
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
 
                     Mostrando{" "}
 
-                    <span className="font-bold text-gray-700">
+                    <span className="font-bold text-gray-700 dark:text-gray-200">
                       {(currentPage - 1) *
                         ITEMS_PER_PAGE +
                         1}
@@ -1457,7 +1580,7 @@ export default function GuiasPage() {
 
                     {" "}até{" "}
 
-                    <span className="font-bold text-gray-700">
+                    <span className="font-bold text-gray-700 dark:text-gray-200">
                       {Math.min(
                         currentPage *
                           ITEMS_PER_PAGE,
@@ -1467,7 +1590,7 @@ export default function GuiasPage() {
 
                     {" "}de{" "}
 
-                    <span className="font-bold text-gray-700">
+                    <span className="font-bold text-gray-700 dark:text-gray-200">
                       {filteredGuides.length}
                     </span>
 
@@ -1489,7 +1612,7 @@ export default function GuiasPage() {
                             )
                         )
                       }
-                      className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 transition dark:border-gray-700 dark:bg-black dark:text-gray-200 hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       ← Anterior
                     </button>
@@ -1513,7 +1636,7 @@ export default function GuiasPage() {
                             )
                         )
                       }
-                      className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-600 transition dark:border-gray-700 dark:bg-black dark:text-gray-200 hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Próxima →
                     </button>
@@ -1528,6 +1651,8 @@ export default function GuiasPage() {
 
         </div>
 
+        {/* RODAPÉ */}
+
         <footer className="mt-12 pb-5 text-center">
 
           <div className="mb-4 flex justify-center gap-2">
@@ -1538,11 +1663,11 @@ export default function GuiasPage() {
 
           </div>
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             © 2026 Way To Know Rio
           </p>
 
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
             Desenvolvido por{" "}
             <span className="font-semibold text-[#e91e8c]">
               Machado's
@@ -1556,4 +1681,3 @@ export default function GuiasPage() {
     </main>
   );
 }
-

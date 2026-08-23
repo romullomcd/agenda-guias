@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+
 import {
   addMonths,
   endOfMonth,
@@ -8,6 +9,7 @@ import {
   startOfMonth,
   subMonths,
 } from "date-fns";
+
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/lib/supabase";
 
@@ -22,6 +24,8 @@ type RankingItem = {
   guide: Guide;
   count: number;
 };
+
+type Theme = "light" | "dark";
 
 const LANGUAGE_FLAGS: Record<string, string> = {
   Português: "🇧🇷",
@@ -54,6 +58,19 @@ export default function GuideRanking() {
     useState(false);
 
   // ============================================================
+  // APLICAR TEMA
+  // ============================================================
+
+  function applyTheme(
+    theme: Theme
+  ) {
+    document.documentElement.classList.toggle(
+      "dark",
+      theme === "dark"
+    );
+  }
+
+  // ============================================================
   // VERIFICAR ACESSO + CARREGAR RANKING
   // ============================================================
 
@@ -62,7 +79,6 @@ export default function GuideRanking() {
   }, [currentMonth]);
 
   async function checkAccessAndLoadRanking() {
-    
     setAccessDenied(false);
 
     // ==========================================================
@@ -82,6 +98,7 @@ export default function GuideRanking() {
 
       setAccessDenied(true);
       setLoading(false);
+
       return;
     }
 
@@ -92,11 +109,12 @@ export default function GuideRanking() {
     if (!user) {
       setAccessDenied(true);
       setLoading(false);
+
       return;
     }
 
     // ==========================================================
-    // VERIFICAR ROLE
+    // VERIFICAR ROLE + TEMA
     // ==========================================================
 
     const {
@@ -104,7 +122,7 @@ export default function GuideRanking() {
       error: profileError,
     } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, theme")
       .eq("id", user.id)
       .single();
 
@@ -116,8 +134,20 @@ export default function GuideRanking() {
 
       setAccessDenied(true);
       setLoading(false);
+
       return;
     }
+
+    // ==========================================================
+    // APLICAR TEMA SALVO NO BANCO
+    // ==========================================================
+
+    const savedTheme: Theme =
+      profile?.theme === "dark"
+        ? "dark"
+        : "light";
+
+    applyTheme(savedTheme);
 
     // ==========================================================
     // NÃO É ADMIN
@@ -131,6 +161,7 @@ export default function GuideRanking() {
 
       setAccessDenied(true);
       setLoading(false);
+
       return;
     }
 
@@ -178,6 +209,7 @@ export default function GuideRanking() {
       );
 
       setLoading(false);
+
       return;
     }
 
@@ -218,6 +250,7 @@ export default function GuideRanking() {
       );
 
       setLoading(false);
+
       return;
     }
 
@@ -354,13 +387,13 @@ export default function GuideRanking() {
 
   if (!loading && accessDenied) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f7fb] px-5">
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f7fb] px-5 dark:bg-black">
 
         <div className="pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full bg-[#e91e8c] opacity-[0.08] blur-3xl" />
 
         <div className="pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#1687d9] opacity-[0.08] blur-3xl" />
 
-        <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-xl">
+        <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900">
 
           <div className="flex h-1">
             <div className="flex-1 bg-[#e91e8c]" />
@@ -370,15 +403,15 @@ export default function GuideRanking() {
 
           <div className="p-8 text-center sm:p-10">
 
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-red-50 text-4xl">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-red-50 text-4xl dark:bg-red-950/40">
               🔒
             </div>
 
-            <h1 className="mt-6 text-2xl font-extrabold text-gray-900">
+            <h1 className="mt-6 text-2xl font-extrabold text-gray-900 dark:text-white">
               Acesso restrito
             </h1>
 
-            <p className="mt-3 text-sm leading-6 text-gray-500">
+            <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-300">
               Esta página é exclusiva para administradores da Agenda de Guias.
             </p>
 
@@ -407,13 +440,13 @@ export default function GuideRanking() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb]">
+      <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] dark:bg-black">
 
         <div className="text-center">
 
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c]" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#e91e8c] dark:border-gray-700" />
 
-          <p className="mt-4 text-sm font-semibold text-gray-500">
+          <p className="mt-4 text-sm font-semibold text-gray-500 dark:text-gray-300">
             Verificando acesso...
           </p>
 
@@ -428,7 +461,7 @@ export default function GuideRanking() {
   // ============================================================
 
   return (
-    <main className="min-h-screen bg-[#f7f7fb]">
+    <main className="min-h-screen bg-[#f7f7fb] dark:bg-black">
 
       {/* ====================================================== */}
       {/* DECORAÇÃO DE FUNDO */}
@@ -441,10 +474,10 @@ export default function GuideRanking() {
       <div className="pointer-events-none fixed left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-[#ffd21c] opacity-[0.04] blur-3xl" />
 
       {/* ====================================================== */}
-      {/* HEADER — IGUAL AO DE GUIAS */}
+      {/* HEADER */}
       {/* ====================================================== */}
 
-      <header className="relative z-10 border-b border-gray-100 bg-white">
+      <header className="relative z-10 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-black">
 
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6">
 
@@ -464,11 +497,11 @@ export default function GuideRanking() {
 
             <div>
 
-              <h1 className="text-lg font-extrabold leading-tight text-gray-900 sm:text-xl">
+              <h1 className="text-lg font-extrabold leading-tight text-gray-900 dark:text-white sm:text-xl">
                 Agenda de Guias
               </h1>
 
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-300">
                 Ranking de guias
               </p>
 
@@ -484,7 +517,7 @@ export default function GuideRanking() {
               window.location.href =
                 "/dashboard";
             }}
-            className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:px-4"
+            className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition dark:border-gray-700 dark:text-gray-300 hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:hover:bg-gray-900 sm:px-4"
           >
             ← Voltar
           </button>
@@ -511,27 +544,27 @@ export default function GuideRanking() {
         {/* TÍTULO */}
         {/* ==================================================== */}
 
-        <div className="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
+        <div className="mb-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
 
           <div className="p-6 sm:p-8">
 
             <div className="flex items-center gap-4">
 
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-yellow-50 text-3xl">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-yellow-50 text-3xl dark:bg-yellow-950/40">
                 🏆
               </div>
 
               <div>
 
-                <p className="text-sm font-medium text-gray-400">
+                <p className="text-sm font-medium text-gray-400 dark:text-gray-500">
                   Administração
                 </p>
 
-                <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-gray-900">
+                <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
                   Ranking de Guias
                 </h2>
 
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-300 sm:text-base">
                   Confira a quantidade de vezes que cada guia foi escalado no mês.
                 </p>
 
@@ -547,7 +580,7 @@ export default function GuideRanking() {
         {/* CARD DO RANKING */}
         {/* ==================================================== */}
 
-        <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+        <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
 
           {/* FAIXA */}
 
@@ -565,7 +598,7 @@ export default function GuideRanking() {
             {/* NAVEGAÇÃO DO MÊS */}
             {/* ================================================= */}
 
-            <div className="mb-6 flex items-center justify-between rounded-2xl bg-gray-50 p-2 sm:p-3">
+            <div className="mb-6 flex items-center justify-between rounded-2xl bg-gray-50 p-2 dark:bg-gray-800 sm:p-3">
 
               <button
                 type="button"
@@ -579,18 +612,18 @@ export default function GuideRanking() {
 
                   setExpanded(false);
                 }}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-lg font-extrabold text-gray-800 shadow-sm transition hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c]"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-lg font-extrabold text-gray-800 shadow-sm transition dark:border-gray-700 dark:bg-black dark:text-gray-100 hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] dark:hover:bg-gray-900"
               >
                 ←
               </button>
 
               <div className="text-center">
 
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                   Ranking mensal
                 </p>
 
-                <h2 className="mt-0.5 text-lg font-extrabold capitalize text-gray-900 sm:text-2xl">
+                <h2 className="mt-0.5 text-lg font-extrabold capitalize text-gray-900 dark:text-white sm:text-2xl">
                   {monthName}
                 </h2>
 
@@ -608,7 +641,7 @@ export default function GuideRanking() {
 
                   setExpanded(false);
                 }}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-lg font-extrabold text-gray-800 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-lg font-extrabold text-gray-800 shadow-sm transition dark:border-gray-700 dark:bg-black dark:text-gray-100 hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:hover:bg-gray-900"
               >
                 →
               </button>
@@ -619,9 +652,9 @@ export default function GuideRanking() {
             {/* INFORMAÇÃO */}
             {/* ================================================= */}
 
-            <div className="mb-6 rounded-2xl bg-blue-50 px-4 py-3">
+            <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 dark:border-blue-900 dark:bg-blue-950/40">
 
-              <p className="text-sm font-semibold text-blue-800">
+              <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
 
                 📊 Mostrando as escalas realizadas em{" "}
 
@@ -639,17 +672,17 @@ export default function GuideRanking() {
 
             {ranking.length === 0 ? (
 
-              <div className="rounded-2xl bg-gray-50 px-5 py-12 text-center">
+              <div className="rounded-2xl bg-gray-50 px-5 py-12 text-center dark:bg-gray-800">
 
                 <div className="text-4xl">
                   🏆
                 </div>
 
-                <h3 className="mt-4 text-lg font-extrabold text-gray-800">
+                <h3 className="mt-4 text-lg font-extrabold text-gray-800 dark:text-white">
                   Nenhuma escala neste mês
                 </h3>
 
-                <p className="mt-2 text-sm font-medium text-gray-500">
+                <p className="mt-2 text-sm font-medium text-gray-500 dark:text-gray-300">
                   Ainda não existem guias escalados em{" "}
                   <span className="capitalize">
                     {monthName}
@@ -679,30 +712,28 @@ export default function GuideRanking() {
                         className={[
                           "flex items-center gap-3 rounded-2xl border p-4 transition sm:p-5",
                           position === 1
-                            ? "border-yellow-200 bg-yellow-50"
+                            ? "border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30"
                             : position === 2
-                            ? "border-gray-200 bg-gray-50"
+                            ? "border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800"
                             : position === 3
-                            ? "border-orange-200 bg-orange-50"
-                            : "border-gray-100 bg-white hover:bg-gray-50",
+                            ? "border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30"
+                            : "border-gray-100 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800",
                         ].join(" ")}
                       >
 
                         {/* POSIÇÃO */}
 
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-lg font-extrabold shadow-sm sm:h-12 sm:w-12">
-
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-lg font-extrabold shadow-sm dark:bg-black sm:h-12 sm:w-12">
                           {getPositionIcon(
                             position
                           )}
-
                         </div>
 
                         {/* GUIA */}
 
                         <div className="min-w-0 flex-1">
 
-                          <p className="truncate text-sm font-extrabold text-gray-900 sm:text-base">
+                          <p className="truncate text-sm font-extrabold text-gray-900 dark:text-white sm:text-base">
 
                             {getGuideFlags(
                               item.guide
@@ -712,7 +743,7 @@ export default function GuideRanking() {
 
                           </p>
 
-                          <p className="mt-1 text-xs font-medium text-gray-500">
+                          <p className="mt-1 text-xs font-medium text-gray-500 dark:text-gray-400">
 
                             {item.guide.active
                               ? "Guia ativo"
@@ -726,17 +757,15 @@ export default function GuideRanking() {
 
                         <div className="text-right">
 
-                          <p className="text-2xl font-extrabold text-gray-900 sm:text-3xl">
+                          <p className="text-2xl font-extrabold text-gray-900 dark:text-white sm:text-3xl">
                             {item.count}
                           </p>
 
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400 sm:text-xs">
-
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 sm:text-xs">
                             {item.count ===
                             1
                               ? "escala"
                               : "escalas"}
-
                           </p>
 
                         </div>
@@ -766,7 +795,7 @@ export default function GuideRanking() {
                         !current
                     )
                   }
-                  className="mt-5 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-extrabold text-gray-700 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
+                  className="mt-5 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-extrabold text-gray-700 transition dark:border-gray-700 dark:bg-black dark:text-gray-200 hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:hover:bg-gray-900"
                 >
                   {expanded
                     ? "Ocultar guias"
@@ -788,18 +817,16 @@ export default function GuideRanking() {
           <div className="mb-4 flex justify-center gap-2">
 
             <span className="h-2 w-8 rounded-full bg-[#e91e8c]" />
-
             <span className="h-2 w-8 rounded-full bg-[#1687d9]" />
-
             <span className="h-2 w-8 rounded-full bg-[#ffd21c]" />
 
           </div>
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             © 2026 Way To Know Rio
           </p>
 
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
             Desenvolvido por{" "}
             <span className="font-semibold text-[#e91e8c]">
               Machado's
