@@ -6537,32 +6537,80 @@ className={[
                   Guia
                 </label>
 
-                <select
+                               <select
                   value={
                     tourGuideId
                   }
                   onChange={(
                     event
-                  ) =>
+                  ) => {
+                    const selectedGuideId =
+                      event.target.value;
+
                     setTourGuideId(
-                      event.target.value
-                    )
-                  }
+                      selectedGuideId
+                    );
+
+                    // Sem guia
+                    if (
+                      !selectedGuideId
+                    ) {
+                      setTourFormAvailabilityId(
+                        null
+                      );
+
+                      return;
+                    }
+
+                    // Procura a disponibilidade
+                    // desse guia na data do tour.
+                    const guideAvailability =
+                      availability.find(
+                        (item) =>
+                          item.guide_id ===
+                            selectedGuideId &&
+                          item.date ===
+                            tourFormDate &&
+                          item.status ===
+                            "available"
+                      );
+
+                    setTourFormAvailabilityId(
+                      guideAvailability?.id ||
+                        null
+                    );
+                  }}
                   disabled={
                     updating
                   }
                   className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
                 >
+                  {/* SEM GUIA SEMPRE DISPONÍVEL */}
 
-<option value="">
-  Sem guia
-</option>
-{
-  !launchTourWithoutGuide &&
-  guides.map(
-    (
-      guide
-    ) => (
+                  <option value="">
+                    Sem guia
+                  </option>
+
+                  {/* SOMENTE GUIAS DISPONÍVEIS NA DATA */}
+
+                  {guides
+                    .filter(
+                      (guide) =>
+                        guide.active &&
+                        availability.some(
+                          (item) =>
+                            item.guide_id ===
+                              guide.id &&
+                            item.date ===
+                              tourFormDate &&
+                            item.status ===
+                              "available"
+                        )
+                    )
+                    .map(
+                      (
+                        guide
+                      ) => (
                         <option
                           key={
                             guide.id
@@ -6574,6 +6622,7 @@ className={[
                           {
                             guide.name
                           }
+
                           {
                             guide.email
                               ? ` — ${guide.email}`
@@ -6581,9 +6630,7 @@ className={[
                           }
                         </option>
                       )
-                    )
-                  }
-
+                    )}
                 </select>
 
               </div>
