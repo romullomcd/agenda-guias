@@ -2577,7 +2577,7 @@ async function saveAddressAfterTour(
   GUIAS DISPONÍVEIS PARA TROCAR
   ============================================================ */
 
-  const availableGuidesForTourEdit =
+const availableGuidesForTourEdit =
   useMemo(() => {
     if (
       !selectedTourEvent ||
@@ -2586,32 +2586,35 @@ async function saveAddressAfterTour(
       return [];
     }
 
-    const availableGuideIds =
-      new Set(
-        availability
-          .filter(
-            (item) =>
-              item.date ===
-                editTourDate &&
-              item.status ===
-                "available"
+    return availability
+      .filter(
+        (item) =>
+          item.date ===
+            editTourDate &&
+          item.status ===
+            "available"
+      )
+      .sort(
+        (a, b) =>
+          a.id - b.id
+      )
+      .map(
+        (item) =>
+          guideMap.get(
+            item.guide_id
           )
-          .map(
-            (item) =>
-              item.guide_id
+      )
+      .filter(
+        (
+          guide
+        ): guide is Guide =>
+          Boolean(
+            guide?.active
           )
       );
-
-    return guides.filter(
-      (guide) =>
-        guide.active &&
-        availableGuideIds.has(
-          guide.id
-        )
-    );
   }, [
     availability,
-    guides,
+    guideMap,
     selectedTourEvent,
     editTourDate,
   ]);
@@ -6598,44 +6601,54 @@ className={[
 
                   {/* SOMENTE GUIAS DISPONÍVEIS NA DATA */}
 
-                  {guides
-                    .filter(
-                      (guide) =>
-                        guide.active &&
-                        availability.some(
-                          (item) =>
-                            item.guide_id ===
-                              guide.id &&
-                            item.date ===
-                              tourFormDate &&
-                            item.status ===
-                              "available"
-                        )
-                    )
-                    .map(
-                      (
-                        guide
-                      ) => (
-                        <option
-                          key={
-                            guide.id
-                          }
-                          value={
-                            guide.id
-                          }
-                        >
-                          {
-                            guide.name
-                          }
+             {availability
+  .filter(
+    (item) =>
+      item.date ===
+        tourFormDate &&
+      item.status ===
+        "available"
+  )
+  .sort(
+    (a, b) =>
+      a.id - b.id
+  )
+  .map(
+    (item) => {
+      const guide =
+        guideMap.get(
+          item.guide_id
+        );
 
-                          {
-                            guide.email
-                              ? ` — ${guide.email}`
-                              : ""
-                          }
-                        </option>
-                      )
-                    )}
+      if (
+        !guide ||
+        !guide.active
+      ) {
+        return null;
+      }
+
+      return (
+        <option
+          key={
+            guide.id
+          }
+          value={
+            guide.id
+          }
+        >
+          {
+            guide.name
+          }
+
+          {
+            guide.email
+              ? ` — ${guide.email}`
+              : ""
+          }
+        </option>
+      );
+    }
+  )}
                 </select>
 
               </div>
