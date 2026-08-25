@@ -637,7 +637,7 @@ export default function Home() {
           <p className="mt-1 text-xs leading-5 text-gray-400">
             Desenvolvido por{" "}
             <span className="font-semibold text-[#e91e8c]">
-              Machado's
+              MCD
             </span>
           </p>
 

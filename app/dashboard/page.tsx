@@ -2126,7 +2126,7 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
           <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
             Desenvolvido por{" "}
             <span className="font-semibold text-[#e91e8c]">
-              Machado's
+              MCD
             </span>
           </p>
 
