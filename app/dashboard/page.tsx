@@ -1317,7 +1317,13 @@ async function toggleTheme() {
 
       <header className="relative z-50 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-black">
 
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6">
+        <div
+  className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6"
+  style={{
+    paddingTop:
+      "calc(1rem + env(safe-area-inset-top))",
+  }}
+>
 
           {/* MARCA */}
 
