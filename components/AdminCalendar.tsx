@@ -2764,14 +2764,19 @@ async function saveAddressAfterTour(
   ============================================================ */
 
   function getDayAvailability(
-    date: string
-  ) {
-    return filteredAvailability.filter(
+  date: string
+) {
+  return filteredAvailability
+    .filter(
       (item) =>
         item.date ===
         date
+    )
+    .sort(
+      (a, b) =>
+        a.id - b.id
     );
-  }
+}
 
   function getDayTourEvents(
     date: string
