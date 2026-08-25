@@ -7714,7 +7714,7 @@ className={[
       }
     }}
     disabled={updating}
-    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
+    className="mt-2 h-[48px] w-full appearance-none rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold leading-normal text-gray-900 outline-none transition focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
   />
 </div>
                 {/* GUIA */}
