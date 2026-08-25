@@ -1280,7 +1280,12 @@ const [
     setShowTourEdit,
   ] = useState(false);
 
-  const [
+const [
+  editTourDate,
+  setEditTourDate,
+] = useState(""); 
+
+ const [
     editTourTitle,
     setEditTourTitle,
   ] = useState("");
@@ -1608,6 +1613,381 @@ type GoogleContact = {
 
     setGoogleContacts([]);
   }
+
+// ============================================================
+// ENDEREÇOS SALVOS - AUTOCOMPLETE
+// ============================================================
+
+type SavedAddress = {
+  id: string;
+  name: string;
+  address: string;
+  usage_count: number;
+  is_preloaded: boolean;
+};
+
+const [
+  savedAddresses,
+  setSavedAddresses,
+] = useState<SavedAddress[]>([]);
+
+const [
+  savedAddressesLoading,
+  setSavedAddressesLoading,
+] = useState(false);
+
+const [
+  activeAddressField,
+  setActiveAddressField,
+] = useState<
+  "tourAddress" |
+  "editTourAddress" |
+  null
+>(null);
+
+const [
+  addressSearchQuery,
+  setAddressSearchQuery,
+] = useState("");
+
+useEffect(() => {
+  if (
+    !activeAddressField ||
+    addressSearchQuery.trim().length < 2
+  ) {
+    setSavedAddresses([]);
+    setSavedAddressesLoading(false);
+    return;
+  }
+
+  let cancelled = false;
+
+  const timer = setTimeout(
+    async () => {
+      try {
+        setSavedAddressesLoading(
+          true
+        );
+
+        const {
+          data: {
+            session,
+          },
+        } =
+          await supabase.auth.getSession();
+
+        if (
+          !session?.access_token
+        ) {
+          if (!cancelled) {
+            setSavedAddresses([]);
+          }
+
+          return;
+        }
+
+        const response =
+          await fetch(
+            `/api/addresses?q=${encodeURIComponent(
+              addressSearchQuery.trim()
+            )}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+              cache: "no-store",
+            }
+          );
+
+        const result =
+          await response
+            .json()
+            .catch(
+              () => ({})
+            );
+
+        if (
+          !cancelled &&
+          response.ok
+        ) {
+          setSavedAddresses(
+            Array.isArray(
+              result.addresses
+            )
+              ? result.addresses
+              : []
+          );
+        }
+
+        if (
+          !cancelled &&
+          !response.ok
+        ) {
+          setSavedAddresses([]);
+        }
+      } catch (error) {
+        console.error(
+          "ERRO AO BUSCAR ENDEREÇOS:",
+          error
+        );
+
+        if (!cancelled) {
+          setSavedAddresses([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setSavedAddressesLoading(
+            false
+          );
+        }
+      }
+    },
+    250
+  );
+
+  return () => {
+    cancelled = true;
+    clearTimeout(timer);
+  };
+}, [
+  activeAddressField,
+  addressSearchQuery,
+]);
+
+function handleAddressChange(
+  field:
+    | "tourAddress"
+    | "editTourAddress",
+  value: string
+) {
+  if (
+    field ===
+    "tourAddress"
+  ) {
+    setTourAddress(
+      value
+    );
+  }
+
+  if (
+    field ===
+    "editTourAddress"
+  ) {
+    setEditTourAddress(
+      value
+    );
+  }
+
+  setActiveAddressField(
+    field
+  );
+
+  setAddressSearchQuery(
+    value
+  );
+}
+
+function selectSavedAddress(
+  field:
+    | "tourAddress"
+    | "editTourAddress",
+  savedAddress: SavedAddress
+) {
+  const fullAddress =
+    `${savedAddress.name}, ${savedAddress.address}`;
+
+  if (
+    field ===
+    "tourAddress"
+  ) {
+    setTourAddress(
+      fullAddress
+    );
+  }
+
+  if (
+    field ===
+    "editTourAddress"
+  ) {
+    setEditTourAddress(
+      fullAddress
+    );
+  }
+
+  setAddressSearchQuery(
+    fullAddress
+  );
+
+  setActiveAddressField(
+    null
+  );
+
+  setSavedAddresses([]);
+}
+
+async function deleteSavedAddress(
+  savedAddress: SavedAddress
+) {
+  if (
+    savedAddress.is_preloaded
+  ) {
+    return;
+  }
+
+  const confirmed =
+    window.confirm(
+      `Deseja excluir o endereço "${savedAddress.name}" da lista de sugestões?\n\nIsso não apagará nenhum tour que já utilizou esse endereço.`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const {
+      data: {
+        session,
+      },
+    } =
+      await supabase.auth.getSession();
+
+    if (
+      !session?.access_token
+    ) {
+      return;
+    }
+
+    const response =
+      await fetch(
+        `/api/addresses?id=${encodeURIComponent(
+          savedAddress.id
+        )}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization:
+              `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+    const result =
+      await response
+        .json()
+        .catch(
+          () => ({})
+        );
+
+    if (!response.ok) {
+      window.alert(
+        result.error ||
+          "Não foi possível excluir o endereço."
+      );
+
+      return;
+    }
+
+    setSavedAddresses(
+      (current) =>
+        current.filter(
+          (item) =>
+            item.id !==
+            savedAddress.id
+        )
+    );
+  } catch (error) {
+    console.error(
+      "ERRO AO EXCLUIR ENDEREÇO:",
+      error
+    );
+
+    window.alert(
+      "Ocorreu um erro ao excluir o endereço."
+    );
+  }
+}
+
+async function saveAddressAfterTour(
+  fullAddress: string
+) {
+  const value =
+    fullAddress.trim();
+
+  if (!value) {
+    return;
+  }
+
+  try {
+    const {
+      data: {
+        session,
+      },
+    } =
+      await supabase.auth.getSession();
+
+    if (
+      !session?.access_token
+    ) {
+      return;
+    }
+
+    const separator =
+      value.indexOf(",");
+
+    let name = value;
+    let address = "";
+
+    if (
+      separator > -1
+    ) {
+      name =
+        value
+          .slice(
+            0,
+            separator
+          )
+          .trim();
+
+      address =
+        value
+          .slice(
+            separator + 1
+          )
+          .trim();
+    }
+
+    if (
+      !name ||
+      !address
+    ) {
+      return;
+    }
+
+    await fetch(
+      "/api/addresses",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+          Authorization:
+            `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          name,
+          address,
+        }),
+      }
+    );
+  } catch (error) {
+    console.error(
+      "ERRO AO SALVAR ENDEREÇO APRENDIDO:",
+      error
+    );
+  }
+}
 
   /* ============================================================
   CARREGAMENTO
@@ -2198,41 +2578,43 @@ type GoogleContact = {
   ============================================================ */
 
   const availableGuidesForTourEdit =
-    useMemo(() => {
-      if (
-        !selectedTourEvent
-      ) {
-        return [];
-      }
+  useMemo(() => {
+    if (
+      !selectedTourEvent ||
+      !editTourDate
+    ) {
+      return [];
+    }
 
-      const availableGuideIds =
-        new Set(
-          availability
-            .filter(
-              (item) =>
-                item.date ===
-                  selectedTourEvent.date &&
-                item.status ===
-                  "available"
-            )
-            .map(
-              (item) =>
-                item.guide_id
-            )
-        );
-
-      return guides.filter(
-        (guide) =>
-          guide.active &&
-          availableGuideIds.has(
-            guide.id
+    const availableGuideIds =
+      new Set(
+        availability
+          .filter(
+            (item) =>
+              item.date ===
+                editTourDate &&
+              item.status ===
+                "available"
+          )
+          .map(
+            (item) =>
+              item.guide_id
           )
       );
-    }, [
-      availability,
-      guides,
-      selectedTourEvent,
-    ]);
+
+    return guides.filter(
+      (guide) =>
+        guide.active &&
+        availableGuideIds.has(
+          guide.id
+        )
+    );
+  }, [
+    availability,
+    guides,
+    selectedTourEvent,
+    editTourDate,
+  ]);
 
   /* ============================================================
   DISPONIBILIDADE FILTRADA
@@ -3293,6 +3675,17 @@ if (
         null
       );
 
+
+      // ========================================================
+      // SALVAR ENDEREÇO PARA AUTOCOMPLETE
+      // Só acontece depois que o tour foi criado com sucesso.
+      // ========================================================
+
+      await saveAddressAfterTour(
+        tourAddress
+      );
+
+    
       alert(
         launchTourWithoutGuide
           ? "✅ Tour lançado com sucesso no sistema e no Google Calendar, sem guia."
@@ -3566,6 +3959,10 @@ if (
   function openTourEdit(
     event: TourEvent
   ) {
+
+setEditTourDate(
+  event.date
+);
     setEditTourTitle(
       event.title
     );
@@ -3594,6 +3991,11 @@ if (
         "10:00"
     );
 
+setEditTourColorId(
+  event.google_color_id ||
+    "9"
+);
+
     setEditTourGuideId(
       event.guide_id ||
         ""
@@ -3613,6 +4015,40 @@ setEditTourAdditionalEmail2(
       true
     );
   }
+
+function handleEditTourDateChange(
+  value: string
+) {
+  const originalDate =
+    selectedTourEvent?.date ||
+    "";
+
+  setEditTourDate(
+    value
+  );
+
+  // Voltou para a data original:
+  // restaura automaticamente o guia que o tour tinha.
+  if (
+    value === originalDate &&
+    selectedTourEvent?.guide_id
+  ) {
+    setEditTourGuideId(
+      selectedTourEvent.guide_id
+    );
+
+    return;
+  }
+
+  // Mudou para outra data:
+  // remove o guia atual para obrigar
+  // uma nova escolha baseada na nova data.
+  if (
+    value !== originalDate
+  ) {
+    setEditTourGuideId("");
+  }
+}
 
   /* ============================================================
   SALVAR EDIÇÃO
@@ -3683,6 +4119,14 @@ setEditTourAdditionalEmail2(
         null
       );
 
+const dateChanged =
+  selectedTourEvent.date !==
+  editTourDate;
+
+const assignmentChanged =
+  guideChanged ||
+  dateChanged;
+
     setUpdating(
       true
     );
@@ -3723,7 +4167,7 @@ setEditTourAdditionalEmail2(
             )
             .eq(
               "date",
-              selectedTourEvent.date
+              editTourDate
             )
             .maybeSingle();
 
@@ -3758,10 +4202,10 @@ setEditTourAdditionalEmail2(
 
       /* GUIA ANTIGO */
 
-      if (
-        guideChanged &&
-        selectedTourEvent.guide_id
-      ) {
+     if (
+  assignmentChanged &&
+  selectedTourEvent.guide_id
+) {
         const {
           data:
             oldGuideAvailability,
@@ -3824,7 +4268,7 @@ setEditTourAdditionalEmail2(
             selectedTourEvent.calendar_event_id,
 
           date:
-            selectedTourEvent.date,
+  editTourDate,
 
           title:
             editTourTitle.trim(),
@@ -3881,6 +4325,8 @@ colorId:
             "tour_events"
           )
           .update({
+date:
+    editTourDate,
             title:
               editTourTitle.trim(),
 
@@ -3946,9 +4392,9 @@ google_color_id:
 
       /* TROCAR GUIA */
 
-      if (
-        guideChanged
-      ) {
+     if (
+  assignmentChanged
+) {
         if (
           oldAvailability
         ) {
@@ -4056,6 +4502,10 @@ google_color_id:
       setShowTourEdit(
         false
       );
+
+await saveAddressAfterTour(
+  editTourAddress
+);
 
       alert(
         newGuide
@@ -6198,37 +6648,160 @@ className={[
 
               </div>
 
-              {/* ENDEREÇO */}
+             {/* ENDEREÇO */}
 
-              <div>
+<div
+  className="relative"
+  data-address-autocomplete
+>
 
-                <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
-                  Endereço
-                  <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
-                    (opcional)
-                  </span>
-                </label>
+  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+    Endereço
+    <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
+      (opcional)
+    </span>
+  </label>
 
-                <input
-                  type="text"
-                  value={
-                    tourAddress
-                  }
-                  onChange={(
+  <input
+    type="text"
+    value={tourAddress}
+    onFocus={() => {
+      setActiveAddressField(
+        "tourAddress"
+      );
+
+      setAddressSearchQuery(
+        tourAddress
+      );
+    }}
+    onChange={(event) =>
+      handleAddressChange(
+        "tourAddress",
+        event.target.value
+      )
+    }
+    disabled={updating}
+    placeholder="Ex.: Av. Atlântica, 1702 - Copacabana"
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
+  />
+
+  {activeAddressField ===
+    "tourAddress" &&
+    (
+      savedAddressesLoading ||
+      savedAddresses.length > 0
+    ) && (
+      <div className="absolute left-0 right-0 top-full z-[1000] mt-2 max-h-72 overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+
+        {savedAddressesLoading && (
+          <div className="px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
+            Buscando endereços...
+          </div>
+        )}
+
+        {!savedAddressesLoading &&
+          savedAddresses.map(
+            (savedAddress) => (
+              <div
+                key={
+                  savedAddress.id
+                }
+                className="flex items-center gap-2 border-b border-gray-100 last:border-b-0 dark:border-gray-800"
+              >
+
+                <button
+                  type="button"
+                  onMouseDown={(
                     event
-                  ) =>
-                    setTourAddress(
-                      event.target.value
-                    )
-                  }
-                  disabled={
-                    updating
-                  }
-                  placeholder="Ex.: Av. Atlântica, 1702 - Copacabana"
-                  className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
-                />
+                  ) => {
+                    event.preventDefault();
+
+                    selectSavedAddress(
+                      "tourAddress",
+                      savedAddress
+                    );
+                  }}
+                  className="min-w-0 flex-1 px-4 py-3 text-left transition hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+
+                  <div className="flex items-start gap-3">
+
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1687d9] text-sm">
+                      🏨
+                    </div>
+
+                    <div className="min-w-0">
+
+                      <p className="truncate text-sm font-extrabold text-gray-900 dark:text-white">
+                        {savedAddress.name}
+                      </p>
+
+                      <p className="mt-1 line-clamp-2 text-xs font-medium text-gray-500 dark:text-gray-300">
+                        {savedAddress.address}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </button>
+
+                {!savedAddress.is_preloaded && (
+                  <button
+                    type="button"
+                    onMouseDown={(
+                      event
+                    ) => {
+                      event.preventDefault();
+
+                      deleteSavedAddress(
+                        savedAddress
+                      );
+                    }}
+                    className="mr-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-red-600 transition duration-150 hover:bg-red-100 hover:text-red-700 dark:text-red-500 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+                    title="Excluir endereço"
+                    aria-label="Excluir endereço"
+                  >
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    className="h-5 w-5"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M3 6h18"
+    />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M8 6V4h8v2"
+    />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M19 6l-1 14H6L5 6"
+    />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M10 11v5M14 11v5"
+    />
+  </svg>
+</button>
+                )}
 
               </div>
+            )
+          )}
+
+      </div>
+    )}
+
+</div>
 
 
 
@@ -7108,6 +7681,42 @@ className={[
 
               <div className="space-y-5 p-6">
 
+
+{/* DATA */}
+
+<div>
+  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+    Data do tour
+  </label>
+
+  <input
+    type="date"
+    value={editTourDate}
+    onChange={(event) =>
+      handleEditTourDateChange(
+        event.target.value
+      )
+    }
+    onClick={(event) => {
+      const input =
+        event.currentTarget;
+
+      if (
+        typeof input.showPicker ===
+        "function"
+      ) {
+        try {
+          input.showPicker();
+        } catch {
+          // O navegador pode bloquear o seletor
+          // em algumas situações.
+        }
+      }
+    }}
+    disabled={updating}
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
+  />
+</div>
                 {/* GUIA */}
 
                 <div className="rounded-2xl border-2 border-yellow-100 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950 p-4">
@@ -7116,7 +7725,7 @@ className={[
                     Guia escalado
                   </label>
 
-                  <select
+                                  <select
                     value={
                       editTourGuideId
                     }
@@ -7130,16 +7739,19 @@ className={[
                     disabled={
                       updating
                     }
-                    className="mt-2 w-full rounded-xl border-2 border-yellow-200 bg-white dark:bg-black px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100 outline-none focus:border-[#c9aa00]"
+                    className="mt-2 w-full rounded-xl border-2 border-yellow-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#c9aa00] dark:border-gray-700 dark:bg-black dark:text-gray-100"
                   >
-
                     <option value="">
                       Sem guia
                     </option>
 
-                    {/* GUIA ATUAL */}
+                    {/* ==================================================
+                        GUIA ORIGINAL
+                        Só aparece enquanto estivermos na data original.
+                    ================================================== */}
 
-                    {
+                    {editTourDate ===
+                      selectedTourEvent?.date &&
                       selectedTourEvent?.guide_id &&
                       guideMap.get(
                         selectedTourEvent.guide_id
@@ -7149,7 +7761,6 @@ className={[
                             selectedTourEvent.guide_id
                           }
                         >
-
                           {
                             guideMap.get(
                               selectedTourEvent.guide_id
@@ -7166,45 +7777,43 @@ className={[
                           }
 
                           {" (atual)"}
-
                         </option>
+                      )}
+
+                    {/* ==================================================
+                        SOMENTE GUIAS DISPONÍVEIS NA DATA ESCOLHIDA
+                    ================================================== */}
+
+                    {availableGuidesForTourEdit
+                      .filter(
+                        (guide) =>
+                          guide.id !==
+                          selectedTourEvent?.guide_id
                       )
-                    }
+                      .map(
+                        (
+                          guide
+                        ) => (
+                          <option
+                            key={
+                              guide.id
+                            }
+                            value={
+                              guide.id
+                            }
+                          >
+                            {
+                              guide.name
+                            }
 
-                    {/* SOMENTE DISPONÍVEIS */}
-
-                    {
-                      availableGuidesForTourEdit
-                        .filter(
-                          (guide) =>
-                            guide.id !==
-                            selectedTourEvent?.guide_id
+                            {
+                              guide.email
+                                ? ` — ${guide.email}`
+                                : ""
+                            }
+                          </option>
                         )
-                        .map(
-                          (
-                            guide
-                          ) => (
-                            <option
-                              key={
-                                guide.id
-                              }
-                              value={
-                                guide.id
-                              }
-                            >
-                              {
-                                guide.name
-                              }
-                              {
-                                guide.email
-                                  ? ` — ${guide.email}`
-                                  : ""
-                              }
-                            </option>
-                          )
-                        )
-                    }
-
+                      )}
                   </select>
 
                   <p className="mt-2 text-xs font-medium text-yellow-800">
@@ -7295,35 +7904,158 @@ className={[
 
                 {/* ENDEREÇO */}
 
-                <div>
+<div
+  className="relative"
+  data-address-autocomplete
+>
 
-                  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
-                    Endereço
-                    <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
-                      (opcional)
-                    </span>
-                  </label>
+  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+    Endereço
+    <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">
+      (opcional)
+    </span>
+  </label>
 
-                  <input
-                    type="text"
-                    value={
-                      editTourAddress
-                    }
-                    onChange={(
+  <input
+    type="text"
+    value={editTourAddress}
+    onFocus={() => {
+      setActiveAddressField(
+        "editTourAddress"
+      );
+
+      setAddressSearchQuery(
+        editTourAddress
+      );
+    }}
+    onChange={(event) =>
+      handleAddressChange(
+        "editTourAddress",
+        event.target.value
+      )
+    }
+    disabled={updating}
+    placeholder="Ex.: Av. Atlântica, 1702 - Copacabana"
+    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
+  />
+
+  {activeAddressField ===
+    "editTourAddress" &&
+    (
+      savedAddressesLoading ||
+      savedAddresses.length > 0
+    ) && (
+      <div className="absolute left-0 right-0 top-full z-[1000] mt-2 max-h-72 overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+
+        {savedAddressesLoading && (
+          <div className="px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-300">
+            Buscando endereços...
+          </div>
+        )}
+
+        {!savedAddressesLoading &&
+          savedAddresses.map(
+            (savedAddress) => (
+              <div
+                key={
+                  savedAddress.id
+                }
+                className="flex items-center gap-2 border-b border-gray-100 last:border-b-0 dark:border-gray-800"
+              >
+
+                <button
+                  type="button"
+                  onMouseDown={(
+                    event
+                  ) => {
+                    event.preventDefault();
+
+                    selectSavedAddress(
+                      "editTourAddress",
+                      savedAddress
+                    );
+                  }}
+                  className="min-w-0 flex-1 px-4 py-3 text-left transition hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+
+                  <div className="flex items-start gap-3">
+
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1687d9] text-sm">
+                      🏨
+                    </div>
+
+                    <div className="min-w-0">
+
+                      <p className="truncate text-sm font-extrabold text-gray-900 dark:text-white">
+                        {savedAddress.name}
+                      </p>
+
+                      <p className="mt-1 line-clamp-2 text-xs font-medium text-gray-500 dark:text-gray-300">
+                        {savedAddress.address}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </button>
+
+                {!savedAddress.is_preloaded && (
+                  <button
+                    type="button"
+                    onMouseDown={(
                       event
-                    ) =>
-                      setEditTourAddress(
-                        event.target.value
-                      )
-                    }
-                    disabled={
-                      updating
-                    }
-                    placeholder="Ex.: Av. Atlântica, 1702 - Copacabana"
-                    className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
-                  />
+                    ) => {
+                      event.preventDefault();
 
-                </div>
+                      deleteSavedAddress(
+                        savedAddress
+                      );
+                    }}
+                    className="mr-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-red-600 transition duration-150 hover:bg-red-100 hover:text-red-700 dark:text-red-500 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+                    title="Excluir endereço"
+                    aria-label="Excluir endereço"
+                 >
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    className="h-5 w-5"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M3 6h18"
+    />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M8 6V4h8v2"
+    />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M19 6l-1 14H6L5 6"
+    />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M10 11v5M14 11v5"
+    />
+  </svg>
+</button>
+                )}
+
+              </div>
+            )
+          )}
+
+      </div>
+    )}
+
+</div>
 
 
                 {/* COR */}
