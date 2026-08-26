@@ -3,54 +3,60 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+type PushStatus =
+  | "loading"
+  | "available"
+  | "enabled"
+  | "denied"
+  | "unsupported";
+
 export default function PushNotifications() {
-  const [status, setStatus] = useState<
-    "loading" | "available" | "enabled" | "denied" | "unsupported"
-  >("loading");
+  const [status, setStatus] =
+    useState<PushStatus>("loading");
 
   useEffect(() => {
-    async function checkPush() {
-      try {
-        if (
-          !("serviceWorker" in navigator) ||
-          !("PushManager" in window) ||
-          !("Notification" in window)
-        ) {
-          setStatus("unsupported");
-          return;
-        }
+    checkPushStatus();
+  }, []);
 
-        const permission =
-          Notification.permission;
+  async function checkPushStatus() {
+    try {
+      if (
+        !("serviceWorker" in navigator) ||
+        !("PushManager" in window) ||
+        !("Notification" in window)
+      ) {
+        setStatus("unsupported");
+        return;
+      }
 
-        if (permission === "denied") {
-          setStatus("denied");
-          return;
-        }
+      if (
+        Notification.permission ===
+        "denied"
+      ) {
+        setStatus("denied");
+        return;
+      }
 
-        const registration =
-          await navigator.serviceWorker.ready;
+      const registration =
+        await navigator.serviceWorker.ready;
 
-        const subscription =
-          await registration.pushManager.getSubscription();
+      const subscription =
+        await registration.pushManager.getSubscription();
 
-        if (subscription) {
-          setStatus("enabled");
-        } else {
-          setStatus("available");
-        }
-      } catch (error) {
-        console.error(
-          "Erro ao verificar Push:",
-          error
-        );
-
+      if (subscription) {
+        setStatus("enabled");
+      } else {
         setStatus("available");
       }
-    }
+    } catch (error) {
+      console.error(
+        "Erro ao verificar Push:",
+        error
+      );
 
-    checkPush();
-  }, []);
+      setStatus("available");
+    }
+  }
 
   async function enablePush() {
     try {
@@ -72,22 +78,41 @@ export default function PushNotifications() {
 
       if (userError || !user) {
         console.error(
-          "Usuário não autenticado para ativar Push."
+          "Usuário não autenticado para ativar Push:",
+          userError
         );
 
         setStatus("available");
         return;
       }
 
-      const permission =
-        await Notification.requestPermission();
+      let permission =
+        Notification.permission;
 
-      if (permission !== "granted") {
+      if (
+        permission ===
+        "default"
+      ) {
+        permission =
+          await Notification.requestPermission();
+      }
+
+      console.log(
+        "Permissão de notificação:",
+        permission
+      );
+
+      if (
+        permission !==
+        "granted"
+      ) {
         setStatus(
-          permission === "denied"
+          permission ===
+            "denied"
             ? "denied"
             : "available"
         );
+
         return;
       }
 
@@ -107,21 +132,55 @@ export default function PushNotifications() {
         return;
       }
 
+      /*
+       * Remove uma subscription antiga e cria
+       * uma nova usando a VAPID public key atual.
+       *
+       * A permissão do navegador continua concedida.
+       */
       const existingSubscription =
         await registration.pushManager.getSubscription();
 
+      if (existingSubscription) {
+        console.log(
+          "Subscription antiga encontrada. Removendo..."
+        );
+
+        try {
+          await existingSubscription.unsubscribe();
+        } catch (error) {
+          console.warn(
+            "Não foi possível remover a subscription antiga:",
+            error
+          );
+        }
+      }
+
+      console.log(
+        "Criando nova Push Subscription..."
+      );
+
       const subscription =
-        existingSubscription ||
-        (await registration.pushManager.subscribe({
+        await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey:
             urlBase64ToUint8Array(
               publicKey
             ),
-        }));
+        });
+
+      console.log(
+        "Subscription criada:",
+        subscription
+      );
 
       const subscriptionJson =
         subscription.toJSON();
+
+      console.log(
+        "Subscription JSON:",
+        subscriptionJson
+      );
 
       if (
         !subscriptionJson.endpoint ||
@@ -136,28 +195,43 @@ export default function PushNotifications() {
         return;
       }
 
-      const { error: saveError } =
+      console.log(
+        "Salvando subscription no Supabase..."
+      );
+
+      const { data, error: saveError } =
         await supabase
-          .from("push_subscriptions")
+          .from(
+            "push_subscriptions"
+          )
           .upsert(
             {
-              user_id: user.id,
+              user_id:
+                user.id,
               endpoint:
                 subscriptionJson.endpoint,
               p256dh:
-                subscriptionJson.keys.p256dh,
+                subscriptionJson.keys
+                  .p256dh,
               auth:
-                subscriptionJson.keys.auth,
+                subscriptionJson.keys
+                  .auth,
               user_agent:
                 navigator.userAgent,
-                updated_at:
-                  new Date().toISOString(),
+              updated_at:
+                new Date().toISOString(),
             },
             {
               onConflict:
                 "user_id,endpoint",
             }
-          );
+          )
+          .select();
+
+      console.log(
+        "Resultado do Supabase:",
+        data
+      );
 
       if (saveError) {
         console.error(
@@ -169,14 +243,14 @@ export default function PushNotifications() {
         return;
       }
 
-      setStatus("enabled");
-
       console.log(
-        "✅ Push ativado com sucesso."
+        "✅ Push registrado no Supabase."
       );
+
+      setStatus("enabled");
     } catch (error) {
       console.error(
-        "Erro ao ativar Push:",
+        "❌ Erro ao ativar Push:",
         error
       );
 
@@ -184,19 +258,32 @@ export default function PushNotifications() {
     }
   }
 
-  if (status === "unsupported") {
+  if (
+    status ===
+    "unsupported"
+  ) {
     return null;
   }
 
-  if (status === "enabled") {
+  if (
+    status ===
+    "enabled"
+  ) {
     return (
-      <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-700">
+      <button
+        type="button"
+        onClick={enablePush}
+        className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-700 transition hover:bg-green-100"
+      >
         🔔 Notificações do celular ativadas
-      </div>
+      </button>
     );
   }
 
-  if (status === "denied") {
+  if (
+    status ===
+    "denied"
+  ) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
         🔕 Notificações bloqueadas no navegador
@@ -208,11 +295,13 @@ export default function PushNotifications() {
     <button
       type="button"
       onClick={enablePush}
-      disabled={status === "loading"}
+      disabled={
+        status === "loading"
+      }
       className="w-full rounded-xl bg-[#1687d9] px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#0f75bd] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
     >
       {status === "loading"
-        ? "Ativando notificações..."
+        ? "Configurando notificações..."
         : "🔔 Ativar notificações no celular"}
     </button>
   );
@@ -229,9 +318,18 @@ function urlBase64ToUint8Array(
     );
 
   const base64 =
-    (base64String + padding)
-      .replace(/-/g, "+")
-      .replace(/_/g, "/");
+    (
+      base64String +
+      padding
+    )
+      .replace(
+        /-/g,
+        "+"
+      )
+      .replace(
+        /_/g,
+        "/"
+      );
 
   const rawData =
     window.atob(base64);
