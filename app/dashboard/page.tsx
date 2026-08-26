@@ -2097,11 +2097,13 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
 
             <div className="p-2 sm:p-4">
 
-{/* <PushNotifications /> */}
+  <div className="mb-2 flex justify-end sm:mb-3">
+    <PushNotifications />
+  </div>
 
-              <Calendar />
+  <Calendar />
 
-            </div>
+</div>
 
           </div>
         )}
