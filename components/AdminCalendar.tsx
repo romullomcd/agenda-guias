@@ -2721,14 +2721,19 @@ const availableGuidesForTourEdit =
   SELECTED DAY
   ============================================================ */
 
-  const selectedDayData =
-    selectedDate
-      ? filteredAvailability.filter(
+const selectedDayData =
+  selectedDate
+    ? filteredAvailability
+        .filter(
           (item) =>
             item.date ===
             selectedDate
         )
-      : [];
+        .sort(
+          (a, b) =>
+            a.id - b.id
+        )
+    : [];
 
   const selectedAvailable =
     selectedDayData.filter(
