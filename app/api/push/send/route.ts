@@ -28,6 +28,25 @@ type PushPayload = {
 
 export async function POST(request: Request) {
   try {
+    const webhookSecret =
+      request.headers.get(
+        "x-push-webhook-secret"
+      );
+
+    if (
+      !webhookSecret ||
+      webhookSecret !==
+        process.env.PUSH_WEBHOOK_SECRET
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Não autorizado.",
+        },
+        { status: 401 }
+      );
+    }
+
     const body =
       (await request.json()) as PushPayload;
 
@@ -91,10 +110,10 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json({
         success: true,
-        message:
-          "Nenhuma subscription encontrada para este guia.",
         user_id: userId,
         sent: 0,
+        message:
+          "Nenhuma subscription encontrada para este guia.",
       });
     }
 
@@ -131,12 +150,6 @@ export async function POST(request: Request) {
         const statusCode =
           error?.statusCode;
 
-        /*
-         * 404/410 normalmente significam que
-         * a subscription não existe mais.
-         * Removemos para não continuar tentando
-         * enviar para um dispositivo inválido.
-         */
         if (
           statusCode === 404 ||
           statusCode === 410
