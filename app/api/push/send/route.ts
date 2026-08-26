@@ -13,16 +13,14 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY!
 );
 
-type PushPayload = {
-  user_id?: string;
-  title?: string;
-  message?: string;
-  type?: string;
+type WebhookPayload = {
   record?: {
+    id?: number;
     user_id?: string;
+    type?: string;
     title?: string;
     message?: string;
-    type?: string;
+    created_at?: string;
   };
 };
 
@@ -48,33 +46,34 @@ export async function POST(request: Request) {
     }
 
     const body =
-      (await request.json()) as PushPayload;
+      (await request.json()) as WebhookPayload;
 
-    const userId =
-      body.record?.user_id ||
-      body.user_id;
+    const record = body.record;
 
+    if (!record) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Payload do webhook inválido.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const userId = record.user_id;
     const title =
-      body.record?.title ||
-      body.title ||
-      "Agenda de Guias";
-
+      record.title || "Agenda de Guias";
     const message =
-      body.record?.message ||
-      body.message ||
+      record.message ||
       "Você recebeu uma nova notificação.";
-
     const type =
-      body.record?.type ||
-      body.type ||
-      "notification";
+      record.type || "notification";
 
     if (!userId) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "user_id não informado.",
+          error: "record.user_id não informado.",
         },
         { status: 400 }
       );
@@ -88,10 +87,7 @@ export async function POST(request: Request) {
       .select(
         "id, user_id, endpoint, p256dh, auth"
       )
-      .eq(
-        "user_id",
-        userId
-      );
+      .eq("user_id", userId);
 
     if (subscriptionsError) {
       return NextResponse.json(

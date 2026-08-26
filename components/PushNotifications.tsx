@@ -193,18 +193,24 @@ export default function PushNotifications() {
 
   return (
     <div>
+
       <button
-        type="button"
-        onClick={enablePush}
-        disabled={status === "loading"}
-        className="w-full rounded-xl bg-[#1687d9] px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#0f75bd] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-      >
-        {status === "enabled"
-          ? "🔔 Testar novamente"
-          : status === "loading"
-          ? "Verificando..."
-          : "🔔 Ativar notificações no celular"}
-      </button>
+  type="button"
+  onClick={enablePush}
+  disabled={status === "loading" || status === "enabled"}
+  className={
+    status === "enabled"
+      ? "w-full rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-extrabold text-green-700 sm:w-auto dark:border-green-900 dark:bg-green-950 dark:text-green-300"
+      : "w-full rounded-xl bg-[#1687d9] px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#0f75bd] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+  }
+>
+  {status === "enabled"
+    ? "✅ Notificações ativadas"
+    : status === "loading"
+    ? "Verificando..."
+    : "🔔 Ativar notificações no celular"}
+</button>
+
     </div>
   );
 }
