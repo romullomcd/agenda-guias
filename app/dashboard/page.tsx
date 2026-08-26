@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Calendar from "@/components/Calendar";
 import AdminCalendar from "@/components/AdminCalendar";
+import PushNotifications from "@/components/PushNotifications";
 
 type Profile = {
   name: string;
@@ -2095,6 +2096,8 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
             </div>
 
             <div className="p-2 sm:p-4">
+
+<PushNotifications />
 
               <Calendar />
 
