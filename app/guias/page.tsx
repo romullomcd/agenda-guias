@@ -1670,7 +1670,7 @@ export default function GuiasPage() {
           <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
             Desenvolvido por{" "}
             <span className="font-semibold text-[#e91e8c]">
-              MCD
+              RMS Labs
             </span>
           </p>
 
