@@ -14,25 +14,63 @@ export default function PushNotifications() {
   const [status, setStatus] =
     useState<PushStatus>("loading");
 
+  const [debug, setDebug] =
+    useState<string[]>([]);
+
+  function addDebug(message: string) {
+    console.log(message);
+
+    setDebug((current) => [
+      ...current,
+      `${new Date().toLocaleTimeString()} - ${message}`,
+    ]);
+  }
+
   useEffect(() => {
     checkPushStatus();
   }, []);
 
   async function checkPushStatus() {
     try {
+      addDebug("Iniciando verificação...");
+
       if (
-        !("serviceWorker" in navigator) ||
-        !("PushManager" in window) ||
-        !("Notification" in window)
+        !("serviceWorker" in navigator)
       ) {
+        addDebug(
+          "ERRO: Service Worker não suportado."
+        );
         setStatus("unsupported");
         return;
       }
+
+      if (!("PushManager" in window)) {
+        addDebug(
+          "ERRO: PushManager não suportado."
+        );
+        setStatus("unsupported");
+        return;
+      }
+
+      if (!("Notification" in window)) {
+        addDebug(
+          "ERRO: Notifications não suportado."
+        );
+        setStatus("unsupported");
+        return;
+      }
+
+      addDebug(
+        `Permissão atual: ${Notification.permission}`
+      );
 
       if (
         Notification.permission ===
         "denied"
       ) {
+        addDebug(
+          "ERRO: notificações estão bloqueadas."
+        );
         setStatus("denied");
         return;
       }
@@ -40,18 +78,27 @@ export default function PushNotifications() {
       const registration =
         await navigator.serviceWorker.ready;
 
+      addDebug(
+        `Service Worker pronto: ${registration.scope}`
+      );
+
       const subscription =
         await registration.pushManager.getSubscription();
 
       if (subscription) {
+        addDebug(
+          "Subscription local encontrada."
+        );
         setStatus("enabled");
       } else {
+        addDebug(
+          "Nenhuma Subscription local encontrada."
+        );
         setStatus("available");
       }
     } catch (error) {
-      console.error(
-        "Erro ao verificar Push:",
-        error
+      addDebug(
+        `ERRO NA VERIFICAÇÃO: ${String(error)}`
       );
 
       setStatus("available");
@@ -59,53 +106,97 @@ export default function PushNotifications() {
   }
 
   async function enablePush() {
+    setDebug([]);
+
     try {
-      setStatus("loading");
+      addDebug(
+        "========== INICIANDO ATIVAÇÃO =========="
+      );
 
       if (
-        !("serviceWorker" in navigator) ||
-        !("PushManager" in window) ||
-        !("Notification" in window)
+        !("serviceWorker" in navigator)
       ) {
+        addDebug(
+          "ERRO: Service Worker não suportado."
+        );
         setStatus("unsupported");
         return;
       }
+
+      if (!("PushManager" in window)) {
+        addDebug(
+          "ERRO: PushManager não suportado."
+        );
+        setStatus("unsupported");
+        return;
+      }
+
+      if (!("Notification" in window)) {
+        addDebug(
+          "ERRO: Notifications não suportado."
+        );
+        setStatus("unsupported");
+        return;
+      }
+
+      addDebug(
+        "Suporte ao Push confirmado."
+      );
 
       const {
         data: { user },
         error: userError,
       } = await supabase.auth.getUser();
 
-      if (userError || !user) {
-        console.error(
-          "Usuário não autenticado para ativar Push:",
-          userError
+      if (userError) {
+        addDebug(
+          `ERRO Supabase Auth: ${userError.message}`
         );
+      }
 
+      if (!user) {
+        addDebug(
+          "ERRO: usuário não autenticado."
+        );
         setStatus("available");
         return;
       }
 
+      addDebug(
+        `Usuário encontrado: ${user.id}`
+      );
+
       let permission =
         Notification.permission;
+
+      addDebug(
+        `Permissão antes do pedido: ${permission}`
+      );
 
       if (
         permission ===
         "default"
       ) {
+        addDebug(
+          "Solicitando permissão..."
+        );
+
         permission =
           await Notification.requestPermission();
-      }
 
-      console.log(
-        "Permissão de notificação:",
-        permission
-      );
+        addDebug(
+          `Resposta da permissão: ${permission}`
+        );
+      }
 
       if (
         permission !==
         "granted"
       ) {
+        addDebug(
+          "Permissão não concedida."
+        );
+
         setStatus(
           permission ===
             "denied"
@@ -116,70 +207,112 @@ export default function PushNotifications() {
         return;
       }
 
+      addDebug(
+        "Permissão concedida."
+      );
+
       const registration =
         await navigator.serviceWorker.ready;
+
+      addDebug(
+        `Service Worker pronto: ${registration.scope}`
+      );
 
       const publicKey =
         process.env
           .NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
+      addDebug(
+        `VAPID public key encontrada: ${
+          publicKey
+            ? "SIM"
+            : "NÃO"
+        }`
+      );
+
       if (!publicKey) {
-        console.error(
-          "NEXT_PUBLIC_VAPID_PUBLIC_KEY não encontrada."
+        addDebug(
+          "ERRO: NEXT_PUBLIC_VAPID_PUBLIC_KEY não encontrada no build."
         );
 
         setStatus("available");
         return;
       }
 
-      /*
-       * Remove uma subscription antiga e cria
-       * uma nova usando a VAPID public key atual.
-       *
-       * A permissão do navegador continua concedida.
-       */
       const existingSubscription =
         await registration.pushManager.getSubscription();
 
       if (existingSubscription) {
-        console.log(
-          "Subscription antiga encontrada. Removendo..."
+        addDebug(
+          "Subscription antiga encontrada."
         );
 
         try {
-          await existingSubscription.unsubscribe();
+          const removed =
+            await existingSubscription.unsubscribe();
+
+          addDebug(
+            `Subscription antiga removida: ${removed}`
+          );
         } catch (error) {
-          console.warn(
-            "Não foi possível remover a subscription antiga:",
-            error
+          addDebug(
+            `Aviso ao remover subscription antiga: ${String(error)}`
           );
         }
+      } else {
+        addDebug(
+          "Nenhuma subscription antiga."
+        );
       }
 
-      console.log(
-        "Criando nova Push Subscription..."
+      addDebug(
+        "Criando nova subscription..."
+      );
+
+      const applicationServerKey =
+        urlBase64ToUint8Array(
+          publicKey
+        );
+
+      addDebug(
+        `Chave convertida. Bytes: ${applicationServerKey.length}`
       );
 
       const subscription =
         await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey:
-            urlBase64ToUint8Array(
-              publicKey
-            ),
+          applicationServerKey,
         });
 
-      console.log(
-        "Subscription criada:",
-        subscription
+      addDebug(
+        "✅ Subscription criada."
       );
 
       const subscriptionJson =
         subscription.toJSON();
 
-      console.log(
-        "Subscription JSON:",
-        subscriptionJson
+      addDebug(
+        `Endpoint recebido: ${
+          subscriptionJson.endpoint
+            ? "SIM"
+            : "NÃO"
+        }`
+      );
+
+      addDebug(
+        `p256dh recebido: ${
+          subscriptionJson.keys?.p256dh
+            ? "SIM"
+            : "NÃO"
+        }`
+      );
+
+      addDebug(
+        `auth recebido: ${
+          subscriptionJson.keys?.auth
+            ? "SIM"
+            : "NÃO"
+        }`
       );
 
       if (
@@ -187,19 +320,22 @@ export default function PushNotifications() {
         !subscriptionJson.keys?.p256dh ||
         !subscriptionJson.keys?.auth
       ) {
-        console.error(
-          "Subscription Push inválida."
+        addDebug(
+          "ERRO: subscription incompleta."
         );
 
         setStatus("available");
         return;
       }
 
-      console.log(
-        "Salvando subscription no Supabase..."
+      addDebug(
+        "Enviando subscription para Supabase..."
       );
 
-      const { data, error: saveError } =
+      const {
+        data,
+        error: saveError,
+      } =
         await supabase
           .from(
             "push_subscriptions"
@@ -228,31 +364,50 @@ export default function PushNotifications() {
           )
           .select();
 
-      console.log(
-        "Resultado do Supabase:",
-        data
-      );
-
       if (saveError) {
-        console.error(
-          "Erro ao salvar subscription Push:",
-          saveError
+        addDebug(
+          `❌ ERRO SUPABASE: ${saveError.message}`
+        );
+
+        addDebug(
+          `Código: ${saveError.code || "sem código"}`
+        );
+
+        addDebug(
+          `Detalhes: ${saveError.details || "sem detalhes"}`
+        );
+
+        addDebug(
+          `Hint: ${saveError.hint || "sem hint"}`
         );
 
         setStatus("available");
         return;
       }
 
-      console.log(
-        "✅ Push registrado no Supabase."
+      addDebug(
+        `✅ Supabase salvou. Registros retornados: ${
+          data?.length || 0
+        }`
+      );
+
+      addDebug(
+        "========== PUSH ATIVADO =========="
       );
 
       setStatus("enabled");
     } catch (error) {
-      console.error(
-        "❌ Erro ao ativar Push:",
-        error
+      addDebug(
+        `❌ ERRO GERAL: ${String(error)}`
       );
+
+      if (
+        error instanceof Error
+      ) {
+        addDebug(
+          `Mensagem: ${error.message}`
+        );
+      }
 
       setStatus("available");
     }
@@ -262,21 +417,10 @@ export default function PushNotifications() {
     status ===
     "unsupported"
   ) {
-    return null;
-  }
-
-  if (
-    status ===
-    "enabled"
-  ) {
     return (
-      <button
-        type="button"
-        onClick={enablePush}
-        className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-700 transition hover:bg-green-100"
-      >
-        🔔 Notificações do celular ativadas
-      </button>
+      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+        Este navegador não suporta Push.
+      </div>
     );
   }
 
@@ -285,25 +429,44 @@ export default function PushNotifications() {
     "denied"
   ) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-        🔕 Notificações bloqueadas no navegador
+      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+        As notificações estão bloqueadas no navegador.
       </div>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={enablePush}
-      disabled={
-        status === "loading"
-      }
-      className="w-full rounded-xl bg-[#1687d9] px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#0f75bd] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-    >
-      {status === "loading"
-        ? "Configurando notificações..."
-        : "🔔 Ativar notificações no celular"}
-    </button>
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={enablePush}
+        disabled={
+          status === "loading"
+        }
+        className="w-full rounded-xl bg-[#1687d9] px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#0f75bd] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+      >
+        {status === "enabled"
+          ? "🔔 Testar novamente"
+          : status === "loading"
+          ? "Verificando..."
+          : "🔔 Ativar notificações no celular"}
+      </button>
+
+      {debug.length > 0 && (
+        <div className="max-h-80 overflow-y-auto rounded-xl border border-gray-200 bg-gray-950 p-3 text-left font-mono text-[11px] leading-relaxed text-green-300">
+          {debug.map(
+            (message, index) => (
+              <div
+                key={index}
+                className="break-words"
+              >
+                {message}
+              </div>
+            )
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
