@@ -2097,7 +2097,7 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
 
             <div className="p-2 sm:p-4">
 
-<PushNotifications />
+{/* <PushNotifications /> */}
 
               <Calendar />
 
