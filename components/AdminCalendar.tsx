@@ -7854,13 +7854,8 @@ className={[
                         SOMENTE GUIAS DISPONÍVEIS NA DATA ESCOLHIDA
                     ================================================== */}
 
-                    {availableGuidesForTourEdit
-                      .filter(
-                        (guide) =>
-                          guide.id !==
-                          selectedTourEvent?.guide_id
-                      )
-                      .map(
+                   {availableGuidesForTourEdit
+  .map(
                         (
                           guide
                         ) => (
