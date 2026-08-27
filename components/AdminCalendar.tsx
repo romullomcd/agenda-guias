@@ -3188,9 +3188,9 @@ setTourAdditionalEmail2(
   ""
 );
 
-    setLaunchTourWithoutGuide(
-      true
-    );
+   setLaunchTourWithoutGuide(
+  false
+);
 
     setSelectedGuideDetails(
       null
@@ -3242,7 +3242,7 @@ setTourAdditionalEmail2(
   );
 
 if (
-  !launchTourWithoutGuide &&
+  tourGuideId &&
   !availabilityId
 ) {
   alert(
@@ -3253,7 +3253,7 @@ if (
 }
 
 if (
-  !launchTourWithoutGuide &&
+  tourGuideId &&
   !guide
 ) {
   alert(
@@ -3273,10 +3273,10 @@ if (
       return;
     }
 
-        if (
-      !launchTourWithoutGuide &&
-      !guide?.email
-    ) {
+       if (
+  tourGuideId &&
+  !guide?.email
+) {
       alert(
         "Este guia não possui e-mail cadastrado."
       );
@@ -3550,9 +3550,13 @@ colorId:
    disponibilidade para escalar.
 ======================================================== */
 
+
 if (
-  !launchTourWithoutGuide
+  guide
 ) {
+
+
+
   const {
     data:
       escalatedAvailability,
@@ -3575,6 +3579,11 @@ if (
         "id, guide_id, date, status"
       )
       .single();
+
+
+
+
+
 
   if (
     availabilityError ||
@@ -3646,7 +3655,7 @@ if (
       );
 
       if (
-  !launchTourWithoutGuide
+  guide
 ) {
   setAvailability(
     (current) =>
@@ -3700,10 +3709,10 @@ if (
 
     
       alert(
-        launchTourWithoutGuide
-          ? "✅ Tour lançado com sucesso no sistema e no Google Calendar, sem guia."
-          : "✅ Tour criado, guia escalado e evento enviado para o Google Calendar."
-      );
+  guide
+    ? "✅ Tour criado, guia escalado e evento enviado para o Google Calendar."
+    : "✅ Tour lançado com sucesso no sistema e no Google Calendar, sem guia."
+);
     } catch (
       error: any
     ) {
@@ -4140,6 +4149,10 @@ const assignmentChanged =
   guideChanged ||
   dateChanged;
 
+const sameGuideDateChange =
+  dateChanged &&
+  !guideChanged;
+
     setUpdating(
       true
     );
@@ -4155,12 +4168,12 @@ const assignmentChanged =
         | null =
         null;
 
-      /* NOVO GUIA */
+      /* NOVA DISPONIBILIDADE */
 
-      if (
-        guideChanged &&
-        newGuide
-      ) {
+if (
+  assignmentChanged &&
+  newGuide
+) {
         const {
           data:
             newGuideAvailability,
@@ -4420,9 +4433,11 @@ google_color_id:
                 "availability"
               )
               .update({
-                status:
-                  "available",
-              })
+    status:
+      "available",
+    suppress_notification:
+      sameGuideDateChange,
+  })
               .eq(
                 "id",
                 oldAvailability.id
@@ -4459,14 +4474,16 @@ google_color_id:
             error:
               newAvailabilityUpdateError,
           } =
-            await supabase
-              .from(
-                "availability"
-              )
-              .update({
-                status:
-                  "escalated",
-              })
+           await supabase
+  .from(
+    "availability"
+  )
+  .update({
+    status:
+      "escalated",
+    suppress_notification:
+      sameGuideDateChange,
+  })
               .eq(
                 "id",
                 newAvailability.id
@@ -7343,9 +7360,9 @@ className={[
                   {
                     updating
                       ? "Sincronizando..."
-                      : launchTourWithoutGuide
-                      ? "Lançar tour"
-                      : "Criar tour e escalar"
+                      : tourGuideId
+  ? "Criar tour e escalar"
+  : "Lançar tour sem guia"
                   }
                 </button>
 
