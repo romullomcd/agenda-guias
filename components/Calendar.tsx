@@ -69,6 +69,17 @@ export default function Calendar() {
     new Date()
   );
 
+  const currentMonthRef =
+    useRef<Date>(
+      currentMonth
+    );
+
+  currentMonthRef.current =
+    currentMonth;
+
+  const firstLoadRef =
+    useRef(true);
+
   const [
     availability,
     setAvailability,
@@ -153,7 +164,6 @@ export default function Calendar() {
     const minimumSwipeDistance =
       60;
 
-    // Ignora movimentos predominantemente verticais.
     if (
       Math.abs(deltaX) <=
         Math.abs(deltaY)
@@ -161,7 +171,6 @@ export default function Calendar() {
       return;
     }
 
-    // Ignora movimentos muito pequenos.
     if (
       Math.abs(deltaX) <
       minimumSwipeDistance
@@ -169,8 +178,7 @@ export default function Calendar() {
       return;
     }
 
-    // Deslizou para a esquerda:
-    // próximo mês.
+    // Esquerda = próximo mês
     if (deltaX < 0) {
       setCurrentMonth(
         (current) =>
@@ -183,8 +191,7 @@ export default function Calendar() {
       return;
     }
 
-    // Deslizou para a direita:
-    // mês anterior.
+    // Direita = mês anterior
     setCurrentMonth(
       (current) =>
         subMonths(
@@ -213,100 +220,13 @@ export default function Calendar() {
   );
 
   /* ============================================================
-  CARREGAR DISPONIBILIDADE + TOURS
-  ============================================================ */
-
-  useEffect(() => {
-    loadAvailability(
-      true
-    );
-
-    const channel =
-      supabase
-        .channel(
-          "guide-availability-calendar"
-        )
-
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "availability",
-          },
-          async () => {
-            await loadAvailability(
-              false
-            );
-          }
-        )
-
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "tour_events",
-          },
-          async () => {
-            await loadAvailability(
-              false
-            );
-          }
-        )
-
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "tour_events",
-          },
-          async () => {
-            await loadAvailability(
-              false
-            );
-          }
-        )
-
-        .on(
-          "postgres_changes",
-          {
-            event: "DELETE",
-            schema: "public",
-            table: "tour_events",
-          },
-          async () => {
-            await loadAvailability(
-              false
-            );
-          }
-        )
-
-        .subscribe(
-          (status) => {
-            console.log(
-              "📡 GUIDE CALENDAR REALTIME:",
-              status
-            );
-          }
-        );
-
-    return () => {
-      supabase.removeChannel(
-        channel
-      );
-    };
-  }, [
-    currentMonth,
-  ]);
-
-  /* ============================================================
-  BUSCAR DADOS
+  CARREGAR DADOS DO MÊS
   ============================================================ */
 
   async function loadAvailability(
-    showLoading = false
+    showLoading = false,
+    month =
+      currentMonthRef.current
   ) {
     if (
       showLoading
@@ -344,7 +264,7 @@ export default function Calendar() {
     const firstDay =
       format(
         startOfMonth(
-          currentMonth
+          month
         ),
         "yyyy-MM-dd"
       );
@@ -352,7 +272,7 @@ export default function Calendar() {
     const lastDay =
       format(
         endOfMonth(
-          currentMonth
+          month
         ),
         "yyyy-MM-dd"
       );
@@ -493,6 +413,112 @@ export default function Calendar() {
       );
     }
   }
+
+  /* ============================================================
+  CARREGAMENTO DO MÊS
+  ============================================================ */
+
+  useEffect(() => {
+    const showInitialLoading =
+      firstLoadRef.current;
+
+    firstLoadRef.current =
+      false;
+
+    loadAvailability(
+      showInitialLoading,
+      currentMonth
+    );
+  }, [
+    currentMonth,
+  ]);
+
+  /* ============================================================
+  REALTIME
+  ============================================================ */
+
+  useEffect(() => {
+    const channel =
+      supabase
+        .channel(
+          "guide-availability-calendar"
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "availability",
+          },
+          async () => {
+            await loadAvailability(
+              false,
+              currentMonthRef.current
+            );
+          }
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "tour_events",
+          },
+          async () => {
+            await loadAvailability(
+              false,
+              currentMonthRef.current
+            );
+          }
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "tour_events",
+          },
+          async () => {
+            await loadAvailability(
+              false,
+              currentMonthRef.current
+            );
+          }
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "tour_events",
+          },
+          async () => {
+            await loadAvailability(
+              false,
+              currentMonthRef.current
+            );
+          }
+        )
+
+        .subscribe(
+          (status) => {
+            console.log(
+              "📡 GUIDE CALENDAR REALTIME:",
+              status
+            );
+          }
+        );
+
+    return () => {
+      supabase.removeChannel(
+        channel
+      );
+    };
+  }, []);
 
   /* ============================================================
   ALTERAR DIA
@@ -847,7 +873,7 @@ export default function Calendar() {
                  CABEÇALHO
               ================================================== */}
 
-             <div className="shrink-0 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-black px-5 py-5 sm:px-6 sm:py-6">
+              <div className="shrink-0 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-black px-5 py-5 sm:px-6 sm:py-6">
 
                 <div className="flex w-full items-start gap-3">
 
@@ -857,7 +883,7 @@ export default function Calendar() {
                       Tour escalado
                     </span>
 
-                   <h3 className="mt-3 break-words text-xl font-extrabold leading-tight text-gray-900 dark:text-white sm:text-2xl">
+                    <h3 className="mt-3 break-words text-xl font-extrabold leading-tight text-gray-900 dark:text-white sm:text-2xl">
                       {
                         selectedTour.title
                       }
@@ -1050,8 +1076,7 @@ export default function Calendar() {
                 )
               )
             }
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition dark:border-gray-700 dark:bg-black dark:text-white
-hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition dark:border-gray-700 dark:bg-black dark:text-white hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
             aria-label="Mês anterior"
           >
             ←
@@ -1073,8 +1098,7 @@ hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] sm:h-11 sm:w-11 sm:
                 )
               )
             }
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition dark:border-gray-700 dark:bg-black dark:text-white
-hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition dark:border-gray-700 dark:bg-black dark:text-white hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
             aria-label="Próximo mês"
           >
             →
@@ -1322,7 +1346,7 @@ hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:h-11 sm:w-11 sm:
 
                 <div className="flex items-center gap-1.5 sm:gap-2">
 
-                  <span className="h-3 w-3 rounded-md border border-gray-300 bg-white dark:border-gray-700 dark:bg-black sm:h-4 sm:w-4" />
+                  <span className="h-3 w-3 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-black sm:h-4 sm:w-4" />
 
                   <span>
                     Não marcado
