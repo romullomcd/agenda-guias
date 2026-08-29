@@ -1113,6 +1113,17 @@ export default function AdminCalendar() {
     new Date()
   );
 
+const currentMonthRef =
+  useRef<Date>(
+    currentMonth
+  );
+
+currentMonthRef.current =
+  currentMonth;
+
+const firstLoadRef =
+  useRef(true);
+
 const touchStartX =
   useRef<number | null>(null);
 
@@ -2077,11 +2088,19 @@ async function saveAddressAfterTour(
   CARREGAMENTO
   ============================================================ */
 
-  useEffect(() => {
-    loadData();
-  }, [
-    currentMonth,
-  ]);
+ useEffect(() => {
+  const showInitialLoading =
+    firstLoadRef.current;
+
+  firstLoadRef.current =
+    false;
+
+  loadData(
+    showInitialLoading
+  );
+}, [
+  currentMonth,
+]);
 
   /* ============================================================
   REALTIME
@@ -2124,20 +2143,20 @@ async function saveAddressAfterTour(
                 }
 
                 const firstDay =
-                  format(
-                    startOfMonth(
-                      currentMonth
-                    ),
-                    "yyyy-MM-dd"
-                  );
+  format(
+    startOfMonth(
+      currentMonthRef.current
+    ),
+    "yyyy-MM-dd"
+  );
 
-                const lastDay =
-                  format(
-                    endOfMonth(
-                      currentMonth
-                    ),
-                    "yyyy-MM-dd"
-                  );
+const lastDay =
+  format(
+    endOfMonth(
+      currentMonthRef.current
+    ),
+    "yyyy-MM-dd"
+  );
 
                 if (
                   newItem.date <
@@ -2246,21 +2265,21 @@ async function saveAddressAfterTour(
             const newEvent =
               payload.new as TourEvent;
 
-            const firstDay =
-              format(
-                startOfMonth(
-                  currentMonth
-                ),
-                "yyyy-MM-dd"
-              );
+           const firstDay =
+  format(
+    startOfMonth(
+      currentMonthRef.current
+    ),
+    "yyyy-MM-dd"
+  );
 
-            const lastDay =
-              format(
-                endOfMonth(
-                  currentMonth
-                ),
-                "yyyy-MM-dd"
-              );
+const lastDay =
+  format(
+    endOfMonth(
+      currentMonthRef.current
+    ),
+    "yyyy-MM-dd"
+  );
 
             if (
               newEvent.date <
@@ -2384,18 +2403,22 @@ async function saveAddressAfterTour(
         channel
       );
     };
-  }, [
-    currentMonth,
-  ]);
+   }, []);
 
   /* ============================================================
   CARREGAR DADOS
   ============================================================ */
 
-  async function loadData() {
+  async function loadData(
+  showLoading = false
+) {
+  if (
+    showLoading
+  ) {
     setLoading(
       true
     );
+  }
 
     const firstDay =
       format(
