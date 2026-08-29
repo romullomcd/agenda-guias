@@ -1130,6 +1130,12 @@ const touchStartX =
 const touchStartY =
   useRef<number | null>(null);
 
+const selectedDateTouchStartX =
+  useRef<number | null>(null);
+
+const selectedDateTouchStartY =
+  useRef<number | null>(null);
+
 function handleCalendarTouchStart(
   event: React.TouchEvent<HTMLDivElement>
 ) {
@@ -1225,6 +1231,122 @@ function handleCalendarTouchEnd(
   // Direita = dia anterior
   goPreviousDay();
 
+}
+
+function handleSelectedDateTouchStart(
+  event: React.TouchEvent<HTMLDivElement>
+) {
+  const touch =
+    event.touches[0];
+
+  if (!touch) {
+    return;
+  }
+
+  selectedDateTouchStartX.current =
+    touch.clientX;
+
+  selectedDateTouchStartY.current =
+    touch.clientY;
+}
+
+function handleSelectedDateTouchEnd(
+  event: React.TouchEvent<HTMLDivElement>
+) {
+  if (
+    selectedDateTouchStartX.current ===
+      null ||
+    selectedDateTouchStartY.current ===
+      null ||
+    !selectedDate
+  ) {
+    return;
+  }
+
+  const touch =
+    event.changedTouches[0];
+
+  if (!touch) {
+    return;
+  }
+
+  const deltaX =
+    touch.clientX -
+    selectedDateTouchStartX.current;
+
+  const deltaY =
+    touch.clientY -
+    selectedDateTouchStartY.current;
+
+  selectedDateTouchStartX.current =
+    null;
+
+  selectedDateTouchStartY.current =
+    null;
+
+  const minimumSwipeDistance =
+    60;
+
+  if (
+    Math.abs(deltaX) <=
+    Math.abs(deltaY)
+  ) {
+    return;
+  }
+
+  if (
+    Math.abs(deltaX) <
+    minimumSwipeDistance
+  ) {
+    return;
+  }
+
+  const currentDate =
+    new Date(
+      `${selectedDate}T12:00:00`
+    );
+
+  const nextDate =
+    deltaX < 0
+      ? addDays(
+          currentDate,
+          1
+        )
+      : subDays(
+          currentDate,
+          1
+        );
+
+  const nextDateString =
+    format(
+      nextDate,
+      "yyyy-MM-dd"
+    );
+
+  const currentMonthString =
+    format(
+      currentMonth,
+      "yyyy-MM"
+    );
+
+  const nextMonthString =
+    format(
+      nextDate,
+      "yyyy-MM"
+    );
+
+  setSelectedDate(
+    nextDateString
+  );
+
+  if (
+    currentMonthString !==
+    nextMonthString
+  ) {
+    setCurrentMonth(
+      nextDate
+    );
+  }
 }
 
   const [
@@ -6092,13 +6214,19 @@ className={[
           >
 
             <div
-              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-black p-4 shadow-2xl sm:rounded-3xl sm:p-6"
-              onClick={(
-                event
-              ) =>
-                event.stopPropagation()
-              }
-            >
+  className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-black p-4 shadow-2xl sm:rounded-3xl sm:p-6 touch-pan-y"
+  onClick={(
+    event
+  ) =>
+    event.stopPropagation()
+  }
+  onTouchStart={
+    handleSelectedDateTouchStart
+  }
+  onTouchEnd={
+    handleSelectedDateTouchEnd
+  }
+>
 
               <div className="flex items-start justify-between">
 
