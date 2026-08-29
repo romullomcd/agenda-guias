@@ -5505,29 +5505,37 @@ className={[
 
             
 
-           <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-100 dark:border-gray-800 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
+       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 dark:border-gray-800 pt-4 text-xs font-semibold text-gray-700 dark:text-gray-200 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
 
-                <div className="flex items-center gap-1.5">
-  <span className="h-3 w-3 rounded bg-[#dc2127] ring-1 ring-[#b91c1c] sm:h-4 sm:w-4" />
-  Tour sem guia/motorista
+  <div className="flex items-center gap-1.5 sm:gap-2">
+    <span className="h-3 w-3 rounded-md bg-[#dc2127] ring-1 ring-[#b91c1c] sm:h-4 sm:w-4" />
+    <span>
+      Tour sem guia/motorista
+    </span>
+  </div>
+
+  <div className="flex items-center gap-1.5 sm:gap-2">
+    <span className="h-3 w-3 rounded-md bg-[#fbd75b] ring-1 ring-[#d4a900] sm:h-4 sm:w-4" />
+    <span>
+      Tour com guia e motorista
+    </span>
+  </div>
+
+  <div className="flex items-center gap-1.5 sm:gap-2">
+    <span className="h-3 w-3 rounded-md bg-[#5484ed] ring-1 ring-[#3b64c4] sm:h-4 sm:w-4" />
+    <span>
+      Tour Ilha Grande
+    </span>
+  </div>
+
+  <div className="flex items-center gap-1.5 sm:gap-2">
+    <span className="h-3 w-3 rounded-md bg-[#ff887c] ring-1 ring-[#d96359] sm:h-4 sm:w-4" />
+    <span>
+      Tour Website
+    </span>
+  </div>
+
 </div>
-
-<div className="flex items-center gap-1.5">
-  <span className="h-3 w-3 rounded bg-[#fbd75b] ring-1 ring-[#d4a900] sm:h-4 sm:w-4" />
-  Tour com guia e motorista
-</div>
-
-<div className="flex items-center gap-1.5">
-  <span className="h-3 w-3 rounded bg-[#5484ed] ring-1 ring-[#3b64c4] sm:h-4 sm:w-4" />
-  Tour Ilha Grande
-</div>
-
-<div className="flex items-center gap-1.5">
-  <span className="h-3 w-3 rounded bg-[#ff887c] ring-1 ring-[#d96359] sm:h-4 sm:w-4" />
-  Tour Website
-</div>
-
-              </div>
 
             </div>
           )}
