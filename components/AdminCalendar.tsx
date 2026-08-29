@@ -2651,57 +2651,61 @@ const lastDay =
     );
   }
 
-  /* ============================================================
-  BUSCA
-  ============================================================ */
+/* ============================================================
+BUSCA
+============================================================ */
 
-  const normalizedSearch =
-    guideSearch
-      .trim()
-      .toLowerCase();
+const normalizedSearch =
+  guideSearch
+    .trim()
+    .toLowerCase();
 
-  const filteredGuides =
-    useMemo(() => {
-      if (
-        !normalizedSearch
-      ) {
-        return guides;
-      }
+/* ============================================================
+GUIAS FILTRADOS
+============================================================ */
 
-      return guides.filter(
-        (guide) =>
-          guide.name
-            .toLowerCase()
-            .includes(
-              normalizedSearch
-            )
-      );
-    }, [
-      guides,
-      normalizedSearch,
-    ]);
+const filteredGuides =
+  useMemo(() => {
+    if (
+      !normalizedSearch
+    ) {
+      return guides;
+    }
 
-  /* ============================================================
-  MAPA
-  ============================================================ */
-
-  const guideMap =
-    useMemo(
-      () =>
-        new Map(
-          guides.map(
-            (guide) => [
-              guide.id,
-              guide,
-            ]
+    return guides.filter(
+      (guide) =>
+        guide.name
+          .toLowerCase()
+          .includes(
+            normalizedSearch
           )
-        ),
-      [guides]
     );
+  }, [
+    guides,
+    normalizedSearch,
+  ]);
 
-  /* ============================================================
-  GUIAS DISPONÍVEIS PARA TROCAR
-  ============================================================ */
+/* ============================================================
+MAPA
+============================================================ */
+
+const guideMap =
+  useMemo(
+    () =>
+      new Map(
+        guides.map(
+          (guide) => [
+            guide.id,
+            guide,
+          ]
+        )
+      ),
+    [guides]
+  );
+
+/* ============================================================
+GUIAS DISPONÍVEIS PARA TROCAR
+============================================================ */
 
 const availableGuidesForTourEdit =
   useMemo(() => {
@@ -2745,71 +2749,104 @@ const availableGuidesForTourEdit =
     editTourDate,
   ]);
 
-  /* ============================================================
-  DISPONIBILIDADE FILTRADA
-  ============================================================ */
+/* ============================================================
+DISPONIBILIDADE FILTRADA
+============================================================ */
 
-  const filteredAvailability =
-    useMemo(() => {
-      if (
-        !normalizedSearch
-      ) {
-        return availability;
-      }
+const filteredAvailability =
+  useMemo(() => {
+    if (
+      !normalizedSearch
+    ) {
+      return availability;
+    }
 
-      const matchingGuideIds =
-        new Set(
-          filteredGuides.map(
-            (guide) =>
-              guide.id
-          )
-        );
-
-      return availability.filter(
-        (item) =>
-          matchingGuideIds.has(
-            item.guide_id
-          )
+    const matchingGuideIds =
+      new Set(
+        filteredGuides.map(
+          (guide) =>
+            guide.id
+        )
       );
-    }, [
-      availability,
-      filteredGuides,
-      normalizedSearch,
-    ]);
 
-  /* ============================================================
-  TOURS FILTRADOS
-  ============================================================ */
+    return availability.filter(
+      (item) =>
+        matchingGuideIds.has(
+          item.guide_id
+        )
+    );
+  }, [
+    availability,
+    filteredGuides,
+    normalizedSearch,
+  ]);
 
-  const filteredTourEvents =
-    useMemo(() => {
-      if (
-        !normalizedSearch
-      ) {
-        return tourEvents;
-      }
+/* ============================================================
+TOURS FILTRADOS PELA BUSCA
+============================================================ */
 
-      const matchingGuideIds =
-        new Set(
-          filteredGuides.map(
-            (guide) =>
-              guide.id
-          )
-        );
+const filteredTourEvents =
+  useMemo(() => {
+    if (!normalizedSearch) {
+      return tourEvents;
+    }
 
-      return tourEvents.filter(
+    const firstDay =
+      format(
+        startOfMonth(
+          currentMonth
+        ),
+        "yyyy-MM-dd"
+      );
+
+    const lastDay =
+      format(
+        endOfMonth(
+          currentMonth
+        ),
+        "yyyy-MM-dd"
+      );
+
+    return tourEvents
+      .filter(
         (event) =>
-          event.guide_id ===
-            null ||
-          matchingGuideIds.has(
-            event.guide_id
+          event.date >=
+            firstDay &&
+          event.date <=
+            lastDay
+      )
+      .filter(
+        (event) => {
+          const searchableText =
+            [
+              event.title,
+              event.description,
+              event.address,
+              event.guide_email,
+              event.additional_email,
+            ]
+              .filter(
+                Boolean
+              )
+              .join(" ")
+              .toLowerCase();
+
+          return searchableText.includes(
+            normalizedSearch
+          );
+        }
+      )
+      .sort(
+        (a, b) =>
+          a.date.localeCompare(
+            b.date
           )
       );
-    }, [
-      tourEvents,
-      filteredGuides,
-      normalizedSearch,
-    ]);
+  }, [
+    tourEvents,
+    currentMonth,
+    normalizedSearch,
+  ]);
 
   /* ============================================================
   CALENDÁRIO
@@ -5151,7 +5188,7 @@ await saveAddressAfterTour(
                 event.target.value
               )
             }
-            placeholder="Buscar guia pelo nome..."
+            placeholder="Buscar tour por título, e-mail ou endereço..."
             className="w-full rounded-lg border-2 border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm font-semibold text-gray-800 dark:border-gray-700 dark:bg-black dark:text-gray-100 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-100 sm:rounded-xl"
           />
 
@@ -5171,39 +5208,122 @@ await saveAddressAfterTour(
         </div>
       </div>
 
-      {guideSearch.trim() && (
-        <div className="mb-4 rounded-xl bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-800 sm:mb-6 sm:text-sm">
+{guideSearch.trim() && (
+  <div className="mb-4 rounded-xl bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 sm:mb-6 sm:text-sm">
 
-          {filteredGuides.length ===
-          0 ? (
-            <>
-              Nenhum guia encontrado para "
-              {guideSearch}".
-            </>
-          ) : (
-            <>
-              Mostrando a agenda de{" "}
-              <strong>
-                {
-                  filteredGuides.length
-                }
-              </strong>{" "}
-              guia
-              {filteredGuides.length !==
-              1
-                ? "s"
-                : ""}{" "}
-              encontrado
-              {filteredGuides.length !==
-              1
-                ? "s"
-                : ""}.
-            </>
-          )}
+    {filteredTourEvents.length ===
+    0 ? (
+      <>
+        Nenhum tour encontrado para "
+        {guideSearch}" neste mês.
+      </>
+    ) : (
+      <>
+        <strong>
+          {
+            filteredTourEvents.length
+          }
+        </strong>{" "}
+        {filteredTourEvents.length ===
+        1
+          ? "tour encontrado"
+          : "tours encontrados"}{" "}
+        neste mês.
+      </>
+    )}
 
-        </div>
+  </div>
+)}
+
+
+{guideSearch.trim() &&
+  calendarView ===
+    "month" && (
+    <div className="mb-6 space-y-3">
+
+      {filteredTourEvents.map(
+        (event) => (
+          <button
+            key={event.id}
+            type="button"
+            onClick={() =>
+              setSelectedTourEvent(
+                event
+              )
+            }
+            className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:border-[#1687d9] hover:shadow-md dark:border-gray-700 dark:bg-black"
+          >
+
+            <div className="flex items-start justify-between gap-4">
+
+              <div className="min-w-0 flex-1">
+
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                  {
+                    format(
+                      new Date(
+                        `${event.date}T12:00:00`
+                      ),
+                      "dd/MM/yyyy"
+                    )
+                  }
+                </p>
+
+                <h4 className="mt-1 break-words text-base font-extrabold text-gray-900 dark:text-white sm:text-lg">
+                  {
+                    event.title
+                  }
+                </h4>
+
+                <p className="mt-2 text-xs font-semibold text-gray-600 dark:text-gray-300 sm:text-sm">
+                  {
+                    event.all_day
+                      ? "📅 Dia inteiro"
+                      : `🕐 ${
+                          event.start_time ||
+                          "09:00"
+                        } às ${
+                          event.end_time ||
+                          "10:00"
+                        }`
+                  }
+                </p>
+
+                <p className="mt-1 text-xs font-semibold text-gray-600 dark:text-gray-300 sm:text-sm">
+                  Guia:{" "}
+                  {
+                    getGuideName(
+                      event.guide_id
+                    )
+                  }
+                </p>
+
+                {event.guide_email && (
+                  <p className="mt-1 break-all text-xs text-gray-500 dark:text-gray-400">
+                    {event.guide_email}
+                  </p>
+                )}
+
+                {event.additional_email && (
+                  <p className="mt-1 break-all text-xs text-gray-500 dark:text-gray-400">
+                    {event.additional_email}
+                  </p>
+                )}
+
+              </div>
+
+              <span className="shrink-0 text-lg text-gray-400">
+                →
+              </span>
+
+            </div>
+
+          </button>
+        )
       )}
 
+    </div>
+  )}
       {/* MÊS / DIA */}
 
       <div className="mb-4 flex flex-col gap-3 rounded-xl bg-gray-50 dark:bg-gray-900 p-2 sm:flex-row sm:items-center sm:justify-between sm:rounded-2xl sm:p-3">
@@ -5329,7 +5449,8 @@ await saveAddressAfterTour(
           ==================================================== */}
 
          {calendarView ===
-  "month" && (
+  "month" &&
+  !guideSearch.trim() && (
   <div
     onTouchStart={
       handleCalendarTouchStart
@@ -5509,7 +5630,7 @@ className={[
 
   <div className="flex items-center gap-1.5 sm:gap-2">
 
-    <span className="h-3 w-3 rounded-md bg-[#dc2127] ring-1 ring-[#ffb3b3] sm:h-4 sm:w-4" />
+    <span className="h-3 w-3 rounded-md bg-[#dc2127] ring-1 ring-black dark:ring-white sm:h-4 sm:w-4" />
 
     <span>
       Tour sem guia/motorista
@@ -5519,7 +5640,7 @@ className={[
 
   <div className="flex items-center gap-1.5 sm:gap-2">
 
-    <span className="h-3 w-3 rounded-md bg-[#fbd75b] ring-1 ring-[#fff1b3] sm:h-4 sm:w-4" />
+    <span className="h-3 w-3 rounded-md bg-[#fbd75b] ring-1 ring-black dark:ring-white sm:h-4 sm:w-4" />
 
     <span>
       Tour com guia e motorista
@@ -5529,7 +5650,7 @@ className={[
 
   <div className="flex items-center gap-1.5 sm:gap-2">
 
-    <span className="h-3 w-3 rounded-md bg-[#5484ed] ring-1 ring-[#b8caff] sm:h-4 sm:w-4" />
+    <span className="h-3 w-3 rounded-md bg-[#5484ed] ring-1 ring-black dark:ring-white sm:h-4 sm:w-4" />
 
     <span>
       Tour Ilha Grande
@@ -5539,7 +5660,7 @@ className={[
 
   <div className="flex items-center gap-1.5 sm:gap-2">
 
-    <span className="h-3 w-3 rounded-md bg-[#ff887c] ring-1 ring-[#ffc5c0] sm:h-4 sm:w-4" />
+    <span className="h-3 w-3 rounded-md bg-[#ff887c] ring-1 ring-black dark:ring-white sm:h-4 sm:w-4" />
 
     <span>
       Tour Website
