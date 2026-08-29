@@ -2173,7 +2173,7 @@ async function saveAddressAfterTour(
       value.indexOf(",");
 
     let name = value;
-    let address = "";
+    let address = value;
 
     if (
       separator > -1
@@ -2194,11 +2194,12 @@ async function saveAddressAfterTour(
           .trim();
     }
 
-    if (
-      !name ||
-      !address
-    ) {
+    if (!name) {
       return;
+    }
+
+    if (!address) {
+      address = name;
     }
 
     await fetch(
@@ -2224,7 +2225,6 @@ async function saveAddressAfterTour(
     );
   }
 }
-
   /* ============================================================
   CARREGAMENTO
   ============================================================ */
@@ -3989,9 +3989,10 @@ if (
       // Só acontece depois que o tour foi criado com sucesso.
       // ========================================================
 
-      await saveAddressAfterTour(
-        tourAddress
-      );
+
+await saveAddressAfterTour(
+  tourAddress
+);
 
     
       alert(
