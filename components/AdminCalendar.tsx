@@ -1197,15 +1197,34 @@ function handleCalendarTouchEnd(
     return;
   }
 
-  // Esquerda = próximo mês
-  if (deltaX < 0) {
-    goNextMonth();
+  if (
+    calendarView ===
+    "month"
+  ) {
+    // Esquerda = próximo mês
+    if (deltaX < 0) {
+      goNextMonth();
+
+      return;
+    }
+
+    // Direita = mês anterior
+    goPreviousMonth();
 
     return;
   }
 
-  // Direita = mês anterior
-  goPreviousMonth();
+  // Modo dia:
+  // Esquerda = próximo dia
+  if (deltaX < 0) {
+    goNextDay();
+
+    return;
+  }
+
+  // Direita = dia anterior
+  goPreviousDay();
+
 }
 
   const [
@@ -5517,9 +5536,19 @@ className={[
              MODO DIA
           ==================================================== */}
 
-          {calendarView ===
-            "day" && (
-            <div className="space-y-4">
+         {calendarView ===
+  "day" && (
+  <div
+    onTouchStart={
+      handleCalendarTouchStart
+    }
+    onTouchEnd={
+      handleCalendarTouchEnd
+    }
+    className="touch-pan-y"
+  >
+
+    <div className="space-y-4">
 
               <div className="rounded-2xl bg-blue-50 p-4 sm:p-5">
 
@@ -5892,12 +5921,12 @@ className={[
                 </div>
 
               </div>
-
             </div>
+
+          </div>
           )}
         </>
       )}
-
       {/* ======================================================
          MODAL DO DIA
       ====================================================== */}
