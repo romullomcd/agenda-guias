@@ -1,3 +1,4 @@
+
 "use client";
 
 import { FormEvent, useState } from "react";
@@ -6,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -566,23 +568,100 @@ export default function Home() {
                 Senha
               </label>
 
-              <input
-                type="password"
-                name="password"
-                value={password}
-                onChange={(
-                  event
-                ) =>
-                  setPassword(
-                    event.target.value
-                  )
-                }
-                required
-                autoComplete="current-password"
-                placeholder="Digite sua senha"
-                disabled={loading}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-gray-900 outline-none transition placeholder:text-gray-500 focus:border-[#e91e8c] focus:bg-white focus:ring-4 focus:ring-pink-100 disabled:cursor-not-allowed disabled:opacity-60"
-              />
+              <div className="relative">
+
+                <input
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
+                  name="password"
+                  value={password}
+                  onChange={(
+                    event
+                  ) =>
+                    setPassword(
+                      event.target.value
+                    )
+                  }
+                  required
+                  autoComplete="current-password"
+                  placeholder="Digite sua senha"
+                  disabled={loading}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 pr-12 text-gray-900 outline-none transition placeholder:text-gray-500 focus:border-[#e91e8c] focus:bg-white focus:ring-4 focus:ring-pink-100 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword(
+                      (current) =>
+                        !current
+                    )
+                  }
+                  disabled={loading}
+                  aria-label={
+                    showPassword
+                      ? "Ocultar senha"
+                      : "Mostrar senha"
+                  }
+                  className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-gray-400 transition hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {showPassword ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="h-5 w-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 3l18 18"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M10.58 10.58a2 2 0 002.84 2.84"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9.88 4.24A9.77 9.77 0 0112 4c5.05 0 8.55 4.42 9.5 6.5a10.5 10.5 0 01-2.03 2.98"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6.61 6.61C4.62 7.93 3.25 9.7 2.5 10.5 3.45 12.58 7 17 12 17c1.61 0 3.08-.43 4.39-1.16"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="h-5 w-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"
+                      />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="3"
+                      />
+                    </svg>
+                  )}
+                </button>
+
+              </div>
 
             </div>
 
@@ -648,3 +727,4 @@ export default function Home() {
     </main>
   );
 }
+

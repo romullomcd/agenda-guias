@@ -1,7 +1,9 @@
+
 "use client";
 
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -87,6 +89,110 @@ export default function Calendar() {
   ] = useState(
     true
   );
+
+  /* ============================================================
+  SWIPE MOBILE
+  ============================================================ */
+
+  const touchStartX =
+    useRef<number | null>(null);
+
+  const touchStartY =
+    useRef<number | null>(null);
+
+  function handleCalendarTouchStart(
+    event: React.TouchEvent<HTMLDivElement>
+  ) {
+    const touch =
+      event.touches[0];
+
+    if (!touch) {
+      return;
+    }
+
+    touchStartX.current =
+      touch.clientX;
+
+    touchStartY.current =
+      touch.clientY;
+  }
+
+  function handleCalendarTouchEnd(
+    event: React.TouchEvent<HTMLDivElement>
+  ) {
+    if (
+      touchStartX.current ===
+        null ||
+      touchStartY.current ===
+        null
+    ) {
+      return;
+    }
+
+    const touch =
+      event.changedTouches[0];
+
+    if (!touch) {
+      return;
+    }
+
+    const deltaX =
+      touch.clientX -
+      touchStartX.current;
+
+    const deltaY =
+      touch.clientY -
+      touchStartY.current;
+
+    touchStartX.current =
+      null;
+
+    touchStartY.current =
+      null;
+
+    const minimumSwipeDistance =
+      60;
+
+    // Ignora movimentos predominantemente verticais.
+    if (
+      Math.abs(deltaX) <=
+        Math.abs(deltaY)
+    ) {
+      return;
+    }
+
+    // Ignora movimentos muito pequenos.
+    if (
+      Math.abs(deltaX) <
+      minimumSwipeDistance
+    ) {
+      return;
+    }
+
+    // Deslizou para a esquerda:
+    // próximo mês.
+    if (deltaX < 0) {
+      setCurrentMonth(
+        (current) =>
+          addMonths(
+            current,
+            1
+          )
+      );
+
+      return;
+    }
+
+    // Deslizou para a direita:
+    // mês anterior.
+    setCurrentMonth(
+      (current) =>
+        subMonths(
+          current,
+          1
+        )
+    );
+  }
 
   /* ============================================================
   MODAL DO TOUR
@@ -1029,140 +1135,152 @@ hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:h-11 sm:w-11 sm:
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-7 gap-1 sm:gap-2">
+              <div
+                onTouchStart={
+                  handleCalendarTouchStart
+                }
+                onTouchEnd={
+                  handleCalendarTouchEnd
+                }
+                className="touch-pan-y"
+              >
 
-                {
-                  days.map(
-                    (day) => {
+                <div className="grid grid-cols-7 gap-1 sm:gap-2">
 
-                      const date =
-                        format(
-                          day,
-                          "yyyy-MM-dd"
-                        );
+                  {
+                    days.map(
+                      (day) => {
 
-                      const existing =
-                        availability.find(
-                          (item) =>
-                            item.date ===
-                            date
-                        );
+                        const date =
+                          format(
+                            day,
+                            "yyyy-MM-dd"
+                          );
 
-                      const sameMonth =
-                        isSameMonth(
-                          day,
-                          currentMonth
-                        );
+                        const existing =
+                          availability.find(
+                            (item) =>
+                              item.date ===
+                              date
+                          );
 
-                      const isEscalated =
-                        existing?.status ===
-                        "escalated";
+                        const sameMonth =
+                          isSameMonth(
+                            day,
+                            currentMonth
+                          );
 
-                      let dayClass =
-                        sameMonth
-                          ? "border-gray-200 bg-white text-gray-900 dark:border-gray-700 dark:bg-black dark:text-white hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900"
-: "border-transparent bg-gray-100 text-gray-400 dark:bg-gray-900 dark:text-gray-500";
+                        const isEscalated =
+                          existing?.status ===
+                          "escalated";
 
-                      /* ==================================================
-                         DISPONÍVEL
-                      ================================================== */
+                        let dayClass =
+                          sameMonth
+                            ? "border-gray-200 bg-white text-gray-900 dark:border-gray-700 dark:bg-black dark:text-white hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900"
+                            : "border-transparent bg-gray-100 text-gray-400 dark:bg-gray-900 dark:text-gray-500";
 
-                      if (
-                        sameMonth &&
-                        existing?.status ===
-                          "available"
-                      ) {
-                        dayClass =
-                          "border-green-500 bg-green-500 text-white hover:bg-green-600";
-                      }
+                        /* ==================================================
+                           DISPONÍVEL
+                        ================================================== */
 
-                      /* ==================================================
-                         INDISPONÍVEL
-                      ================================================== */
+                        if (
+                          sameMonth &&
+                          existing?.status ===
+                            "available"
+                        ) {
+                          dayClass =
+                            "border-green-500 bg-green-500 text-white hover:bg-green-600";
+                        }
 
-                      if (
-                        sameMonth &&
-                        existing?.status ===
-                          "unavailable"
-                      ) {
-                        dayClass =
-                          "border-red-500 bg-red-500 text-white hover:bg-red-600";
-                      }
+                        /* ==================================================
+                           INDISPONÍVEL
+                        ================================================== */
 
-                      /* ==================================================
-                         ESCALADO
-                      ================================================== */
+                        if (
+                          sameMonth &&
+                          existing?.status ===
+                            "unavailable"
+                        ) {
+                          dayClass =
+                            "border-red-500 bg-red-500 text-white hover:bg-red-600";
+                        }
 
-                      if (
-                        sameMonth &&
-                        isEscalated
-                      ) {
-                        dayClass =
-                          "border-[#b59600] bg-[#c9aa00] text-white shadow-inner hover:bg-[#b59600]";
-                      }
+                        /* ==================================================
+                           ESCALADO
+                        ================================================== */
 
-                      return (
-                        <button
-                          key={
-                            date
-                          }
-                          type="button"
-                          onClick={() => {
+                        if (
+                          sameMonth &&
+                          isEscalated
+                        ) {
+                          dayClass =
+                            "border-[#b59600] bg-[#c9aa00] text-white shadow-inner hover:bg-[#b59600]";
+                        }
 
-                            if (
-                              !sameMonth
-                            ) {
-                              return;
+                        return (
+                          <button
+                            key={
+                              date
                             }
+                            type="button"
+                            onClick={() => {
 
-                            if (
-                              isEscalated
-                            ) {
-                              openEscalatedTour(
-                                date
+                              if (
+                                !sameMonth
+                              ) {
+                                return;
+                              }
+
+                              if (
+                                isEscalated
+                              ) {
+                                openEscalatedTour(
+                                  date
+                                );
+
+                                return;
+                              }
+
+                              toggleDay(
+                                day
                               );
 
-                              return;
+                            }}
+                            disabled={
+                              loading ||
+                              !sameMonth
                             }
+                            title={
+                              isEscalated
+                                ? "Clique para ver as informações do tour"
+                                : undefined
+                            }
+                            className={[
+                              "aspect-square rounded-lg border text-xs font-extrabold transition sm:rounded-xl sm:text-sm md:text-base",
 
-                            toggleDay(
-                              day
-                            );
+                              dayClass,
 
-                          }}
-                          disabled={
-                            loading ||
-                            !sameMonth
-                          }
-                          title={
-                            isEscalated
-                              ? "Clique para ver as informações do tour"
-                              : undefined
-                          }
-                          className={[
-                            "aspect-square rounded-lg border text-xs font-extrabold transition sm:rounded-xl sm:text-sm md:text-base",
+                              isEscalated &&
+                              sameMonth
+                                ? "cursor-pointer"
+                                : "",
+                            ].join(
+                              " "
+                            )}
+                          >
+                            {
+                              format(
+                                day,
+                                "d"
+                              )
+                            }
+                          </button>
+                        );
+                      }
+                    )
+                  }
 
-                            dayClass,
-
-                            isEscalated &&
-                            sameMonth
-                              ? "cursor-pointer"
-                              : "",
-                          ].join(
-                            " "
-                          )}
-                        >
-                          {
-                            format(
-                              day,
-                              "d"
-                            )
-                          }
-                        </button>
-                      );
-                    }
-                  )
-                }
+                </div>
 
               </div>
 
@@ -1247,3 +1365,4 @@ hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:h-11 sm:w-11 sm:
     </>
   );
 }
+

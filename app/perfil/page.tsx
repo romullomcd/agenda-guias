@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -91,6 +92,13 @@ export default function PerfilPage() {
 
   const [confirmPassword, setConfirmPassword] =
     useState("");
+
+  // ============================================
+  // MOSTRAR / OCULTAR SENHAS
+  // ============================================
+
+  const [showPasswords, setShowPasswords] =
+    useState(false);
 
   // ============================================
   // APLICAR TEMA
@@ -377,25 +385,25 @@ export default function PerfilPage() {
       }
 
       const passwordChanged =
-  password.length > 0;
+        password.length > 0;
 
-if (passwordChanged) {
-  await supabase.auth.signOut();
+      if (passwordChanged) {
+        await supabase.auth.signOut();
 
-  window.location.href = "/";
+        window.location.href = "/";
 
-  return;
-}
+        return;
+      }
 
-setMessage(
-  result.message ||
-    "Perfil atualizado com sucesso!"
-);
+      setMessage(
+        result.message ||
+          "Perfil atualizado com sucesso!"
+      );
 
-setPassword("");
-setConfirmPassword("");
+      setPassword("");
+      setConfirmPassword("");
 
-await loadProfile();
+      await loadProfile();
     } catch (error) {
       console.error(error);
 
@@ -802,19 +810,97 @@ await loadProfile();
                       Nova senha
                     </label>
 
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(event) =>
-                        setPassword(
-                          event.target.value
-                        )
-                      }
-                      minLength={6}
-                      placeholder="Mínimo 6 caracteres"
-                      autoComplete="new-password"
-                      className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950 [color-scheme:light] dark:[color-scheme:dark] autofill:bg-black"
-                    />
+                    <div className="relative">
+
+                      <input
+                        type={
+                          showPasswords
+                            ? "text"
+                            : "password"
+                        }
+                        value={
+                          password
+                        }
+                        onChange={(event) =>
+                          setPassword(
+                            event.target.value
+                          )
+                        }
+                        minLength={6}
+                        placeholder="Mínimo 6 caracteres"
+                        autoComplete="new-password"
+                        className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 pr-12 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950 [color-scheme:light] dark:[color-scheme:dark] autofill:bg-black"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowPasswords(
+                            (current) =>
+                              !current
+                          )
+                        }
+                        aria-label={
+                          showPasswords
+                            ? "Ocultar senhas"
+                            : "Mostrar senhas"
+                        }
+                        className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-gray-400 transition hover:text-gray-600 dark:hover:text-gray-200"
+                      >
+                        {showPasswords ? (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="h-5 w-5"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M3 3l18 18"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M10.58 10.58a2 2 0 002.84 2.84"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9.88 4.24A9.77 9.77 0 0112 4c5.05 0 8.55 4.42 9.5 6.5a10.5 10.5 0 01-2.03 2.98"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M6.61 6.61C4.62 7.93 3.25 9.7 2.5 10.5 3.45 12.58 7 17 12 17c1.61 0 3.08-.43 4.39-1.16"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="h-5 w-5"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"
+                            />
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="3"
+                            />
+                          </svg>
+                        )}
+                      </button>
+
+                    </div>
 
                   </div>
 
@@ -826,21 +912,97 @@ await loadProfile();
                       Confirmar nova senha
                     </label>
 
-                    <input
-                      type="password"
-                      value={
-                        confirmPassword
-                      }
-                      onChange={(event) =>
-                        setConfirmPassword(
-                          event.target.value
-                        )
-                      }
-                      minLength={6}
-                      placeholder="Digite novamente"
-                      autoComplete="new-password"
-                      className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-blue-950"
-                    />
+                    <div className="relative">
+
+                      <input
+                        type={
+                          showPasswords
+                            ? "text"
+                            : "password"
+                        }
+                        value={
+                          confirmPassword
+                        }
+                        onChange={(event) =>
+                          setConfirmPassword(
+                            event.target.value
+                          )
+                        }
+                        minLength={6}
+                        placeholder="Digite novamente"
+                        autoComplete="new-password"
+                        className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 pr-12 text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-50 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowPasswords(
+                            (current) =>
+                              !current
+                          )
+                        }
+                        aria-label={
+                          showPasswords
+                            ? "Ocultar senhas"
+                            : "Mostrar senhas"
+                        }
+                        className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-gray-400 transition hover:text-gray-600 dark:hover:text-gray-200"
+                      >
+                        {showPasswords ? (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="h-5 w-5"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M3 3l18 18"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M10.58 10.58a2 2 0 002.84 2.84"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9.88 4.24A9.77 9.77 0 0112 4c5.05 0 8.55 4.42 9.5 6.5 0.4.74 0.69 1.39 0.96 2.03"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M6.61 6.61C4.62 7.93 3.25 9.7 2.5 10.5 3.45 12.58 7 17 12 17c1.61 0 3.08-.43 4.39-1.16"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="h-5 w-5"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"
+                            />
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="3"
+                            />
+                          </svg>
+                        )}
+                      </button>
+
+                    </div>
 
                   </div>
 
@@ -902,3 +1064,4 @@ await loadProfile();
     </main>
   );
 }
+
