@@ -2815,27 +2815,28 @@ const filteredTourEvents =
           event.date <=
             lastDay
       )
-      .filter(
-        (event) => {
-          const searchableText =
-            [
-              event.title,
-              event.description,
-              event.address,
-              event.guide_email,
-              event.additional_email,
-            ]
-              .filter(
-                Boolean
-              )
-              .join(" ")
-              .toLowerCase();
+     .filter(
+  (event) => {
+    const searchableText =
+      [
+        event.title,
+        event.description,
+        event.address,
+        event.guide_email,
+        event.additional_email,
+        event.additional_email_2,
+      ]
+        .filter(
+          Boolean
+        )
+        .join(" ")
+        .toLowerCase();
 
-          return searchableText.includes(
-            normalizedSearch
-          );
-        }
-      )
+    return searchableText.includes(
+      normalizedSearch
+    );
+  }
+)
       .sort(
         (a, b) =>
           a.date.localeCompare(
