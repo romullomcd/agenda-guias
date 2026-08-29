@@ -5505,7 +5505,7 @@ className={[
 
             
 
-            <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
+           <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-100 dark:border-gray-800 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
 
                 <div className="flex items-center gap-1.5">
   <span className="h-3 w-3 rounded bg-[#dc2127] ring-1 ring-[#b91c1c] sm:h-4 sm:w-4" />
