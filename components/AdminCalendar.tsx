@@ -1113,6 +1113,90 @@ export default function AdminCalendar() {
     new Date()
   );
 
+const touchStartX =
+  useRef<number | null>(null);
+
+const touchStartY =
+  useRef<number | null>(null);
+
+function handleCalendarTouchStart(
+  event: React.TouchEvent<HTMLDivElement>
+) {
+  const touch =
+    event.touches[0];
+
+  if (!touch) {
+    return;
+  }
+
+  touchStartX.current =
+    touch.clientX;
+
+  touchStartY.current =
+    touch.clientY;
+}
+
+function handleCalendarTouchEnd(
+  event: React.TouchEvent<HTMLDivElement>
+) {
+  if (
+    touchStartX.current ===
+      null ||
+    touchStartY.current ===
+      null
+  ) {
+    return;
+  }
+
+  const touch =
+    event.changedTouches[0];
+
+  if (!touch) {
+    return;
+  }
+
+  const deltaX =
+    touch.clientX -
+    touchStartX.current;
+
+  const deltaY =
+    touch.clientY -
+    touchStartY.current;
+
+  touchStartX.current =
+    null;
+
+  touchStartY.current =
+    null;
+
+  const minimumSwipeDistance =
+    60;
+
+  if (
+    Math.abs(deltaX) <=
+    Math.abs(deltaY)
+  ) {
+    return;
+  }
+
+  if (
+    Math.abs(deltaX) <
+    minimumSwipeDistance
+  ) {
+    return;
+  }
+
+  // Esquerda = próximo mês
+  if (deltaX < 0) {
+    goNextMonth();
+
+    return;
+  }
+
+  // Direita = mês anterior
+  goPreviousMonth();
+}
+
   const [
     currentDay,
     setCurrentDay,
@@ -5202,9 +5286,18 @@ await saveAddressAfterTour(
              MODO MÊS
           ==================================================== */}
 
-          {calendarView ===
-            "month" && (
-            <>
+         {calendarView ===
+  "month" && (
+  <div
+    onTouchStart={
+      handleCalendarTouchStart
+    }
+    onTouchEnd={
+      handleCalendarTouchEnd
+    }
+    className="touch-pan-y"
+  >
+    
               <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[8px] font-extrabold uppercase tracking-wide text-gray-800 dark:text-gray-200 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
 
                 <div>Seg</div>
@@ -5217,7 +5310,10 @@ await saveAddressAfterTour(
 
               </div>
 
-              <div className="grid grid-cols-7 gap-1 sm:gap-2">
+              
+  <div className="grid grid-cols-7 gap-1 sm:gap-2">
+
+  
 
                 {days.map(
                   (day) => {
@@ -5309,6 +5405,7 @@ await saveAddressAfterTour(
                           }
                         </div>
 
+
                         <div className="space-y-0.5 overflow-hidden sm:space-y-1">
 
                           {dayEvents
@@ -5362,9 +5459,11 @@ className={[
                   }
                 )}
 
-              </div>
+                            </div>
 
-              <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
+            
+
+            <div className="mt-4 flex flex-wrap gap-3 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
 
                 <div className="flex items-center gap-1.5">
   <span className="h-3 w-3 rounded bg-[#dc2127] ring-1 ring-[#b91c1c] sm:h-4 sm:w-4" />
@@ -5387,7 +5486,8 @@ className={[
 </div>
 
               </div>
-            </>
+
+            </div>
           )}
 
           {/* ====================================================
