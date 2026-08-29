@@ -5509,7 +5509,7 @@ className={[
 
   <div className="flex items-center gap-1.5 sm:gap-2">
 
-    <span className="h-3 w-3 rounded-md bg-[#dc2127] ring-1 ring-[#b91c1c] sm:h-4 sm:w-4" />
+    <span className="h-3 w-3 rounded-md bg-[#dc2127] ring-1 ring-[#ffb3b3] sm:h-4 sm:w-4" />
 
     <span>
       Tour sem guia/motorista
@@ -5519,7 +5519,7 @@ className={[
 
   <div className="flex items-center gap-1.5 sm:gap-2">
 
-    <span className="h-3 w-3 rounded-md bg-[#fbd75b] ring-1 ring-[#d4a900] sm:h-4 sm:w-4" />
+    <span className="h-3 w-3 rounded-md bg-[#fbd75b] ring-1 ring-[#fff1b3] sm:h-4 sm:w-4" />
 
     <span>
       Tour com guia e motorista
@@ -5529,7 +5529,7 @@ className={[
 
   <div className="flex items-center gap-1.5 sm:gap-2">
 
-    <span className="h-3 w-3 rounded-md bg-[#5484ed] ring-1 ring-[#3b64c4] sm:h-4 sm:w-4" />
+    <span className="h-3 w-3 rounded-md bg-[#5484ed] ring-1 ring-[#b8caff] sm:h-4 sm:w-4" />
 
     <span>
       Tour Ilha Grande
@@ -5539,7 +5539,7 @@ className={[
 
   <div className="flex items-center gap-1.5 sm:gap-2">
 
-    <span className="h-3 w-3 rounded-md bg-[#ff887c] ring-1 ring-[#d96359] sm:h-4 sm:w-4" />
+    <span className="h-3 w-3 rounded-md bg-[#ff887c] ring-1 ring-[#ffc5c0] sm:h-4 sm:w-4" />
 
     <span>
       Tour Website

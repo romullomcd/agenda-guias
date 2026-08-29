@@ -1316,7 +1316,7 @@ export default function Calendar() {
 
                 <div className="flex items-center gap-1.5 sm:gap-2">
 
-                  <span className="h-3 w-3 rounded-md bg-[#c9aa00] ring-1 ring-[#d6c36a] sm:h-4 sm:w-4" />
+                  <span className="h-3 w-3 rounded-md bg-[#c9aa00] ring-1 ring-black dark:ring-white sm:h-4 sm:w-4" />
 
                   <span>
                     Escalado
@@ -1326,7 +1326,7 @@ export default function Calendar() {
 
                 <div className="flex items-center gap-1.5 sm:gap-2">
 
-                  <span className="h-3 w-3 rounded-md bg-green-500 ring-1 ring-green-200 sm:h-4 sm:w-4" />
+                  <span className="h-3 w-3 rounded-md bg-green-500 ring-1 ring-black dark:ring-white sm:h-4 sm:w-4" />
 
                   <span>
                     Disponível
@@ -1336,7 +1336,7 @@ export default function Calendar() {
 
                 <div className="flex items-center gap-1.5 sm:gap-2">
 
-                  <span className="h-3 w-3 rounded-md bg-red-500 ring-1 ring-red-200 sm:h-4 sm:w-4" />
+                  <span className="h-3 w-3 rounded-md bg-red-500 ring-1 ring-black dark:ring-white sm:h-4 sm:w-4" />
 
                   <span>
                     Indisponível
@@ -1346,7 +1346,7 @@ export default function Calendar() {
 
                 <div className="flex items-center gap-1.5 sm:gap-2">
 
-                  <span className="h-3 w-3 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-black sm:h-4 sm:w-4" />
+                  <span className="h-3 w-3 rounded-md bg-white ring-1 ring-black dark:bg-black dark:ring-white sm:h-4 sm:w-4" />
 
                   <span>
                     Não marcado
