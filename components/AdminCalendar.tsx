@@ -5311,6 +5311,12 @@ await saveAddressAfterTour(
                   </p>
                 )}
 
+{event.additional_email_2 && (
+  <p className="mt-1 break-all text-xs text-gray-500 dark:text-gray-400">
+    {event.additional_email_2}
+  </p>
+)}
+
               </div>
 
               <span className="shrink-0 text-lg text-gray-400">
