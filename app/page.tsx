@@ -1,4 +1,3 @@
-
 "use client";
 
 import { FormEvent, useState } from "react";
@@ -720,6 +719,28 @@ export default function Home() {
             </span>
           </p>
 
+          <div className="mt-2 flex items-center justify-center gap-3 text-xs">
+
+            <a
+              href="/politica-de-privacidade"
+              className="text-gray-400 underline underline-offset-2 transition hover:text-[#e91e8c]"
+            >
+              Política de Privacidade
+            </a>
+
+            <span className="text-gray-300">
+              •
+            </span>
+
+            <a
+              href="/termos-de-servico"
+              className="text-gray-400 underline underline-offset-2 transition hover:text-[#e91e8c]"
+            >
+              Termos de Serviço
+            </a>
+
+          </div>
+
         </footer>
 
       </div>
@@ -727,4 +748,3 @@ export default function Home() {
     </main>
   );
 }
-
