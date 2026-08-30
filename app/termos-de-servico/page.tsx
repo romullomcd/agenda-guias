@@ -88,7 +88,7 @@ export default function TermosDeServico() {
                SELETOR DE IDIOMA
             ================================================== */}
 
-            <div className="flex shrink-0 rounded-xl border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-900">
+            <div className="flex w-fit shrink-0 self-start rounded-xl border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-900 sm:self-auto">
 
               <button
                 type="button"
