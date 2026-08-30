@@ -16,6 +16,29 @@ export default function PoliticaDePrivacidade() {
       <div className="mx-auto w-full max-w-3xl">
 
         {/* ======================================================
+           VOLTAR AO LOGIN
+        ====================================================== */}
+
+        <div className="mb-4">
+
+          <a
+            href="/"
+            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-gray-600 transition hover:bg-white hover:text-[#e91e8c] dark:text-gray-300 dark:hover:bg-gray-900 dark:hover:text-[#e91e8c]"
+          >
+
+            <span aria-hidden="true">
+              ←
+            </span>
+
+            {isPortuguese
+              ? "Voltar ao login"
+              : "Back to login"}
+
+          </a>
+
+        </div>
+
+        {/* ======================================================
            CABEÇALHO
         ====================================================== */}
 
@@ -109,6 +132,7 @@ export default function PoliticaDePrivacidade() {
             <div className="mt-8 space-y-7 text-sm leading-7 sm:text-base">
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   1. Sobre esta política
                 </h2>
@@ -119,9 +143,11 @@ export default function PoliticaDePrivacidade() {
                   para autenticação, gerenciamento de agenda e integração
                   com serviços do Google.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   2. Informações utilizadas
                 </h2>
@@ -132,9 +158,11 @@ export default function PoliticaDePrivacidade() {
                   endereço de e-mail e informações relacionadas às agendas,
                   tours e disponibilidades cadastradas no sistema.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   3. Integração com o Google
                 </h2>
@@ -150,9 +178,11 @@ export default function PoliticaDePrivacidade() {
                   utilizadas somente para fornecer as funcionalidades
                   relacionadas à integração autorizada pelo usuário.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   4. Uso das informações
                 </h2>
@@ -168,9 +198,11 @@ export default function PoliticaDePrivacidade() {
                   As informações não são vendidas ou disponibilizadas para
                   terceiros para fins de publicidade.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   5. Compartilhamento
                 </h2>
@@ -181,9 +213,11 @@ export default function PoliticaDePrivacidade() {
                   incluindo os serviços do Google quando a integração estiver
                   autorizada.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   6. Segurança
                 </h2>
@@ -194,9 +228,11 @@ export default function PoliticaDePrivacidade() {
                   Nenhum sistema conectado à internet pode garantir
                   segurança absoluta.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   7. Exclusão e revogação de acesso
                 </h2>
@@ -207,9 +243,11 @@ export default function PoliticaDePrivacidade() {
                   conta Google. A utilização do sistema também pode ser
                   interrompida pelo administrador responsável.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   8. Alterações nesta política
                 </h2>
@@ -219,9 +257,11 @@ export default function PoliticaDePrivacidade() {
                   refletir alterações no sistema, nas integrações ou nas
                   obrigações legais aplicáveis.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   9. Contato
                 </h2>
@@ -234,6 +274,7 @@ export default function PoliticaDePrivacidade() {
                 <p className="mt-2 font-bold text-[#e91e8c]">
                   adtodosossantos@gmail.com
                 </p>
+
               </section>
 
             </div>
@@ -241,6 +282,7 @@ export default function PoliticaDePrivacidade() {
             <div className="mt-8 space-y-7 text-sm leading-7 sm:text-base">
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   1. About this policy
                 </h2>
@@ -251,9 +293,11 @@ export default function PoliticaDePrivacidade() {
                   authentication, agenda management, and integration
                   with Google services.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   2. Information we use
                 </h2>
@@ -264,9 +308,11 @@ export default function PoliticaDePrivacidade() {
                   address, and information related to schedules, tours,
                   and guide availability registered in the system.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   3. Google integration
                 </h2>
@@ -283,9 +329,11 @@ export default function PoliticaDePrivacidade() {
                   to provide the features related to the integration
                   authorized by the user.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   4. Use of information
                 </h2>
@@ -300,9 +348,11 @@ export default function PoliticaDePrivacidade() {
                   Information is not sold or made available to third
                   parties for advertising purposes.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   5. Sharing of information
                 </h2>
@@ -312,9 +362,11 @@ export default function PoliticaDePrivacidade() {
                   perform features requested by the user, including
                   Google services when the integration is authorized.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   6. Security
                 </h2>
@@ -325,9 +377,11 @@ export default function PoliticaDePrivacidade() {
                   No internet-connected system can guarantee absolute
                   security.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   7. Deletion and access revocation
                 </h2>
@@ -338,9 +392,11 @@ export default function PoliticaDePrivacidade() {
                   Use of the system may also be discontinued by the
                   responsible administrator.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   8. Changes to this policy
                 </h2>
@@ -350,9 +406,11 @@ export default function PoliticaDePrivacidade() {
                   changes to the system, integrations, or applicable
                   legal requirements.
                 </p>
+
               </section>
 
               <section>
+
                 <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">
                   9. Contact
                 </h2>
@@ -365,6 +423,7 @@ export default function PoliticaDePrivacidade() {
                 <p className="mt-2 font-bold text-[#e91e8c]">
                   adtodosossantos@gmail.com
                 </p>
+
               </section>
 
             </div>
