@@ -28,6 +28,9 @@ export default function Dashboard() {
 const notificationRef =
   useRef<HTMLDivElement>(null);
 
+const googleMobileRef =
+  useRef<HTMLDivElement>(null);
+
   const [profile, setProfile] =
     useState<Profile | null>(null);
 
@@ -52,6 +55,12 @@ const [adminSearch, setAdminSearch] =
 
   const [showMenu, setShowMenu] =
     useState(false);
+
+const [showGoogleMobile, setShowGoogleMobile] =
+  useState(false);
+
+const googleToggleLockRef =
+  useRef(false);
 
 const [theme, setTheme] =
   useState<"light" | "dark">(
@@ -80,12 +89,18 @@ useEffect(() => {
     useState(false);
 
 useEffect(() => {
-  if (!showMenu && !showNotifications) {
+  if (
+    !showMenu &&
+    !showNotifications
+  ) {
     return;
   }
 
-  function handleClickOutside(event: MouseEvent) {
-    const target = event.target as Node;
+  function handleClickOutside(
+    event: MouseEvent
+  ) {
+    const target =
+      event.target as Node;
 
     if (
       showMenu &&
@@ -115,10 +130,12 @@ useEffect(() => {
       handleClickOutside
     );
   };
+
 }, [
   showMenu,
   showNotifications,
 ]);
+
 
   // ============================================================
   // MODAL DE NOTIFICAÇÃO
@@ -1695,20 +1712,53 @@ hover:bg-blue-50 hover:text-[#1687d9]"
               </div>
             )}
 
-            {/* AVATAR */}
+{/* GOOGLE MOBILE — SOMENTE ADMIN */}
 
-            <div
-              className={
-                "flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white " +
-                (isAdmin
-                  ? "bg-[#1687d9]"
-                  : "bg-[#e91e8c]")
-              }
-            >
-              {profile.name
-                .charAt(0)
-                .toUpperCase()}
-            </div>
+{isAdmin && (
+  <div
+    ref={googleMobileRef}
+    className="relative lg:hidden"
+  >
+
+    <button
+      type="button"
+     onClick={() => {
+  if (googleToggleLockRef.current) {
+    return;
+  }
+
+  googleToggleLockRef.current = true;
+
+  if (!googleConnected) {
+    setShowGoogleMobile(true);
+  } else {
+    setShowGoogleMobile(
+      (current) => !current
+    );
+  }
+
+  window.setTimeout(() => {
+    googleToggleLockRef.current = false;
+  }, 250);
+}}
+      className={[
+        "flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-black shadow-sm transition dark:bg-black",
+        googleConnected
+          ? "border-2 border-green-500"
+          : "border-2 border-red-500",
+      ].join(" ")}
+      aria-label="Google Calendar"
+      aria-expanded={showGoogleMobile}
+    >
+      <span className="bg-[linear-gradient(135deg,#4285F4_0%,#4285F4_25%,#34A853_25%,#34A853_50%,#FBBC05_50%,#FBBC05_75%,#EA4335_75%,#EA4335_100%)] bg-clip-text text-transparent">
+        G
+      </span>
+    </button>
+
+  </div>
+)}
+
+
 
             {/* MENU MOBILE */}
 
@@ -1976,10 +2026,91 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
 
         </div>
 
-      </header>
+</header>
 
-      {/* ====================================================== */}
-      {/* CONTEÚDO */}
+{/* GOOGLE MOBILE — PAINEL */}
+
+{isAdmin &&
+  !checkingGoogle &&
+  (!googleConnected ||
+    showGoogleMobile) && (
+
+  <div className="mt-4 lg:hidden">
+
+    <div className="mb-1 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-black">
+
+      <div className="flex h-1">
+
+        <div className="flex-1 bg-[#4285F4]" />
+        <div className="flex-1 bg-[#34A853]" />
+        <div className="flex-1 bg-[#FBBC05]" />
+        <div className="flex-1 bg-[#EA4335]" />
+
+      </div>
+
+      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+
+        <div className="flex items-center gap-4">
+
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-2xl">
+            📅
+          </div>
+
+          <div>
+
+            <h2 className="text-base font-extrabold text-gray-900 dark:text-white sm:text-lg">
+              Google Calendar
+            </h2>
+
+            <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-300 sm:text-sm">
+              {checkingGoogle
+                ? "Verificando conexão..."
+                : googleConnected
+                ? "Sua conta está conectada e pronta para sincronizar sua agenda."
+                : "Conecte sua conta para sincronizar sua agenda."}
+            </p>
+
+          </div>
+
+        </div>
+
+        {!checkingGoogle &&
+          !googleConnected && (
+            <button
+              type="button"
+              disabled={connectingGoogle}
+              onClick={connectGoogleCalendar}
+              className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            >
+              {connectingGoogle
+                ? "⏳ Conectando..."
+                : "📅 Conectar Google"}
+            </button>
+          )}
+
+        {!checkingGoogle &&
+          googleConnected && (
+            <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-extrabold text-green-700 sm:w-auto">
+
+              <span>✓</span>
+
+              <span>
+                Google conectado
+              </span>
+
+            </div>
+          )}
+
+      </div>
+
+    </div>
+
+  </div>
+)}
+
+
+{/* ====================================================== */}
+{/* CONTEÚDO */}
       {/* ====================================================== */}
 
    <section className="relative z-10 w-full px-3 py-4 sm:px-4 sm:py-6 lg:px-4 lg:py-4">
@@ -2191,81 +2322,7 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
 
         <div className="min-h-0 min-w-0 overflow-visible lg:h-full">
 
-          {/* GOOGLE MOBILE */}
-
-          <div className="mb-6 lg:hidden">
-
-            <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-black">
-
-              <div className="flex h-1">
-
-                <div className="flex-1 bg-[#4285F4]" />
-                <div className="flex-1 bg-[#34A853]" />
-                <div className="flex-1 bg-[#FBBC05]" />
-                <div className="flex-1 bg-[#EA4335]" />
-
-              </div>
-
-              <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-
-                <div className="flex items-center gap-4">
-
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-2xl">
-                    📅
-                  </div>
-
-                  <div>
-
-                    <h2 className="text-base font-extrabold text-gray-900 dark:text-white sm:text-lg">
-                      Google Calendar
-                    </h2>
-
-                    <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-300 sm:text-sm">
-                      {checkingGoogle
-                        ? "Verificando conexão..."
-                        : googleConnected
-                        ? "Sua conta está conectada e pronta para sincronizar sua agenda."
-                        : "Conecte sua conta para sincronizar sua agenda."}
-                    </p>
-
-                  </div>
-
-                </div>
-
-                {!checkingGoogle &&
-                  !googleConnected && (
-                    <button
-                      type="button"
-                      disabled={connectingGoogle}
-                      onClick={
-                        connectGoogleCalendar
-                      }
-                      className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                    >
-                      {connectingGoogle
-                        ? "⏳ Conectando..."
-                        : "📅 Conectar Google"}
-                    </button>
-                  )}
-
-                {!checkingGoogle &&
-                  googleConnected && (
-                    <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-extrabold text-green-700 sm:w-auto">
-
-                      <span>✓</span>
-
-                      <span>
-                        Google conectado
-                      </span>
-
-                    </div>
-                  )}
-
-              </div>
-
-            </div>
-
-          </div>
+        
 
        <div className="min-h-0 min-w-0 lg:h-full">
 
@@ -2319,9 +2376,9 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
         {/* RODAPÉ */}
         {/* ==================================================== */}
 
-        <footer className="mt-12 pb-5 text-center lg:hidden">
+        <footer className="mt-5 pb-2 text-center lg:hidden">
 
-          <div className="mb-4 flex justify-center gap-2">
+          <div className="mb-2 flex justify-center gap-1.5">
 
             <span className="h-2 w-8 rounded-full bg-[#e91e8c]" />
 
@@ -2331,16 +2388,16 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
 
           </div>
 
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            © 2026 Way To Know Rio
-          </p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500">
+  © 2026 Way To Know Rio
+</p>
 
-          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-            Desenvolvido por{" "}
-            <span className="font-semibold text-[#e91e8c]">
-              RMS Labs
-            </span>
-          </p>
+<p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
+  Desenvolvido por{" "}
+  <span className="font-semibold text-[#e91e8c]">
+    RMS Labs
+  </span>
+</p>
 
         </footer>
 
