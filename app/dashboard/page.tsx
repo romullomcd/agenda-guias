@@ -2078,6 +2078,13 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
                   event.target.value
                 )
               }
+
+  onKeyDown={(event) => {
+    if (event.key === "Escape") {
+      setAdminSearch("");
+      event.currentTarget.blur();
+    }
+  }}
               placeholder="Título, e-mail ou endereço..."
               className="w-full rounded-xl border-2 border-gray-300 bg-white px-3 py-2.5 pr-9 text-xs font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-100 dark:border-gray-700 dark:bg-black dark:text-gray-100"
             />
