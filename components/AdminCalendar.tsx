@@ -1105,7 +1105,16 @@ function RichTextEditor({
 COMPONENTE PRINCIPAL
 ============================================================ */
 
-export default function AdminCalendar() {
+type AdminCalendarProps = {
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+};
+
+export default function AdminCalendar({
+  searchValue,
+  onSearchChange,
+}: AdminCalendarProps) {
+
   const [
     currentMonth,
     setCurrentMonth,
@@ -1117,6 +1126,9 @@ const currentMonthRef =
   useRef<Date>(
     currentMonth
   );
+
+const calendarMonthRef =
+  useRef<HTMLDivElement>(null);
 
 currentMonthRef.current =
   currentMonth;
@@ -1392,9 +1404,17 @@ function handleSelectedDateTouchEnd(
   >([]);
 
   const [
-    guideSearch,
-    setGuideSearch,
-  ] = useState("");
+  internalGuideSearch,
+  setInternalGuideSearch,
+] = useState("");
+
+const guideSearch =
+  searchValue ??
+  internalGuideSearch;
+
+const setGuideSearch =
+  onSearchChange ??
+  setInternalGuideSearch;
 
   const [
     selectedDate,
@@ -1607,6 +1627,58 @@ type GoogleContact = {
     contactSearchQuery,
     setContactSearchQuery,
   ] = useState("");
+
+ /* ============================================================
+SCROLL — MUDAR MÊS NO DESKTOP
+============================================================ */
+
+useEffect(() => {
+  function handleWheel(event: WheelEvent) {
+    if (window.innerWidth < 1024) {
+      return;
+    }
+
+    if (Math.abs(event.deltaY) < 10) {
+      return;
+    }
+
+    const target =
+      event.target as HTMLElement | null;
+
+    const calendarArea =
+      target?.closest(
+        "[data-admin-calendar-month]"
+      );
+
+    if (!calendarArea) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    setCurrentMonth((current) =>
+      event.deltaY > 0
+        ? addMonths(current, 1)
+        : subMonths(current, 1)
+    );
+  }
+
+  document.addEventListener(
+    "wheel",
+    handleWheel,
+    {
+      passive: false,
+    }
+  );
+
+  return () => {
+    document.removeEventListener(
+      "wheel",
+      handleWheel
+    );
+  };
+}, []);
 
   useEffect(() => {
     if (
@@ -2250,9 +2322,9 @@ async function saveAddressAfterTour(
   useEffect(() => {
     const channel =
       supabase
-        .channel(
-          "admin-calendar-realtime"
-        )
+       .channel(
+  `admin-calendar-realtime-${crypto.randomUUID()}`
+)
 
         .on(
           "postgres_changes",
@@ -5282,11 +5354,11 @@ await saveAddressAfterTour(
   ============================================================ */
 
   return (
-    <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-black sm:mt-6 sm:rounded-3xl sm:p-6">
+  <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-black sm:rounded-3xl sm:p-6 lg:h-full lg:min-h-0 lg:flex lg:flex-col">
 
       {/* CABEÇALHO */}
 
-      <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:gap-5 md:flex-row md:items-center md:justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:gap-5 md:flex-row md:items-center md:justify-between lg:hidden">
 
         <div>
           <h3 className="text-lg font-extrabold text-gray-900 dark:text-white sm:text-2xl">
@@ -5454,111 +5526,204 @@ await saveAddressAfterTour(
 
     </div>
   )}
-      {/* MÊS / DIA */}
+{/* ==================================================== */}
+{/* CONTROLES DESKTOP */}
+{/* ==================================================== */}
 
-      <div className="mb-4 flex flex-col gap-3 rounded-xl bg-gray-50 dark:bg-gray-900 p-2 sm:flex-row sm:items-center sm:justify-between sm:rounded-2xl sm:p-3">
+<div className="relative mb-4 hidden items-center justify-between rounded-xl bg-gray-50 p-2 dark:bg-gray-900 sm:mb-6 sm:rounded-2xl sm:p-3 lg:flex">
 
-        <div className="flex rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-black p-1">
+  {/* SETAS — ESQUERDA */}
 
-          <button
-            type="button"
-            onClick={
-              switchToMonthView
-            }
-            className={[
-              "flex-1 rounded-lg px-4 py-2 text-sm font-extrabold transition sm:flex-none",
-              calendarView ===
-              "month"
-                ? "bg-[#1687d9] text-white shadow-sm"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-            ].join(" ")}
-          >
-            📅 Mês
-          </button>
+  <div className="flex shrink-0 items-center gap-2">
 
-          <button
-            type="button"
-            onClick={
-              enterDayView
-            }
-            className={[
-              "flex-1 rounded-lg px-4 py-2 text-sm font-extrabold transition sm:flex-none",
-              calendarView ===
-              "day"
-                ? "bg-[#1687d9] text-white shadow-sm"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-            ].join(" ")}
-          >
-            📌 Dia
-          </button>
+    <button
+      type="button"
+      onClick={
+        calendarView === "month"
+          ? goPreviousMonth
+          : goPreviousDay
+      }
+      className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] dark:border-gray-700 dark:bg-black dark:text-white sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+    >
+      ←
+    </button>
 
-        </div>
+    <button
+      type="button"
+      onClick={
+        calendarView === "month"
+          ? goNextMonth
+          : goNextDay
+      }
+      className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-white sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+    >
+      →
+    </button>
 
-        {calendarView ===
-          "day" && (
-          <button
-            type="button"
-            onClick={
-              goToday
-            }
-            className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-black px-4 py-2 text-sm font-extrabold text-gray-700 dark:text-gray-200 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
-          >
-            Hoje
-          </button>
-        )}
+  </div>
 
-      </div>
+  {/* NOME DO MÊS/DIA — CENTRO */}
 
-      {/* NAVEGAÇÃO */}
+  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
 
-      <div className="mb-4 flex items-center justify-between rounded-xl bg-gray-50 dark:bg-gray-900 p-2 sm:mb-6 sm:rounded-2xl sm:p-3">
+    {calendarView === "month" ? (
+      <h4 className="whitespace-nowrap text-sm font-extrabold capitalize text-gray-900 dark:text-white sm:text-2xl">
+        {monthName}
+      </h4>
+    ) : (
+      <h4 className="whitespace-nowrap text-sm font-extrabold capitalize text-gray-900 dark:text-white sm:text-xl">
+        {dayName}
+      </h4>
+    )}
 
-        <button
-          type="button"
-          onClick={
-            calendarView ===
-            "month"
-              ? goPreviousMonth
-              : goPreviousDay
-          }
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white dark:border-gray-700 dark:bg-black text-lg font-extrabold text-gray-900 dark:text-white shadow-sm transition hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
-        >
-          ←
-        </button>
+  </div>
 
-        <div className="min-w-0 px-2 text-center">
+  {/* MÊS / DIA / HOJE — DIREITA */}
 
-          {calendarView ===
-          "month" ? (
-            <h4 className="px-2 text-base font-extrabold capitalize text-gray-900 dark:text-white sm:text-2xl">
-              {
-                monthName
-              }
-            </h4>
-          ) : (
-            <h4 className="break-words px-2 text-sm font-extrabold capitalize text-gray-900 dark:text-white sm:text-xl">
-              {
-                dayName
-              }
-            </h4>
-          )}
+  <div className="ml-auto flex shrink-0 items-center gap-2">
 
-        </div>
+    <div className="flex shrink-0 rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-black">
 
-        <button
-          type="button"
-          onClick={
-            calendarView ===
-            "month"
-              ? goNextMonth
-              : goNextDay
-          }
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white dark:border-gray-700 dark:bg-black text-lg font-extrabold text-gray-900 dark:text-white shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
-        >
-          →
-        </button>
+      <button
+        type="button"
+        onClick={switchToMonthView}
+        className={[
+          "rounded-lg px-2.5 py-1.5 text-xs font-extrabold transition sm:px-3 sm:py-2 sm:text-sm",
+          calendarView === "month"
+            ? "bg-[#1687d9] text-white shadow-sm"
+            : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
+        ].join(" ")}
+      >
+        📅 Mês
+      </button>
 
-      </div>
+      <button
+        type="button"
+        onClick={enterDayView}
+        className={[
+          "rounded-lg px-2.5 py-1.5 text-xs font-extrabold transition sm:px-3 sm:py-2 sm:text-sm",
+          calendarView === "day"
+            ? "bg-[#1687d9] text-white shadow-sm"
+            : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
+        ].join(" ")}
+      >
+        📌 Dia
+      </button>
+
+    </div>
+
+    {calendarView === "day" && (
+      <button
+        type="button"
+        onClick={goToday}
+        className="h-[42px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-extrabold text-gray-700 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-200 sm:h-[44px]"
+      >
+        Hoje
+      </button>
+    )}
+
+  </div>
+
+</div>
+
+
+{/* ==================================================== */}
+{/* CONTROLES MOBILE */}
+{/* ==================================================== */}
+
+<div className="mb-4 lg:hidden">
+
+  {/* MÊS / DIA */}
+
+  <div className="mb-3 flex flex-col gap-3 rounded-xl bg-gray-50 p-2 dark:bg-gray-900 sm:flex-row sm:items-center sm:justify-between sm:rounded-2xl sm:p-3">
+
+    <div className="flex rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-black">
+
+      <button
+        type="button"
+        onClick={switchToMonthView}
+        className={[
+          "flex-1 rounded-lg px-4 py-2 text-sm font-extrabold transition sm:flex-none",
+          calendarView === "month"
+            ? "bg-[#1687d9] text-white shadow-sm"
+            : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
+        ].join(" ")}
+      >
+        📅 Mês
+      </button>
+
+      <button
+        type="button"
+        onClick={enterDayView}
+        className={[
+          "flex-1 rounded-lg px-4 py-2 text-sm font-extrabold transition sm:flex-none",
+          calendarView === "day"
+            ? "bg-[#1687d9] text-white shadow-sm"
+            : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
+        ].join(" ")}
+      >
+        📌 Dia
+      </button>
+
+    </div>
+
+    {calendarView === "day" && (
+      <button
+        type="button"
+        onClick={goToday}
+        className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-extrabold text-gray-700 transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-200"
+      >
+        Hoje
+      </button>
+    )}
+
+  </div>
+
+  {/* SETAS + DATA */}
+
+  <div className="flex items-center justify-between rounded-xl bg-gray-50 p-2 dark:bg-gray-900 sm:rounded-2xl sm:p-3">
+
+    <button
+      type="button"
+      onClick={
+        calendarView === "month"
+          ? goPreviousMonth
+          : goPreviousDay
+      }
+      className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] dark:border-gray-700 dark:bg-black dark:text-white sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+    >
+      ←
+    </button>
+
+    <div className="min-w-0 px-2 text-center">
+
+      {calendarView === "month" ? (
+        <h4 className="px-2 text-base font-extrabold capitalize text-gray-900 dark:text-white sm:text-2xl">
+          {monthName}
+        </h4>
+      ) : (
+        <h4 className="break-words px-2 text-sm font-extrabold capitalize text-gray-900 dark:text-white sm:text-xl">
+          {dayName}
+        </h4>
+      )}
+
+    </div>
+
+    <button
+      type="button"
+      onClick={
+        calendarView === "month"
+          ? goNextMonth
+          : goNextDay
+      }
+      className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-white sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+    >
+      →
+    </button>
+
+  </div>
+
+</div>
 
       {/* LOADING */}
 
@@ -5582,14 +5747,16 @@ await saveAddressAfterTour(
   "month" &&
   !guideSearch.trim() && (
   <div
-    onTouchStart={
-      handleCalendarTouchStart
-    }
-    onTouchEnd={
-      handleCalendarTouchEnd
-    }
-    className="touch-pan-y"
-  >
+  ref={calendarMonthRef}
+  data-admin-calendar-month
+  onTouchStart={
+    handleCalendarTouchStart
+  }
+  onTouchEnd={
+    handleCalendarTouchEnd
+  }
+  className="touch-pan-y lg:flex lg:min-h-0 lg:flex-1 lg:flex-col"
+>
     
               <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[8px] font-extrabold uppercase tracking-wide text-gray-800 dark:text-gray-200 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
 
@@ -5604,7 +5771,7 @@ await saveAddressAfterTour(
               </div>
 
               
-  <div className="grid grid-cols-7 gap-1 sm:gap-2">
+  <div className="grid grid-cols-7 gap-1 sm:gap-2 lg:min-h-0 lg:flex-1 lg:auto-rows-fr">
 
   
 
@@ -5670,8 +5837,8 @@ await saveAddressAfterTour(
                           !sameMonth
                         }
                         className={[
-                          "min-h-[58px] overflow-hidden rounded-lg border p-1 text-left transition",
-                          "sm:min-h-32 sm:rounded-xl sm:p-2",
+  "min-h-[58px] overflow-hidden rounded-lg border p-1 text-left transition",
+  "sm:min-h-32 sm:rounded-xl sm:p-2 lg:min-h-0 lg:flex lg:flex-col",
                           !sameMonth
   ? "cursor-default border-transparent bg-gray-100 dark:bg-gray-900 text-gray-400 dark:text-gray-500"
   : "border-gray-200 dark:border-gray-700 bg-white dark:bg-black hover:border-[#1687d9] hover:shadow-md",
@@ -5680,26 +5847,28 @@ await saveAddressAfterTour(
                         )}
                       >
 
-                        <div
-                          className={[
-                            "mb-1 text-right text-[9px] font-extrabold sm:mb-2 sm:text-sm",
-                            sameMonth
-  ? "text-gray-900 dark:text-white"
-  : "text-gray-400 dark:text-gray-500",
-                          ].join(
-                            " "
-                          )}
-                        >
-                          {
-                            format(
-                              day,
-                              "d"
-                            )
-                          }
-                        </div>
+                       <div
+  className={[
+    "mb-1 flex shrink-0 justify-center text-[9px] font-extrabold sm:mb-2 sm:text-sm",
+    sameMonth
+      ? "text-gray-900 dark:text-white"
+      : "text-gray-400 dark:text-gray-500",
+  ].join(" ")}
+>
+  <span
+    className={
+      format(day, "yyyy-MM-dd") ===
+      format(new Date(), "yyyy-MM-dd")
+        ? "flex h-4 w-4 items-center justify-center rounded-full bg-[#1687d9] text-white sm:h-5 sm:w-5"
+        : ""
+    }
+  >
+    {format(day, "d")}
+  </span>
+</div>
 
 
-                        <div className="space-y-0.5 overflow-hidden sm:space-y-1">
+                        <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden sm:space-y-1">
 
                           {dayEvents
                             .slice(
@@ -5756,7 +5925,7 @@ className={[
 
             
 
-<div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 dark:border-gray-800 pt-4 text-xs font-semibold text-gray-700 dark:text-gray-200 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
+<div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 dark:border-gray-800 dark:text-gray-200 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm lg:hidden">
 
   <div className="flex items-center gap-1.5 sm:gap-2">
 

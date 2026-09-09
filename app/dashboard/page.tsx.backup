@@ -31,8 +31,6 @@ const notificationRef =
   const [profile, setProfile] =
     useState<Profile | null>(null);
 
-const [adminSearch, setAdminSearch] =
-  useState("");
 
   const [loading, setLoading] =
     useState(true);
@@ -1982,337 +1980,137 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
       {/* CONTEÚDO */}
       {/* ====================================================== */}
 
-   <section className="relative z-10 w-full px-3 py-4 sm:px-4 sm:py-6 lg:px-4 lg:py-4">
+      <section className="relative z-10 mx-auto max-w-7xl px-5 py-7 sm:px-6 sm:py-9">
 
-  {isAdmin ? (
+        {/* ==================================================== */}
+        {/* GOOGLE CALENDAR - SOMENTE ADMIN */}
+        {/* ==================================================== */}
 
-    <div className="lg:grid lg:h-[calc(100dvh-115px)] lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-3">
+        {isAdmin && (
+          <div className="mb-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-black">
 
-      {/* ==================================================== */}
-      {/* SIDEBAR DESKTOP */}
-      {/* ==================================================== */}
+            <div className="flex h-1">
 
-      <aside className="hidden min-h-0 flex-col gap-3 lg:flex">
-
-        {/* GOOGLE CALENDAR */}
-
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-black">
-
-          <div className="flex h-1">
-            <div className="flex-1 bg-[#4285F4]" />
-            <div className="flex-1 bg-[#34A853]" />
-            <div className="flex-1 bg-[#FBBC05]" />
-            <div className="flex-1 bg-[#EA4335]" />
-          </div>
-
-          <div className="p-4">
-
-            <div className="flex items-center gap-3">
-
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-xl">
-                📅
-              </div>
-
-              <div className="min-w-0">
-
-                <h2 className="text-sm font-extrabold text-gray-900 dark:text-white">
-                  Google Calendar
-                </h2>
-
-                <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-300">
-                  {checkingGoogle
-                    ? "Verificando conexão..."
-                    : googleConnected
-                    ? "Sua conta está conectada e pronta para sincronizar sua agenda."
-                    : "Conecte sua conta para sincronizar sua agenda."}
-                </p>
-
-              </div>
+              <div className="flex-1 bg-[#4285F4]" />
+              <div className="flex-1 bg-[#34A853]" />
+              <div className="flex-1 bg-[#FBBC05]" />
+              <div className="flex-1 bg-[#EA4335]" />
 
             </div>
 
-            {!checkingGoogle && !googleConnected && (
-              <button
-                type="button"
-                disabled={connectingGoogle}
-                onClick={connectGoogleCalendar}
-                className="mt-4 w-full rounded-xl bg-green-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {connectingGoogle
-                  ? "⏳ Conectando..."
-                  : "📅 Conectar Google"}
-              </button>
-            )}
+            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
 
-            {!checkingGoogle && googleConnected && (
-              <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-2.5 text-xs font-extrabold text-green-700">
+              <div className="flex items-center gap-4">
 
-                <span>✓</span>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-2xl">
+                  📅
+                </div>
 
-                <span>
-                  Google conectado
-                </span>
+                <div>
 
-              </div>
-            )}
+                  <h2 className="text-base font-extrabold text-gray-900 dark:text-white sm:text-lg">
+                    Google Calendar
+                  </h2>
 
-          </div>
-
-        </div>
-
-        {/* BUSCA */}
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
-
-          <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-            Buscar tour
-          </p>
-
-          <div className="relative">
-
-            <input
-              type="text"
-              value={adminSearch}
-              onChange={(event) =>
-                setAdminSearch(
-                  event.target.value
-                )
-              }
-              placeholder="Título, e-mail ou endereço..."
-              className="w-full rounded-xl border-2 border-gray-300 bg-white px-3 py-2.5 pr-9 text-xs font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-100 dark:border-gray-700 dark:bg-black dark:text-gray-100"
-            />
-
-            {adminSearch && (
-              <button
-                type="button"
-                onClick={() =>
-                  setAdminSearch("")
-                }
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              >
-                ✕
-              </button>
-            )}
-
-          </div>
-
-        </div>
-
-        {/* LEGENDA */}
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
-
-          <p className="text-xs font-extrabold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-            Legenda
-          </p>
-
-          <div className="mt-3 space-y-2.5">
-
-            <div className="flex items-center gap-2.5">
-              <span className="h-3 w-3 shrink-0 rounded-md bg-[#dc2127] ring-1 ring-black dark:ring-white" />
-
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                Tour sem guia/motorista
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <span className="h-3 w-3 shrink-0 rounded-md bg-[#fbd75b] ring-1 ring-black dark:ring-white" />
-
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                Tour com guia e motorista
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <span className="h-3 w-3 shrink-0 rounded-md bg-[#5484ed] ring-1 ring-black dark:ring-white" />
-
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                Tour Ilha Grande
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <span className="h-3 w-3 shrink-0 rounded-md bg-[#ff887c] ring-1 ring-black dark:ring-white" />
-
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                Tour Website
-              </span>
-            </div>
-
-          </div>
-
-        </div>
-{/* RODAPÉ DESKTOP */}
-
-<div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
-
-  <div className="mb-3 flex justify-center gap-2">
-
-    <span className="h-2 w-8 rounded-full bg-[#e91e8c]" />
-
-    <span className="h-2 w-8 rounded-full bg-[#1687d9]" />
-
-    <span className="h-2 w-8 rounded-full bg-[#ffd21c]" />
-
-  </div>
-
-  <p className="text-center text-[11px] text-gray-400 dark:text-gray-500">
-    © 2026 Way To Know Rio
-  </p>
-
-  <p className="mt-1 text-center text-[11px] text-gray-400 dark:text-gray-500">
-    Desenvolvido por{" "}
-    <span className="font-semibold text-[#e91e8c]">
-      RMS Labs
-    </span>
-  </p>
-
-</div>
-
-      </aside>
-
-
-
-      {/* ==================================================== */}
-      {/* CALENDÁRIO */}
-      {/* ==================================================== */}
-
-      <div className="min-h-0 min-w-0 overflow-visible rounded-2xl bg-white shadow-sm dark:bg-black lg:h-full">
-
-        
-
-        <div className="min-h-0 min-w-0 overflow-visible lg:h-full">
-
-          {/* GOOGLE MOBILE */}
-
-          <div className="mb-6 lg:hidden">
-
-            <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-black">
-
-              <div className="flex h-1">
-
-                <div className="flex-1 bg-[#4285F4]" />
-                <div className="flex-1 bg-[#34A853]" />
-                <div className="flex-1 bg-[#FBBC05]" />
-                <div className="flex-1 bg-[#EA4335]" />
-
-              </div>
-
-              <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-
-                <div className="flex items-center gap-4">
-
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-2xl">
-                    📅
-                  </div>
-
-                  <div>
-
-                    <h2 className="text-base font-extrabold text-gray-900 dark:text-white sm:text-lg">
-                      Google Calendar
-                    </h2>
-
-                    <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-300 sm:text-sm">
-                      {checkingGoogle
-                        ? "Verificando conexão..."
-                        : googleConnected
-                        ? "Sua conta está conectada e pronta para sincronizar sua agenda."
-                        : "Conecte sua conta para sincronizar sua agenda."}
-                    </p>
-
-                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-300 sm:text-sm">
+                    {checkingGoogle
+                      ? "Verificando conexão..."
+                      : googleConnected
+                      ? "Sua conta está conectada e pronta para sincronizar sua agenda."
+                      : "Conecte sua conta para sincronizar sua agenda."}
+                  </p>
 
                 </div>
 
-                {!checkingGoogle &&
-                  !googleConnected && (
-                    <button
-                      type="button"
-                      disabled={connectingGoogle}
-                      onClick={
-                        connectGoogleCalendar
-                      }
-                      className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                    >
-                      {connectingGoogle
-                        ? "⏳ Conectando..."
-                        : "📅 Conectar Google"}
-                    </button>
-                  )}
-
-                {!checkingGoogle &&
-                  googleConnected && (
-                    <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-extrabold text-green-700 sm:w-auto">
-
-                      <span>✓</span>
-
-                      <span>
-                        Google conectado
-                      </span>
-
-                    </div>
-                  )}
-
               </div>
+
+              {!checkingGoogle &&
+                !googleConnected && (
+                  <button
+                    type="button"
+                    disabled={
+                      connectingGoogle
+                    }
+                    onClick={
+                      connectGoogleCalendar
+                    }
+                    className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                  >
+                    {connectingGoogle
+                      ? "⏳ Conectando..."
+                      : "📅 Conectar Google"}
+                  </button>
+                )}
+
+              {!checkingGoogle &&
+                googleConnected && (
+                  <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-extrabold text-green-700 sm:w-auto">
+
+                    <span>
+                      ✓
+                    </span>
+
+                    <span>
+                      Google conectado
+                    </span>
+
+                  </div>
+                )}
 
             </div>
 
           </div>
+        )}
 
-       <div className="min-h-0 min-w-0 lg:h-full">
+        {/* ==================================================== */}
+        {/* CALENDÁRIO */}
+        {/* ==================================================== */}
 
-  <AdminCalendar
-    searchValue={
-      adminSearch
-    }
-    onSearchChange={
-      setAdminSearch
-    }
-  />
+        {isAdmin ? (
+          <div className="overflow-hidden rounded-3xl bg-white shadow-sm dark:bg-black">
 
-</div>
+            <div className="flex h-1">
 
-        </div>
+              <div className="flex-1 bg-[#e91e8c]" />
+              <div className="flex-1 bg-[#ffd21c]" />
+              <div className="flex-1 bg-[#1687d9]" />
 
-      </div>
+            </div>
 
-    </div>
+            <div className="p-2 sm:p-4">
 
-  ) : (
+              <AdminCalendar />
 
-    <div className="overflow-hidden rounded-3xl bg-white shadow-sm dark:bg-black">
+            </div>
 
-      <div className="flex h-1">
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-3xl bg-white shadow-sm dark:bg-black">
 
-        <div className="flex-1 bg-[#e91e8c]" />
-        <div className="flex-1 bg-[#ffd21c]" />
-        <div className="flex-1 bg-[#1687d9]" />
+            <div className="flex h-1">
 
-      </div>
+              <div className="flex-1 bg-[#e91e8c]" />
+              <div className="flex-1 bg-[#ffd21c]" />
+              <div className="flex-1 bg-[#1687d9]" />
 
-      <div className="p-2 sm:p-4">
+            </div>
 
-        <PushNotifications />
+            <div className="p-2 sm:p-4">
 
-        <Calendar />
+<PushNotifications />
 
-      </div>
+              <Calendar />
 
-    </div>
+            </div>
 
-  )}
-
-
-
-
-
+          </div>
+        )}
 
         {/* ==================================================== */}
         {/* RODAPÉ */}
         {/* ==================================================== */}
 
-        <footer className="mt-12 pb-5 text-center lg:hidden">
+        <footer className="mt-12 pb-5 text-center">
 
           <div className="mb-4 flex justify-center gap-2">
 
