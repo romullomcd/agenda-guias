@@ -5823,7 +5823,7 @@ const calendarWeekCount =
           ? goPreviousMonth
           : goPreviousDay
       }
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#e91e8c] hover:bg-pink-50 hover:text-[#e91e8c] dark:border-gray-700 dark:bg-black dark:text-white sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
+      className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-lg font-extrabold text-gray-900 shadow-sm transition hover:border-[#1687d9] hover:bg-pink-50 hover:text-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-white sm:h-11 sm:w-11 sm:rounded-xl sm:border-2 sm:text-xl"
     >
       ←
     </button>
