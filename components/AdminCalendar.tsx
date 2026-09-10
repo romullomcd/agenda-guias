@@ -5899,17 +5899,23 @@ await saveAddressAfterTour(
     {dayEvents
       .slice(0, 2)
       .map((event) => (
-        <div
-          key={`event-${event.id}`}
-          className={[
-            "truncate rounded px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-gray-900 dark:text-white sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
-            getColorClass(
-              event.google_color_id || "9"
-            ),
-          ].join(" ")}
-        >
-        {event.title}
-        </div>
+       <div
+  key={`event-${event.id}`}
+  onClick={(eventClick) => {
+    eventClick.stopPropagation();
+  }}
+  onPointerDown={(eventPointer) => {
+    eventPointer.stopPropagation();
+  }}
+  className={[
+    "truncate rounded px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-gray-900 dark:text-white sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
+    getColorClass(
+      event.google_color_id || "9"
+    ),
+  ].join(" ")}
+>
+  {event.title}
+</div>
       ))}
 
     {dayEvents.length > 2 && (
