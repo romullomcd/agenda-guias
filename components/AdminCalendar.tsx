@@ -5437,7 +5437,8 @@ await saveAddressAfterTour(
       }
     );
 
-
+const calendarWeekCount =
+  Math.ceil(days.length / 7);
 
 
   const monthTourSegments = (() => {
@@ -6031,7 +6032,10 @@ await saveAddressAfterTour(
   <div className="relative min-h-0 lg:flex lg:h-full lg:flex-1 lg:flex-col">
 
 <div
-  className="pointer-events-none absolute inset-0 grid grid-cols-7 gap-0 auto-rows-[90px] sm:auto-rows-[120px] lg:min-h-0 lg:flex-1 lg:auto-rows-fr"
+  className="pointer-events-none absolute inset-0 grid grid-cols-7 auto-rows-[90px] sm:auto-rows-[120px] lg:min-h-0 lg:h-full"
+  style={{
+    gridTemplateRows: `repeat(${calendarWeekCount}, minmax(0, 1fr))`,
+  }}
 >
 
   
@@ -6151,8 +6155,14 @@ await saveAddressAfterTour(
 
 
 <div
-  className="pointer-events-none absolute inset-0 grid grid-cols-7 auto-rows-[90px] sm:auto-rows-[120px] lg:min-h-0 lg:h-full lg:auto-rows-fr"
+  className="pointer-events-none absolute inset-0 grid grid-cols-7 auto-rows-[90px] sm:auto-rows-[120px] lg:min-h-0 lg:h-full"
+  style={{
+    gridTemplateRows: `repeat(${calendarWeekCount}, minmax(0, 1fr))`,
+  }}
 >
+  {/* Mantém a mesma quantidade de linhas da grade principal */}
+  
+
   {monthTourSegments.map(
     (
       segment,
@@ -6168,41 +6178,36 @@ await saveAddressAfterTour(
         }}
         className="pointer-events-none z-30 self-start px-0"
       >
-<div
-  className="px-0.5 sm:px-1"
-  style={{
-    marginTop:
-      (segment.row === 1
-        ? 31
-        : 22) +
-      segment.lane *
-        (typeof window !== "undefined" &&
-        window.innerWidth < 640
-          ? 15
-          : 26),
-  }}
->
+        <div
+          className="px-0.5 sm:px-1"
+          style={{
+            marginTop:
+              (segment.row === 1
+                ? 31
+                : 22) +
+              segment.lane *
+                (typeof window !== "undefined" &&
+                window.innerWidth < 640
+                  ? 15
+                  : 26),
+          }}
+        >
           <div
             role="button"
             tabIndex={0}
             onClick={(event) => {
               event.stopPropagation();
-
               setSelectedTourEvent(
                 segment.event
               );
             }}
-            onKeyDown={(
-              event
-            ) => {
+            onKeyDown={(event) => {
               if (
-                event.key ===
-                  "Enter" ||
+                event.key === "Enter" ||
                 event.key === " "
               ) {
                 event.preventDefault();
                 event.stopPropagation();
-
                 setSelectedTourEvent(
                   segment.event
                 );
@@ -6210,12 +6215,10 @@ await saveAddressAfterTour(
             }}
             className={[
               "pointer-events-auto w-full cursor-pointer truncate rounded px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-gray-900 shadow-sm transition hover:brightness-95 dark:text-white sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
-              segment.columnStart ===
-                1
+              segment.columnStart === 1
                 ? "rounded-l-md"
                 : "",
-              segment.columnEnd ===
-                8
+              segment.columnEnd === 8
                 ? "rounded-r-md"
                 : "",
               getColorClass(
@@ -6225,8 +6228,7 @@ await saveAddressAfterTour(
               ),
             ].join(" ")}
             title={
-              segment.event
-                .title
+              segment.event.title
             }
           >
             {segment.event.title}
