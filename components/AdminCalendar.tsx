@@ -5526,76 +5526,84 @@ await saveAddressAfterTour(
           return;
         }
 
-        while (
-          startIndex <=
-          endIndex
-        ) {
-          const week =
-            Math.floor(
-              startIndex / 7
-            );
+       while (
+  startIndex <=
+  endIndex
+) {
+  // Como o calendário começa no domingo,
+  // cada grupo de 7 dias representa uma semana
+  // exatamente de domingo a sábado.
+  const week =
+    Math.floor(
+      startIndex / 7
+    );
 
-          const weekEnd =
-            week * 7 + 6;
+  const weekStart =
+    week * 7;
 
-          const segmentEnd =
-            Math.min(
-              endIndex,
-              weekEnd
-            );
+  const weekEnd =
+    weekStart + 6;
 
-const columnStart =
-  (startIndex % 7) + 1;
+  const segmentEnd =
+    Math.min(
+      endIndex,
+      weekEnd
+    );
 
-const columnEnd =
-  (segmentEnd % 7) + 2;
+  const columnStart =
+    (startIndex -
+      weekStart) + 1;
 
-          if (
-            !occupiedByWeek[week]
-          ) {
-            occupiedByWeek[week] =
-              [];
-          }
+  const columnEnd =
+    (segmentEnd -
+      weekStart) + 2;
 
-          let lane = 0;
+  if (
+    !occupiedByWeek[week]
+  ) {
+    occupiedByWeek[week] =
+      [];
+  }
 
-          while (
-            occupiedByWeek[
-              week
-            ].some(
-              (occupied) =>
-                occupied.lane ===
-                  lane &&
-                startIndex <=
-                  occupied.end &&
-                segmentEnd >=
-                  occupied.start
-            )
-          ) {
-            lane++;
-          }
+  let lane = 0;
 
-          occupiedByWeek[
-            week
-          ].push({
-            start:
-              startIndex,
-            end:
-              segmentEnd,
-            lane,
-          });
+  while (
+    occupiedByWeek[
+      week
+    ].some(
+      (occupied) =>
+        occupied.lane ===
+          lane &&
+        startIndex <=
+          occupied.end &&
+        segmentEnd >=
+          occupied.start
+    )
+  ) {
+    lane++;
+  }
 
-          segments.push({
-            event,
-            row: week + 1,
-            columnStart,
-            columnEnd,
-            lane,
-          });
+  occupiedByWeek[
+    week
+  ].push({
+    start:
+      startIndex,
+    end:
+      segmentEnd,
+    lane,
+  });
 
-          startIndex =
-            segmentEnd + 1;
-        }
+  segments.push({
+    event,
+    row: week + 1,
+    columnStart,
+    columnEnd,
+    lane,
+  });
+
+  startIndex =
+    segmentEnd + 1;
+}
       }
     );
 
@@ -6022,7 +6030,9 @@ const columnEnd =
               
   <div className="relative min-h-0 lg:flex lg:h-full lg:flex-1 lg:flex-col">
 
-<div className="grid grid-cols-7 gap-0 auto-rows-[90px] sm:auto-rows-[120px] lg:min-h-0 lg:flex-1 lg:auto-rows-fr">
+<div
+  className="pointer-events-none absolute inset-0 grid grid-cols-7 gap-0 auto-rows-[90px] sm:auto-rows-[120px] lg:min-h-0 lg:flex-1 lg:auto-rows-fr"
+>
 
   
 
@@ -6141,7 +6151,7 @@ const columnEnd =
 
 
 <div
-  className="pointer-events-none absolute inset-0 grid grid-cols-7 auto-rows-[90px] sm:auto-rows-[120px] lg:auto-rows-fr"
+  className="pointer-events-none absolute inset-0 grid grid-cols-7 auto-rows-[90px] sm:auto-rows-[120px] lg:min-h-0 lg:h-full lg:auto-rows-fr"
 >
   {monthTourSegments.map(
     (
