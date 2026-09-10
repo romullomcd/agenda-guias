@@ -6032,10 +6032,7 @@ const calendarWeekCount =
   <div className="relative min-h-0 lg:flex lg:h-full lg:flex-1 lg:flex-col">
 
 <div
-  className="pointer-events-none absolute inset-0 grid grid-cols-7 auto-rows-[90px] sm:auto-rows-[120px] lg:min-h-0 lg:h-full"
-  style={{
-    gridTemplateRows: `repeat(${calendarWeekCount}, minmax(0, 1fr))`,
-  }}
+  className="grid grid-cols-7 gap-0 auto-rows-[90px] sm:auto-rows-[120px] lg:min-h-0 lg:flex-1 lg:auto-rows-fr"
 >
 
   
