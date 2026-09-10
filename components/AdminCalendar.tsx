@@ -57,6 +57,7 @@ type Availability = {
 type TourEvent = {
   id: number;
   date: string;
+  end_date: string;
   title: string;
   description: string | null;
   address: string | null;
@@ -1430,6 +1431,13 @@ const setGuideSearch =
     string | null
   >(null);
 
+const [
+  tourFormEndDate,
+  setTourFormEndDate,
+] = useState<
+  string | null
+>(null);
+
   const [
     tourFormAvailabilityId,
     setTourFormAvailabilityId,
@@ -1540,6 +1548,11 @@ const [
   editTourDate,
   setEditTourDate,
 ] = useState(""); 
+
+const [
+  editTourEndDate,
+  setEditTourEndDate,
+] = useState("");
 
  const [
     editTourTitle,
@@ -2636,6 +2649,16 @@ const lastDay =
   async function loadData(
   showLoading = false
 ) {
+
+
+console.log(
+  "LOAD DATA EXECUTADO",
+  new Date().toLocaleTimeString(),
+  "currentMonth:",
+  currentMonth
+);
+
+
   if (
     showLoading
   ) {
@@ -2707,7 +2730,7 @@ const lastDay =
         supabase
           .from("tour_events")
 .select(
-  "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, google_color_id, calendar_event_id, status, created_at, updated_at"
+  "id, date, end_date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, google_color_id, calendar_event_id, status, created_at, updated_at"
 )
 
           .gte(
@@ -3134,15 +3157,11 @@ const selectedDayData =
     );
 
   const selectedDayEvents =
-    selectedDate
-      ? filteredTourEvents.filter(
-          (event) =>
-            event.date ===
-              selectedDate &&
-            event.status ===
-              "scheduled"
-        )
-      : [];
+  selectedDate
+    ? getDayTourEvents(
+        selectedDate
+      )
+    : [];
 
   /* ============================================================
   HELPERS
@@ -3163,17 +3182,32 @@ const selectedDayData =
     );
 }
 
-  function getDayTourEvents(
-    date: string
-  ) {
-    return filteredTourEvents.filter(
-      (event) =>
-        event.date ===
-          date &&
-        event.status ===
-          "scheduled"
-    );
-  }
+function getDayTourEvents(
+  date: string
+) {
+  return filteredTourEvents.filter(
+    (event) => {
+      if (
+        event.status !==
+        "scheduled"
+      ) {
+        return false;
+      }
+
+      const startDate =
+        event.date;
+
+      const endDate =
+        event.end_date ||
+        event.date;
+
+      return (
+        date >= startDate &&
+        date <= endDate
+      );
+    }
+  );
+}
 
   function getGuideName(
     guideId: string | null
@@ -3338,6 +3372,8 @@ function getColorClass(
 
       date?: string;
 
+      endDate?: string;
+
       title?: string;
 
       description?: string | null;
@@ -3452,6 +3488,10 @@ function getColorClass(
       escalationDate
     );
 
+setTourFormEndDate(
+  escalationDate
+);
+
     setTourFormAvailabilityId(
       selectedGuideAvailability.id
     );
@@ -3524,6 +3564,10 @@ setTourAdditionalEmail2(
     setTourFormDate(
       selectedDate
     );
+
+setTourFormEndDate(
+  selectedDate
+);
 
     setTourFormAvailabilityId(
       null
@@ -3716,6 +3760,11 @@ if (
             date:
               escalationDate,
 
+end_date:
+  tourFormEndDate ||
+  escalationDate,
+
+
             title:
               tourTitle.trim(),
 
@@ -3767,7 +3816,7 @@ calendar_event_id:
               "scheduled",
           })
  .select(
-  "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, google_color_id, calendar_event_id, status, created_at, updated_at"
+ "id, date, end_date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, google_color_id, calendar_event_id, status, created_at, updated_at"
 )
           .single();
 
@@ -3799,6 +3848,10 @@ calendar_event_id:
 
           date:
             escalationDate,
+
+endDate:
+  tourFormEndDate ||
+  escalationDate,
 
           title:
             tourTitle.trim(),
@@ -3877,7 +3930,7 @@ colorId:
             newEvent.id
           )
           .select(
-            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+            "id, date, end_date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, google_color_id, calendar_event_id, status, created_at, updated_at"
           )
           .single();
 
@@ -4145,8 +4198,8 @@ await saveAddressAfterTour(
           .from(
             "tour_events"
           )
-          .select(
-            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+                    .select(
+            "id, date, end_date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, additional_email_2, google_color_id, calendar_event_id, status, created_at, updated_at"
           )
           .eq(
             "guide_id",
@@ -4363,6 +4416,13 @@ await saveAddressAfterTour(
 setEditTourDate(
   event.date
 );
+
+setEditTourEndDate(
+  event.end_date ||
+    event.date
+);
+
+
     setEditTourTitle(
       event.title
     );
@@ -4674,6 +4734,10 @@ if (
           date:
   editTourDate,
 
+endDate:
+  editTourEndDate ||
+  editTourDate,
+
           title:
             editTourTitle.trim(),
 
@@ -4728,11 +4792,16 @@ colorId:
           .from(
             "tour_events"
           )
-          .update({
-date:
+.update({
+  date:
     editTourDate,
-            title:
-              editTourTitle.trim(),
+
+  end_date:
+    editTourEndDate ||
+    editTourDate,
+
+  title:
+    editTourTitle.trim(),
 
             description:
               plainDescription
@@ -5368,6 +5437,178 @@ await saveAddressAfterTour(
       }
     );
 
+
+
+
+  const monthTourSegments = (() => {
+    const segments: {
+      event: TourEvent;
+      row: number;
+      columnStart: number;
+      columnEnd: number;
+      lane: number;
+    }[] = [];
+
+    const monthEvents =
+      filteredTourEvents.filter(
+        (event) =>
+          event.status ===
+            "scheduled" &&
+          event.date <=
+            format(
+              days[days.length - 1],
+              "yyyy-MM-dd"
+            ) &&
+          (event.end_date ||
+            event.date) >=
+            format(
+              days[0],
+              "yyyy-MM-dd"
+            )
+      );
+
+    const occupiedByWeek: Record<
+      number,
+      {
+        start: number;
+        end: number;
+        lane: number;
+      }[]
+    > = {};
+
+    monthEvents.forEach(
+      (event) => {
+        const eventStart =
+          event.date;
+
+        const eventEnd =
+          event.end_date ||
+          event.date;
+
+        let startIndex =
+          days.findIndex(
+            (day) =>
+              format(
+                day,
+                "yyyy-MM-dd"
+              ) >= eventStart
+          );
+
+        let endIndex =
+          -1;
+
+        for (
+          let i = days.length - 1;
+          i >= 0;
+          i--
+        ) {
+          const currentDate =
+            format(
+              days[i],
+              "yyyy-MM-dd"
+            );
+
+          if (
+            currentDate <=
+            eventEnd
+          ) {
+            endIndex = i;
+            break;
+          }
+        }
+
+        if (
+          startIndex < 0 ||
+          endIndex < 0 ||
+          startIndex >
+            endIndex
+        ) {
+          return;
+        }
+
+        while (
+          startIndex <=
+          endIndex
+        ) {
+          const week =
+            Math.floor(
+              startIndex / 7
+            );
+
+          const weekEnd =
+            week * 7 + 6;
+
+          const segmentEnd =
+            Math.min(
+              endIndex,
+              weekEnd
+            );
+
+          const columnStart =
+            (startIndex % 7) + 1;
+
+          const columnEnd =
+            (segmentEnd % 7) + 2;
+
+          if (
+            !occupiedByWeek[week]
+          ) {
+            occupiedByWeek[week] =
+              [];
+          }
+
+          let lane = 0;
+
+          while (
+            occupiedByWeek[
+              week
+            ].some(
+              (occupied) =>
+                occupied.lane ===
+                  lane &&
+                startIndex <=
+                  occupied.end &&
+                segmentEnd >=
+                  occupied.start
+            )
+          ) {
+            lane++;
+          }
+
+          occupiedByWeek[
+            week
+          ].push({
+            start:
+              startIndex,
+            end:
+              segmentEnd,
+            lane,
+          });
+
+          segments.push({
+            event,
+            row: week + 1,
+            columnStart,
+            columnEnd,
+            lane,
+          });
+
+          startIndex =
+            segmentEnd + 1;
+        }
+      }
+    );
+
+    return segments;
+  })();
+
+
+
+
+
+
+
+
   /* ============================================================
   RENDER
   ============================================================ */
@@ -5779,7 +6020,11 @@ await saveAddressAfterTour(
     
               
               
-  <div className="grid grid-cols-7 gap-0 auto-rows-[90px] sm:auto-rows-[120px] lg:min-h-0 lg:flex-1 lg:auto-rows-fr">
+  <div className="relative min-h-0 lg:flex lg:h-full lg:flex-1 lg:flex-col">
+
+<div className="grid grid-cols-7 gap-0 auto-rows-[90px] sm:auto-rows-[120px] lg:min-h-0 lg:flex-1 lg:auto-rows-fr">
+
+  
 
   
 {days.map(
@@ -5823,11 +6068,7 @@ await saveAddressAfterTour(
                           "escalated"
                       );
 
-                    const dayEvents =
-                      getDayTourEvents(
-                        date
-                      );
-
+                    
                     return (
                       <button
                         key={
@@ -5888,40 +6129,104 @@ await saveAddressAfterTour(
   </span>
 </div>
 
- <div
-  className={[
-    "absolute left-1 right-1 overflow-hidden space-y-0.5 sm:space-y-1",
-    index < 7
-      ? "top-8"
-      : "top-5",
-  ].join(" ")}
->
-    {dayEvents
-      .slice(0, 2)
-      .map((event) => (
-        <div
-          key={`event-${event.id}`}
-          className={[
-            "truncate rounded px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-gray-900 dark:text-white sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
-            getColorClass(
-              event.google_color_id || "9"
-            ),
-          ].join(" ")}
-        >
-        {event.title}
-        </div>
-      ))}
+ 
 
-    {dayEvents.length > 2 && (
-      <div className="px-0.5 text-[7px] font-bold text-blue-700 sm:text-xs">
-        +{dayEvents.length - 2} tours
-      </div>
-    )}
-  </div>
+
 </button>
                     );
                   }
                 )}
+</div>
+
+
+
+<div
+  className="pointer-events-none absolute inset-0 grid grid-cols-7 auto-rows-[90px] sm:auto-rows-[120px] lg:auto-rows-fr"
+>
+  {monthTourSegments.map(
+    (
+      segment,
+      index
+    ) => (
+      <div
+        key={`tour-segment-${segment.event.id}-${segment.row}-${index}`}
+        style={{
+          gridColumn:
+            `${segment.columnStart} / ${segment.columnEnd}`,
+          gridRow:
+            segment.row,
+        }}
+        className="pointer-events-none z-30 self-start px-0"
+      >
+<div
+  className="px-0.5 sm:px-1"
+  style={{
+    marginTop:
+      (segment.row === 1
+        ? 31
+        : 22) +
+      segment.lane *
+        (typeof window !== "undefined" &&
+        window.innerWidth < 640
+          ? 15
+          : 26),
+  }}
+>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={(event) => {
+              event.stopPropagation();
+
+              setSelectedTourEvent(
+                segment.event
+              );
+            }}
+            onKeyDown={(
+              event
+            ) => {
+              if (
+                event.key ===
+                  "Enter" ||
+                event.key === " "
+              ) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                setSelectedTourEvent(
+                  segment.event
+                );
+              }
+            }}
+            className={[
+              "pointer-events-auto w-full truncate rounded px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-gray-900 shadow-sm transition hover:brightness-95 dark:text-white sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
+              segment.columnStart ===
+                1
+                ? "rounded-l-md"
+                : "",
+              segment.columnEnd ===
+                8
+                ? "rounded-r-md"
+                : "",
+              getColorClass(
+                segment.event
+                  .google_color_id ||
+                  "9"
+              ),
+            ].join(" ")}
+            title={
+              segment.event
+                .title
+            }
+          >
+            {segment.event.title}
+          </div>
+        </div>
+      </div>
+    )
+  )}
+</div>
+
 
                             </div>
 
@@ -7089,33 +7394,87 @@ className={[
 
             <div className="space-y-5 p-6">
 
-              {/* DATA */}
+              {/* DATAS */}
 
-              <div className="rounded-2xl bg-blue-50 p-4">
+<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 
-                <p className="text-xs font-bold uppercase tracking-wide text-blue-500">
-                  Data
-                </p>
+  {/* DATA INICIAL */}
 
-                <p className="mt-1 text-sm font-extrabold capitalize text-blue-900">
+  <div className="rounded-2xl bg-blue-50 p-4">
 
-                  {
-                    tourFormDate &&
-                    format(
-                      new Date(
-                        `${tourFormDate}T12:00:00`
-                      ),
-                      "dd 'de' MMMM 'de' yyyy",
-                      {
-                        locale:
-                          ptBR,
-                      }
-                    )
-                  }
+    <p className="text-xs font-bold uppercase tracking-wide text-blue-500">
+      Data inicial
+    </p>
 
-                </p>
+    <p className="mt-1 text-sm font-extrabold capitalize text-blue-900">
 
-              </div>
+      {
+        tourFormDate &&
+        format(
+          new Date(
+            `${tourFormDate}T12:00:00`
+          ),
+          "dd 'de' MMMM 'de' yyyy",
+          {
+            locale:
+              ptBR,
+          }
+        )
+      }
+
+    </p>
+
+  </div>
+
+  {/* DATA FINAL */}
+
+  <div className="rounded-2xl bg-blue-50 p-4">
+
+    <label className="text-xs font-bold uppercase tracking-wide text-blue-500">
+      Data final
+    </label>
+
+ <input
+  type="date"
+  value={
+    tourFormEndDate ||
+    tourFormDate ||
+    ""
+  }
+  min={
+    tourFormDate ||
+    undefined
+  }
+  onChange={(event) =>
+    setTourFormEndDate(
+      event.target.value
+    )
+  }
+  onMouseDown={(event) => {
+    const input =
+      event.currentTarget;
+
+    if (
+      typeof input.showPicker ===
+      "function"
+    ) {
+      event.preventDefault();
+
+      try {
+        input.showPicker();
+      } catch {
+        // O navegador pode bloquear o seletor
+        // em algumas situações.
+      }
+    }
+  }}
+  disabled={updating}
+  className="mt-2 w-full rounded-xl border-2 border-blue-100 bg-white px-3 py-2 text-sm font-extrabold text-blue-900 outline-none focus:border-[#1687d9] dark:border-blue-900 dark:bg-black dark:text-white"
+/>
+
+  </div>
+
+</div>
 
               {/* GUIA */}
 
@@ -8362,8 +8721,47 @@ className={[
     className="mt-2 h-[48px] w-full appearance-none rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold leading-normal text-gray-900 outline-none transition focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
   />
 </div>
-                {/* GUIA */}
 
+{/* DATA FINAL */}
+
+<div>
+  <label className="text-sm font-extrabold text-gray-800 dark:text-gray-100">
+    Data final
+  </label>
+
+ <input
+  type="date"
+  value={editTourEndDate}
+  min={editTourDate}
+  onChange={(event) =>
+    setEditTourEndDate(
+      event.target.value
+    )
+  }
+  onMouseDown={(event) => {
+    const input =
+      event.currentTarget;
+
+    if (
+      typeof input.showPicker ===
+      "function"
+    ) {
+      event.preventDefault();
+
+      try {
+        input.showPicker();
+      } catch {
+        // O navegador pode bloquear o seletor
+        // em algumas situações.
+      }
+    }
+  }}
+  disabled={updating}
+  className="mt-2 h-[48px] w-full appearance-none rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold leading-normal text-gray-900 outline-none transition focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100"
+/>
+</div>
+
+{/* GUIA */}
                 <div className="rounded-2xl border-2 border-yellow-100 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950 p-4">
 
                   <label className="text-sm font-extrabold text-yellow-900">

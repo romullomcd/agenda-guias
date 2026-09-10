@@ -18,6 +18,7 @@ type CalendarRequest = {
   eventId?: string | null;
 
   date?: string;
+  endDate?: string;
   title?: string;
   description?: string | null;
   address?: string | null;
@@ -372,27 +373,26 @@ const emails = [
       })
     );
 
-  /* ==========================================================
+    /* ==========================================================
   DIA INTEIRO
   ========================================================== */
 
   if (
     data.allDay !== false
   ) {
-    const startDate =
+    const finalDate =
+      data.endDate ||
+      data.date;
+
+    const endDateExclusive =
       new Date(
-        `${data.date}T00:00:00`
+        `${finalDate}T00:00:00`
       );
 
-    startDate.setDate(
-      startDate.getDate() +
+    endDateExclusive.setDate(
+      endDateExclusive.getDate() +
         1
     );
-
-    const endDate =
-      startDate
-        .toISOString()
-        .split("T")[0];
 
     event.start = {
       date:
@@ -401,7 +401,9 @@ const emails = [
 
     event.end = {
       date:
-        endDate,
+        endDateExclusive
+          .toISOString()
+          .split("T")[0],
     };
   }
 
@@ -409,7 +411,7 @@ const emails = [
   EVENTO COM HORÁRIO
   ========================================================== */
 
-  else {
+   else {
     if (
       !isValidTime(
         data.startTime
@@ -419,7 +421,7 @@ const emails = [
       )
     ) {
       throw new Error(
-        "Informe um horário de início e término válidos."
+        "Informe um horÃ¡rio de inÃ­cio e tÃ©rmino vÃ¡lidos."
       );
     }
 
@@ -429,14 +431,19 @@ const emails = [
     const endTime =
       data.endTime!;
 
+    const finalDate =
+      data.endDate ||
+      data.date;
+
     if (
+      finalDate === data.date &&
       !isEndAfterStart(
         startTime,
         endTime
       )
     ) {
       throw new Error(
-        "O horário de término precisa ser maior que o horário de início."
+        "O horÃ¡rio de tÃ©rmino precisa ser maior que o horÃ¡rio de inÃ­cio."
       );
     }
 
@@ -450,7 +457,7 @@ const emails = [
 
     event.end = {
       dateTime:
-        `${data.date}T${endTime}:00`,
+        `${finalDate}T${endTime}:00`,
 
       timeZone:
         "America/Sao_Paulo",
