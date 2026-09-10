@@ -5834,7 +5834,7 @@ await saveAddressAfterTour(
 >
 
 {index < 7 && (
-  <div className="absolute left-0 right-0 top-1 text-center text-[8px] font-extrabold uppercase leading-none text-gray-500 dark:text-gray-400 lg:text-[11px]">
+  <div className="absolute left-0 right-0 top-1 text-center text-[10px] font-extrabold uppercase leading-none text-gray-500 dark:text-gray-400 lg:text-[11px]">
     {[
       "Seg",
       "Ter",
@@ -5849,7 +5849,7 @@ await saveAddressAfterTour(
 
 <div
   className={[
-    "absolute left-1/2 -translate-x-1/2 text-[12px] font-extrabold leading-none",
+    "absolute left-1/2 -translate-x-1/2 text-[9px] font-extrabold leading-none",
     index < 7
       ? "top-4"
       : "top-1",
@@ -5873,8 +5873,8 @@ await saveAddressAfterTour(
   className={[
     "absolute left-1 right-1 overflow-hidden space-y-0.5 sm:space-y-1",
     index < 7
-      ? "top-10"
-      : "top-6",
+      ? "top-8"
+      : "top-5",
   ].join(" ")}
 >
     {dayEvents
