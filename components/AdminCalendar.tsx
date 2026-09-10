@@ -2478,10 +2478,15 @@ const lastDay =
             const newEvent =
               payload.new as TourEvent;
 
-           const firstDay =
+
+
+const firstDay =
   format(
     startOfMonth(
-      currentMonthRef.current
+      subMonths(
+        currentMonth,
+        1
+      )
     ),
     "yyyy-MM-dd"
   );
@@ -2489,10 +2494,16 @@ const lastDay =
 const lastDay =
   format(
     endOfMonth(
-      currentMonthRef.current
+      addMonths(
+        currentMonth,
+        1
+      )
     ),
     "yyyy-MM-dd"
   );
+
+
+
 
             if (
               newEvent.date <
@@ -2633,21 +2644,29 @@ const lastDay =
     );
   }
 
-    const firstDay =
-      format(
-        startOfMonth(
-          currentMonth
-        ),
-        "yyyy-MM-dd"
-      );
+const firstDay =
+  format(
+    startOfMonth(
+      subMonths(
+        currentMonth,
+        1
+      )
+    ),
+    "yyyy-MM-dd"
+  );
 
-    const lastDay =
-      format(
-        endOfMonth(
-          currentMonth
-        ),
-        "yyyy-MM-dd"
-      );
+const lastDay =
+  format(
+    endOfMonth(
+      addMonths(
+        currentMonth,
+        1
+      )
+    ),
+    "yyyy-MM-dd"
+  );
+
+
 
     const [
       guidesResult,
