@@ -1109,11 +1109,13 @@ COMPONENTE PRINCIPAL
 type AdminCalendarProps = {
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+  onMonthChange?: (date: Date) => void;
 };
 
 export default function AdminCalendar({
   searchValue,
   onSearchChange,
+  onMonthChange,
 }: AdminCalendarProps) {
 
   const [
@@ -1122,6 +1124,15 @@ export default function AdminCalendar({
   ] = useState(
     new Date()
   );
+
+useEffect(() => {
+  onMonthChange?.(
+    currentMonth
+  );
+}, [
+  currentMonth,
+  onMonthChange,
+]);
 
 const currentMonthRef =
   useRef<Date>(

@@ -40,6 +40,9 @@ const [adminSearch, setAdminSearch] =
 const [tourCount, setTourCount] =
   useState(0);
 
+const [displayedMonth, setDisplayedMonth] =
+  useState(new Date());
+
   const [loading, setLoading] =
     useState(true);
 
@@ -239,9 +242,9 @@ setTheme(
 
 
 // ============================================================
-// CONTADOR DE TOURS LANÇADOS
+// CONTADOR DE TOURS LANÇADOS NO MÊS EXIBIDO
 // SOMENTE ADMIN
-// Conta cada dia do tour
+// Conta cada dia de tour que pertence ao mês atual
 // ============================================================
 
 useEffect(() => {
@@ -256,19 +259,67 @@ useEffect(() => {
   let cancelled = false;
 
   async function loadTourCount() {
+    const year =
+      displayedMonth.getFullYear();
+
+    const month =
+      displayedMonth.getMonth();
+
+    const firstDay =
+      new Date(
+        year,
+        month,
+        1
+      );
+
+    const lastDay =
+      new Date(
+        year,
+        month + 1,
+        0
+      );
+
+    const firstDayString =
+      `${year}-${String(
+        month + 1
+      ).padStart(2, "0")}-01`;
+
+    const lastDayString =
+      `${year}-${String(
+        month + 1
+      ).padStart(2, "0")}-${String(
+        lastDay.getDate()
+      ).padStart(2, "0")}`;
+
     const {
       data,
       error,
     } = await supabase
       .from("tour_events")
-      .select("id, date, end_date")
-      .eq("status", "scheduled");
+      .select(
+        "id, date, end_date"
+      )
+      .eq(
+        "status",
+        "scheduled"
+      )
+      // Tour precisa ter pelo menos
+      // um dia dentro do mês exibido.
+      .lte(
+        "date",
+        lastDayString
+      )
+      .gte(
+        "end_date",
+        firstDayString
+      );
 
     if (error) {
       console.error(
-        "❌ ERRO AO CONTAR TOURS:",
+        "❌ ERRO AO CONTAR TOURS DO MÊS:",
         error
       );
+
       return;
     }
 
@@ -276,58 +327,123 @@ useEffect(() => {
       return;
     }
 
+    const monthStartMs =
+      Date.UTC(
+        year,
+        month,
+        1
+      );
+
+    const monthEndMs =
+      Date.UTC(
+        year,
+        month,
+        lastDay.getDate()
+      );
+
     let totalDays = 0;
 
-    for (const tour of data || []) {
-      const start = new Date(
-        `${tour.date}T00:00:00`
-      );
+    for (
+      const tour of data || []
+    ) {
+      const startMs =
+        Date.parse(
+          `${tour.date}T00:00:00Z`
+        );
 
-      const end = new Date(
-        `${tour.end_date || tour.date}T00:00:00`
-      );
+      const endDate =
+        tour.end_date ||
+        tour.date;
 
-      const difference =
+      const endMs =
+        Date.parse(
+          `${endDate}T00:00:00Z`
+        );
+
+      if (
+        Number.isNaN(startMs) ||
+        Number.isNaN(endMs)
+      ) {
+        continue;
+      }
+
+      const visibleStartMs =
+        Math.max(
+          startMs,
+          monthStartMs
+        );
+
+      const visibleEndMs =
+        Math.min(
+          endMs,
+          monthEndMs
+        );
+
+      if (
+        visibleStartMs >
+        visibleEndMs
+      ) {
+        continue;
+      }
+
+      const days =
         Math.floor(
-          (end.getTime() - start.getTime()) /
-            (1000 * 60 * 60 * 24)
+          (
+            visibleEndMs -
+            visibleStartMs
+          ) /
+            (
+              1000 *
+              60 *
+              60 *
+              24
+            )
         ) + 1;
 
-      totalDays += Math.max(
-        1,
-        difference
-      );
+      totalDays += days;
     }
 
-    setTourCount(totalDays);
+    setTourCount(
+      totalDays
+    );
   }
 
   loadTourCount();
 
-  channel = supabase
-    .channel("dashboard-tour-count")
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "tour_events",
-      },
-      () => {
-        loadTourCount();
-      }
-    )
-    .subscribe();
+  channel =
+    supabase
+      .channel(
+        "dashboard-tour-count"
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tour_events",
+        },
+        () => {
+          loadTourCount();
+        }
+      )
+      .subscribe();
 
   return () => {
     cancelled = true;
 
     if (channel) {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(
+        channel
+      );
+
       channel = null;
     }
   };
-}, [profile]);
+}, [
+  profile,
+  displayedMonth,
+]);
+
 
   // ============================================================
   // GOOGLE CALENDAR
@@ -2335,7 +2451,7 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
 <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
   <div>
     <p className="text-xs font-extrabold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-      Tours lançados
+      Tours lançados neste Mês
     </p>
 
     <p className="mt-2 text-3xl font-black leading-none text-gray-900 dark:text-white">
@@ -2441,14 +2557,17 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
 
        <div className="min-h-0 min-w-0 lg:h-full">
 
-  <AdminCalendar
-    searchValue={
-      adminSearch
-    }
-    onSearchChange={
-      setAdminSearch
-    }
-  />
+<AdminCalendar
+  searchValue={
+    adminSearch
+  }
+  onSearchChange={
+    setAdminSearch
+  }
+  onMonthChange={
+    setDisplayedMonth
+  }
+/>
 
 </div>
 
