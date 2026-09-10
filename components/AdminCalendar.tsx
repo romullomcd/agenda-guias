@@ -3095,7 +3095,7 @@ const filteredTourEvents =
         currentMonth
       ),
       {
-        weekStartsOn: 1,
+        weekStartsOn: 0,
       }
     );
 
@@ -3105,7 +3105,7 @@ const filteredTourEvents =
         currentMonth
       ),
       {
-        weekStartsOn: 1,
+        weekStartsOn: 0,
       }
     );
 
@@ -5544,11 +5544,11 @@ await saveAddressAfterTour(
               weekEnd
             );
 
-          const columnStart =
-            (startIndex % 7) + 1;
+const columnStart =
+  (startIndex % 7) + 1;
 
-          const columnEnd =
-            (segmentEnd % 7) + 2;
+const columnEnd =
+  (segmentEnd % 7) + 2;
 
           if (
             !occupiedByWeek[week]
@@ -6096,14 +6096,14 @@ await saveAddressAfterTour(
 {index < 7 && (
   <div className="absolute left-0 right-0 top-1 text-center text-[10px] font-extrabold uppercase leading-none text-gray-500 dark:text-gray-400 lg:text-[11px]">
     {[
-      "Seg",
-      "Ter",
-      "Qua",
-      "Qui",
-      "Sex",
-      "Sáb",
-      "Dom",
-    ][index]}
+  "Dom",
+  "Seg",
+  "Ter",
+  "Qua",
+  "Qui",
+  "Sex",
+  "Sáb",
+][index]}
   </div>
 )}
 
