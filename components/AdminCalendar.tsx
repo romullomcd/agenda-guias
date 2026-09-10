@@ -5889,7 +5889,7 @@ await saveAddressAfterTour(
             ),
           ].join(" ")}
         >
-          📅 {event.title}
+        {event.title}
         </div>
       ))}
 
