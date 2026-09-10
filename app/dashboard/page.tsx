@@ -2372,34 +2372,7 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
 
 
 
-        {/* ==================================================== */}
-        {/* RODAPÉ */}
-        {/* ==================================================== */}
-
-        <footer className="mt-5 pb-2 text-center lg:hidden">
-
-          <div className="mb-2 flex justify-center gap-1.5">
-
-            <span className="h-2 w-8 rounded-full bg-[#e91e8c]" />
-
-            <span className="h-2 w-8 rounded-full bg-[#1687d9]" />
-
-            <span className="h-2 w-8 rounded-full bg-[#ffd21c]" />
-
-          </div>
-
-          <p className="text-[11px] text-gray-400 dark:text-gray-500">
-  © 2026 Way To Know Rio
-</p>
-
-<p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
-  Desenvolvido por{" "}
-  <span className="font-semibold text-[#e91e8c]">
-    RMS Labs
-  </span>
-</p>
-
-        </footer>
+  
 
       </section>
 

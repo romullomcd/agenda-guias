@@ -5758,20 +5758,9 @@ await saveAddressAfterTour(
   className="touch-pan-y lg:-mt-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col"
 >
     
-              <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[8px] font-extrabold uppercase tracking-wide text-gray-800 dark:text-gray-200 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm lg:hidden">
-
-  <div>Seg</div>
-  <div>Ter</div>
-  <div>Qua</div>
-  <div>Qui</div>
-  <div>Sex</div>
-  <div>Sáb</div>
-  <div>Dom</div>
-
-</div>
-
               
-  <div className="grid grid-cols-7 gap-0 lg:min-h-0 lg:flex-1 lg:auto-rows-fr">
+              
+  <div className="grid grid-cols-7 gap-0 auto-rows-[90px] sm:auto-rows-[120px] lg:min-h-0 lg:flex-1 lg:auto-rows-fr">
 
   
 {days.map(
@@ -5836,8 +5825,8 @@ await saveAddressAfterTour(
                           !sameMonth
                         }
                         className={[
-  "relative min-h-[58px] overflow-hidden rounded-lg border p-1 text-left transition",
-  "sm:min-h-32 sm:rounded-xl sm:p-2 lg:min-h-[120px] lg:rounded-none lg:px-2 lg:pb-2 lg:pt-0",
+  "relative min-h-[58px] overflow-hidden border p-1 text-left transition",
+  "sm:min-h-32 sm:p-2 lg:min-h-[120px] lg:rounded-none lg:px-2 lg:pb-2 lg:pt-0",
   !sameMonth
     ? "cursor-default border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-900 text-gray-400 dark:text-gray-500"
     : "border-gray-200 dark:border-gray-700 bg-white dark:bg-black hover:border-[#1687d9] hover:shadow-md",
@@ -5845,7 +5834,7 @@ await saveAddressAfterTour(
 >
 
 {index < 7 && (
-  <div className="absolute left-0 right-0 top-1 hidden text-center text-[11px] font-extrabold uppercase leading-none text-gray-500 dark:text-gray-400 lg:block">
+  <div className="absolute left-0 right-0 top-1 text-center text-[8px] font-extrabold uppercase leading-none text-gray-500 dark:text-gray-400 lg:text-[11px]">
     {[
       "Seg",
       "Ter",
@@ -5861,7 +5850,9 @@ await saveAddressAfterTour(
 <div
   className={[
     "absolute left-1/2 -translate-x-1/2 text-[12px] font-extrabold leading-none",
-    index < 7 ? "top-4" : "top-1",
+    index < 7
+      ? "top-4"
+      : "top-1",
     sameMonth
       ? "text-gray-900 dark:text-white"
       : "text-gray-400 dark:text-gray-500",
@@ -5878,7 +5869,7 @@ await saveAddressAfterTour(
   </span>
 </div>
 
-  <div
+ <div
   className={[
     "absolute left-1 right-1 overflow-hidden space-y-0.5 sm:space-y-1",
     index < 7
@@ -5917,49 +5908,7 @@ await saveAddressAfterTour(
 
             
 
-<div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 pt-4 text-xs font-semibold text-gray-700 dark:border-gray-800 dark:text-gray-200 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm lg:hidden">
 
-  <div className="flex items-center gap-1.5 sm:gap-2">
-
-    <span className="h-3 w-3 rounded-md bg-[#dc2127] ring-1 ring-black dark:ring-white sm:h-4 sm:w-4" />
-
-    <span>
-      Tour sem guia/motorista
-    </span>
-
-  </div>
-
-  <div className="flex items-center gap-1.5 sm:gap-2">
-
-    <span className="h-3 w-3 rounded-md bg-[#fbd75b] ring-1 ring-black dark:ring-white sm:h-4 sm:w-4" />
-
-    <span>
-      Tour com guia e motorista
-    </span>
-
-  </div>
-
-  <div className="flex items-center gap-1.5 sm:gap-2">
-
-    <span className="h-3 w-3 rounded-md bg-[#5484ed] ring-1 ring-black dark:ring-white sm:h-4 sm:w-4" />
-
-    <span>
-      Tour Ilha Grande
-    </span>
-
-  </div>
-
-  <div className="flex items-center gap-1.5 sm:gap-2">
-
-    <span className="h-3 w-3 rounded-md bg-[#ff887c] ring-1 ring-black dark:ring-white sm:h-4 sm:w-4" />
-
-    <span>
-      Tour Website
-    </span>
-
-  </div>
-
-</div>
 
             </div>
           )}
