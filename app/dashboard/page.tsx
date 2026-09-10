@@ -2113,7 +2113,7 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
 {/* CONTEÚDO */}
       {/* ====================================================== */}
 
-   <section className="relative z-10 w-full px-3 py-4 sm:px-4 sm:py-6 lg:px-4 lg:py-4">
+   <section className="relative z-10 w-full px-3 py-4 sm:px-4 sm:py-6 lg:px-2 lg:py-2">
 
   {isAdmin ? (
 

@@ -5354,7 +5354,7 @@ await saveAddressAfterTour(
   ============================================================ */
 
   return (
-  <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-black sm:rounded-3xl sm:p-6 lg:h-full lg:min-h-0 lg:flex lg:flex-col">
+  <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-black sm:rounded-3xl sm:p-6 lg:h-full lg:min-h-0 lg:flex lg:flex-col lg:p-3">
 
       {/* CABEÇALHO */}
 
@@ -5755,28 +5755,27 @@ await saveAddressAfterTour(
   onTouchEnd={
     handleCalendarTouchEnd
   }
-  className="touch-pan-y lg:flex lg:min-h-0 lg:flex-1 lg:flex-col"
+  className="touch-pan-y lg:-mt-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col"
 >
     
-              <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[8px] font-extrabold uppercase tracking-wide text-gray-800 dark:text-gray-200 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
+              <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[8px] font-extrabold uppercase tracking-wide text-gray-800 dark:text-gray-200 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm lg:hidden">
 
-                <div>Seg</div>
-                <div>Ter</div>
-                <div>Qua</div>
-                <div>Qui</div>
-                <div>Sex</div>
-                <div>Sáb</div>
-                <div>Dom</div>
+  <div>Seg</div>
+  <div>Ter</div>
+  <div>Qua</div>
+  <div>Qui</div>
+  <div>Sex</div>
+  <div>Sáb</div>
+  <div>Dom</div>
 
-              </div>
+</div>
 
               
-  <div className="grid grid-cols-7 gap-1 sm:gap-2 lg:min-h-0 lg:flex-1 lg:auto-rows-fr">
+  <div className="grid grid-cols-7 gap-0 lg:min-h-0 lg:flex-1 lg:auto-rows-fr">
 
   
-
-                {days.map(
-                  (day) => {
+{days.map(
+  (day, index) => {
 
                     const date =
                       format(
@@ -5837,29 +5836,41 @@ await saveAddressAfterTour(
                           !sameMonth
                         }
                         className={[
-  "min-h-[58px] overflow-hidden rounded-lg border p-1 text-left transition",
-  "sm:min-h-32 sm:rounded-xl sm:p-2 lg:min-h-0 lg:flex lg:flex-col",
-                          !sameMonth
-  ? "cursor-default border-transparent bg-gray-100 dark:bg-gray-900 text-gray-400 dark:text-gray-500"
-  : "border-gray-200 dark:border-gray-700 bg-white dark:bg-black hover:border-[#1687d9] hover:shadow-md",
-                        ].join(
-                          " "
-                        )}
-                      >
+  "relative min-h-[58px] overflow-hidden rounded-lg border p-1 text-left transition",
+  "sm:min-h-32 sm:rounded-xl sm:p-2 lg:min-h-[120px] lg:rounded-none lg:px-2 lg:pb-2 lg:pt-0",
+  !sameMonth
+    ? "cursor-default border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-900 text-gray-400 dark:text-gray-500"
+    : "border-gray-200 dark:border-gray-700 bg-white dark:bg-black hover:border-[#1687d9] hover:shadow-md",
+].join(" ")}
+>
 
-                       <div
+{index < 7 && (
+  <div className="absolute left-0 right-0 top-1 hidden text-center text-[11px] font-extrabold uppercase leading-none text-gray-500 dark:text-gray-400 lg:block">
+    {[
+      "Seg",
+      "Ter",
+      "Qua",
+      "Qui",
+      "Sex",
+      "Sáb",
+      "Dom",
+    ][index]}
+  </div>
+)}
+
+<div
   className={[
-    "mb-1 flex shrink-0 justify-center text-[9px] font-extrabold sm:mb-2 sm:text-sm",
+    "absolute left-1/2 -translate-x-1/2 text-[12px] font-extrabold leading-none",
+    index < 7 ? "top-4" : "top-1",
     sameMonth
       ? "text-gray-900 dark:text-white"
       : "text-gray-400 dark:text-gray-500",
   ].join(" ")}
->
-  <span
+>  <span
     className={
       format(day, "yyyy-MM-dd") ===
       format(new Date(), "yyyy-MM-dd")
-        ? "flex h-4 w-4 items-center justify-center rounded-full bg-[#1687d9] text-white sm:h-5 sm:w-5"
+        ? "flex h-4 w-4 items-center justify-center rounded-full bg-[#1687d9] text-white"
         : ""
     }
   >
@@ -5867,56 +5878,37 @@ await saveAddressAfterTour(
   </span>
 </div>
 
+  <div
+  className={[
+    "absolute left-1 right-1 overflow-hidden space-y-0.5 sm:space-y-1",
+    index < 7
+      ? "top-10"
+      : "top-6",
+  ].join(" ")}
+>
+    {dayEvents
+      .slice(0, 2)
+      .map((event) => (
+        <div
+          key={`event-${event.id}`}
+          className={[
+            "truncate rounded px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-gray-900 dark:text-white sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
+            getColorClass(
+              event.google_color_id || "9"
+            ),
+          ].join(" ")}
+        >
+          📅 {event.title}
+        </div>
+      ))}
 
-                        <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden sm:space-y-1">
-
-                          {dayEvents
-                            .slice(
-                              0,
-                              2
-                            )
-                            .map(
-                              (
-                                event
-                              ) => (
-                                <div
-                                  key={`event-${event.id}`}
-className={[
-  "truncate rounded px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-gray-900 dark:text-white sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
-  getColorClass(
-    event.google_color_id ||
-      "9"
-  ),
-].join(" ")}
-                                >
-                                  📅{" "}
-                                  {
-                                    event.title
-                                  }
-                                </div>
-                              )
-                            )}
-
-                          {dayEvents.length >
-                            2 && (
-                            <div className="px-0.5 text-[7px] font-bold text-blue-700 sm:text-xs">
-                              +
-                              {
-                                dayEvents.length -
-                                  2
-                              }{" "}
-                              tours
-                            </div>
-                          )}
-
-                        
-                          
-
-                          
-
-                        </div>
-
-                      </button>
+    {dayEvents.length > 2 && (
+      <div className="px-0.5 text-[7px] font-bold text-blue-700 sm:text-xs">
+        +{dayEvents.length - 2} tours
+      </div>
+    )}
+  </div>
+</button>
                     );
                   }
                 )}
