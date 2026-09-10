@@ -6199,7 +6199,7 @@ await saveAddressAfterTour(
               }
             }}
             className={[
-              "pointer-events-auto w-full truncate rounded px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-gray-900 shadow-sm transition hover:brightness-95 dark:text-white sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
+              "pointer-events-auto w-full cursor-pointer truncate rounded px-0.5 py-0.5 text-[7px] font-extrabold leading-tight text-gray-900 shadow-sm transition hover:brightness-95 dark:text-white sm:rounded-lg sm:px-1.5 sm:py-1 sm:text-xs",
               segment.columnStart ===
                 1
                 ? "rounded-l-md"

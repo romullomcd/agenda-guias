@@ -37,6 +37,9 @@ const googleMobileRef =
 const [adminSearch, setAdminSearch] =
   useState("");
 
+const [tourCount, setTourCount] =
+  useState(0);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -233,6 +236,98 @@ setTheme(
       setLoading(false);
     }
   }
+
+
+// ============================================================
+// CONTADOR DE TOURS LANÇADOS
+// SOMENTE ADMIN
+// Conta cada dia do tour
+// ============================================================
+
+useEffect(() => {
+  if (!profile || profile.role !== "admin") {
+    return;
+  }
+
+  let channel:
+    | ReturnType<typeof supabase.channel>
+    | null = null;
+
+  let cancelled = false;
+
+  async function loadTourCount() {
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("tour_events")
+      .select("id, date, end_date")
+      .eq("status", "scheduled");
+
+    if (error) {
+      console.error(
+        "❌ ERRO AO CONTAR TOURS:",
+        error
+      );
+      return;
+    }
+
+    if (cancelled) {
+      return;
+    }
+
+    let totalDays = 0;
+
+    for (const tour of data || []) {
+      const start = new Date(
+        `${tour.date}T00:00:00`
+      );
+
+      const end = new Date(
+        `${tour.end_date || tour.date}T00:00:00`
+      );
+
+      const difference =
+        Math.floor(
+          (end.getTime() - start.getTime()) /
+            (1000 * 60 * 60 * 24)
+        ) + 1;
+
+      totalDays += Math.max(
+        1,
+        difference
+      );
+    }
+
+    setTourCount(totalDays);
+  }
+
+  loadTourCount();
+
+  channel = supabase
+    .channel("dashboard-tour-count")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "tour_events",
+      },
+      () => {
+        loadTourCount();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    cancelled = true;
+
+    if (channel) {
+      supabase.removeChannel(channel);
+      channel = null;
+    }
+  };
+}, [profile]);
 
   // ============================================================
   // GOOGLE CALENDAR
@@ -2235,6 +2330,26 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
           </div>
 
         </div>
+
+{/* TOURS LANÇADOS */}
+<div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
+  <div>
+    <p className="text-xs font-extrabold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+      Tours lançados
+    </p>
+
+    <p className="mt-2 text-3xl font-black leading-none text-gray-900 dark:text-white">
+      {tourCount}
+    </p>
+  </div>
+
+  <div className="mt-4 border-t border-gray-100 pt-3 dark:border-gray-800">
+    <p className="text-[11px] text-gray-400 dark:text-gray-500">
+      Tours ativos na agenda
+    </p>
+  </div>
+</div>
+
 
         {/* LEGENDA */}
 
