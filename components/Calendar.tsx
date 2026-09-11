@@ -383,12 +383,14 @@ export default function Calendar() {
             "status",
             "scheduled"
           )
-          // O tour pode começar antes do mês e terminar dentro/depois dele
+          /*
+           * Busca qualquer tour que tenha
+           * interseção com o mês visualizado.
+           */
           .lte(
             "date",
             lastDay
           )
-          // O tour pode terminar depois do mês e ter começado antes/dentro dele
           .gte(
             "end_date",
             firstDay
@@ -465,8 +467,7 @@ export default function Calendar() {
       );
     } else {
       setTourEvents(
-        tourEventsResult.data ||
-          []
+        tourEventsResult.data || []
       );
     }
 
@@ -1373,8 +1374,13 @@ export default function Calendar() {
                           );
 
                         /*
-                         * Verifica se o dia está dentro
+                         * Verifica se este dia faz parte
                          * de algum tour escalado.
+                         *
+                         * IMPORTANTE:
+                         * isso também vale para os dias
+                         * do mês anterior/seguinte que
+                         * aparecem na grade.
                          */
                         const escalatedTour =
                           tourEvents.find(
@@ -1407,7 +1413,7 @@ export default function Calendar() {
                           sameMonth &&
                           existing?.status ===
                             "available" &&
-                          !escalatedTour
+                          !isEscalated
                         ) {
                           dayClass =
                             "border-green-500 bg-green-500 text-white hover:bg-green-600";
@@ -1421,7 +1427,7 @@ export default function Calendar() {
                           sameMonth &&
                           existing?.status ===
                             "unavailable" &&
-                          !escalatedTour
+                          !isEscalated
                         ) {
                           dayClass =
                             "border-red-500 bg-red-500 text-white hover:bg-red-600";
@@ -1429,10 +1435,12 @@ export default function Calendar() {
 
                         /* ==================================================
                            ESCALADO
+                           
+                           Agora funciona também para
+                           dias que pertencem a outro mês.
                         ================================================== */
 
                         if (
-                          sameMonth &&
                           isEscalated
                         ) {
                           dayClass =
@@ -1454,9 +1462,7 @@ export default function Calendar() {
                               }
 
                               if (
-                                escalatedTour ||
-                                existing?.status ===
-                                  "escalated"
+                                isEscalated
                               ) {
                                 openEscalatedTour(
                                   date
