@@ -467,7 +467,8 @@ export default function Calendar() {
       );
     } else {
       setTourEvents(
-        tourEventsResult.data || []
+        tourEventsResult.data ||
+          []
       );
     }
 
@@ -1374,13 +1375,12 @@ export default function Calendar() {
                           );
 
                         /*
-                         * Verifica se este dia faz parte
-                         * de algum tour escalado.
+                         * Verifica se este dia está dentro
+                         * do período de algum tour escalado.
                          *
-                         * IMPORTANTE:
-                         * isso também vale para os dias
-                         * do mês anterior/seguinte que
-                         * aparecem na grade.
+                         * Isso também funciona para os
+                         * dias do mês anterior/seguinte
+                         * que aparecem na grade.
                          */
                         const escalatedTour =
                           tourEvents.find(
@@ -1399,6 +1399,14 @@ export default function Calendar() {
                           ) ||
                           existing?.status ===
                             "escalated";
+
+                        /*
+                         * Só permite clicar em dia fora
+                         * do mês atual quando ele estiver
+                         * escalado.
+                         */
+                        const canOpenEscalatedTour =
+                          isEscalated;
 
                         let dayClass =
                           sameMonth
@@ -1435,9 +1443,6 @@ export default function Calendar() {
 
                         /* ==================================================
                            ESCALADO
-                           
-                           Agora funciona também para
-                           dias que pertencem a outro mês.
                         ================================================== */
 
                         if (
@@ -1455,12 +1460,21 @@ export default function Calendar() {
                             type="button"
                             onClick={() => {
 
+                              /*
+                               * Dia fora do mês:
+                               * só abre se for escalado.
+                               */
                               if (
-                                !sameMonth
+                                !sameMonth &&
+                                !canOpenEscalatedTour
                               ) {
                                 return;
                               }
 
+                              /*
+                               * Se for escalado,
+                               * abre o tour.
+                               */
                               if (
                                 isEscalated
                               ) {
@@ -1471,6 +1485,16 @@ export default function Calendar() {
                                 return;
                               }
 
+                              /*
+                               * Dia normal fora do mês
+                               * não faz nada.
+                               */
+                              if (
+                                !sameMonth
+                              ) {
+                                return;
+                              }
+
                               toggleDay(
                                 day
                               );
@@ -1478,7 +1502,8 @@ export default function Calendar() {
                             }}
                             disabled={
                               loading ||
-                              !sameMonth
+                              (!sameMonth &&
+                                !canOpenEscalatedTour)
                             }
                             title={
                               isEscalated
@@ -1500,8 +1525,7 @@ export default function Calendar() {
 
                               dayClass,
 
-                              isEscalated &&
-                              sameMonth
+                              isEscalated
                                 ? "cursor-pointer"
                                 : "",
                             ].join(
