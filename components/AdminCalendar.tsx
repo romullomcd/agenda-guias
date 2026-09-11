@@ -6092,28 +6092,25 @@ const calendarWeekCount =
 
                     
                     return (
-                      <button
-                        key={
-                          date
-                        }
-                        type="button"
-                        onClick={() =>
-                          sameMonth &&
-                          setSelectedDate(
-                            date
-                          )
-                        }
-                        disabled={
-                          !sameMonth
-                        }
-                        className={[
-  "relative min-h-[58px] overflow-hidden border p-1 text-left transition",
-  "sm:min-h-32 sm:p-2 lg:min-h-[120px] lg:rounded-none lg:px-2 lg:pb-2 lg:pt-0",
-  !sameMonth
-    ? "cursor-default border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-900 text-gray-400 dark:text-gray-500"
-    : "border-gray-200 dark:border-gray-700 bg-white dark:bg-black hover:border-[#1687d9] hover:shadow-md",
-].join(" ")}
+             <button
+  key={date}
+  type="button"
+  onClick={() =>
+    sameMonth &&
+    setSelectedDate(date)
+  }
+  disabled={!sameMonth}
+  className={[
+    "relative z-0 min-h-[58px] overflow-hidden border p-1 text-left transition hover:z-20",
+    "sm:min-h-32 sm:p-2 lg:min-h-[120px] lg:rounded-none lg:px-2 lg:pb-2 lg:pt-0",
+    !sameMonth
+      ? "cursor-default border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-900 text-gray-400 dark:text-gray-500"
+      : "border-gray-200 dark:border-gray-700 bg-white dark:bg-black hover:border-[#1687d9] hover:shadow-md",
+  ].join(" ")}
 >
+  
+
+  
 
 {index < 7 && (
   <div className="absolute left-0 right-0 top-1 text-center text-[10px] font-extrabold uppercase leading-none text-gray-500 dark:text-gray-400 lg:text-[11px]">
@@ -9268,7 +9265,7 @@ className={[
                         disabled={
                           updating
                         }
-                        className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9]"
+                        className="mt-2 w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-[#1687d9] dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:placeholder:text-gray-500"
                       />
 
                     </div>

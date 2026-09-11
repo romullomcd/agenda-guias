@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import { supabase } from "@/lib/supabase";
 import Calendar from "@/components/Calendar";
 import AdminCalendar from "@/components/AdminCalendar";
@@ -23,28 +28,77 @@ type Notification = {
 };
 
 export default function Dashboard() {
-  const menuRef = useRef<HTMLDivElement>(null);
+  // ============================================================
+  // REFS
+  // ============================================================
 
-const notificationRef =
-  useRef<HTMLDivElement>(null);
+  const menuRef =
+    useRef<HTMLDivElement>(null);
 
-const googleMobileRef =
-  useRef<HTMLDivElement>(null);
+  const notificationRef =
+    useRef<HTMLDivElement>(null);
+
+  const googleMobileRef =
+    useRef<HTMLDivElement>(null);
+
+  const desktopAdminMenuRef =
+    useRef<HTMLDivElement>(null);
+
+  const googleToggleLockRef =
+    useRef(false);
+
+  // ============================================================
+  // PERFIL / ESTADOS GERAIS
+  // ============================================================
 
   const [profile, setProfile] =
     useState<Profile | null>(null);
 
-const [adminSearch, setAdminSearch] =
-  useState("");
+  const [adminSearch, setAdminSearch] =
+    useState("");
 
-const [tourCount, setTourCount] =
-  useState(0);
+  const [tourCount, setTourCount] =
+    useState(0);
 
-const [displayedMonth, setDisplayedMonth] =
-  useState(new Date());
+  const [displayedMonth, setDisplayedMonth] =
+    useState(new Date());
 
   const [loading, setLoading] =
     useState(true);
+
+  // ============================================================
+  // RESPONSIVIDADE
+  // SOMENTE PARA POSICIONAR O PUSH NOTIFICATIONS
+  // ============================================================
+
+  const [isDesktop, setIsDesktop] =
+    useState(false);
+
+  useEffect(() => {
+    function handleResize() {
+      setIsDesktop(
+        window.innerWidth >= 1024
+      );
+    }
+
+    handleResize();
+
+    window.addEventListener(
+      "resize",
+      handleResize
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        handleResize
+      );
+    };
+  }, []);
+
+  // ============================================================
+  // GOOGLE
+  // ============================================================
 
   const [googleConnected, setGoogleConnected] =
     useState(false);
@@ -62,27 +116,27 @@ const [displayedMonth, setDisplayedMonth] =
   const [showMenu, setShowMenu] =
     useState(false);
 
-const [showGoogleMobile, setShowGoogleMobile] =
-  useState(false);
+  const [showDesktopAdminMenu, setShowDesktopAdminMenu] =
+    useState(false);
 
-const googleToggleLockRef =
-  useRef(false);
+  const [showGoogleMobile, setShowGoogleMobile] =
+    useState(false);
 
-const [theme, setTheme] =
-  useState<"light" | "dark">(
-    "light"
-  );
+  const [theme, setTheme] =
+    useState<"light" | "dark">(
+      "light"
+    );
 
+  // ============================================================
+  // TEMA
+  // ============================================================
 
-useEffect(() => {
-  document.documentElement.classList.toggle(
-    "dark",
-    theme === "dark"
-  );
-}, [theme]);
-
-
-
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      "dark",
+      theme === "dark"
+    );
+  }, [theme]);
 
   // ============================================================
   // NOTIFICAÇÕES
@@ -94,54 +148,75 @@ useEffect(() => {
   const [showNotifications, setShowNotifications] =
     useState(false);
 
-useEffect(() => {
-  if (
-    !showMenu &&
-    !showNotifications
-  ) {
-    return;
-  }
+  // ============================================================
+  // CLIQUES FORA DOS MENUS
+  // ============================================================
 
-  function handleClickOutside(
-    event: MouseEvent
-  ) {
-    const target =
-      event.target as Node;
-
+  useEffect(() => {
     if (
-      showMenu &&
-      menuRef.current &&
-      !menuRef.current.contains(target)
+      !showMenu &&
+      !showNotifications &&
+      !showDesktopAdminMenu
     ) {
-      setShowMenu(false);
+      return;
     }
 
-    if (
-      showNotifications &&
-      notificationRef.current &&
-      !notificationRef.current.contains(target)
+    function handleClickOutside(
+      event: MouseEvent
     ) {
-      setShowNotifications(false);
+      const target =
+        event.target as Node;
+
+      // MENU MOBILE
+      if (
+        showMenu &&
+        menuRef.current &&
+        !menuRef.current.contains(
+          target
+        )
+      ) {
+        setShowMenu(false);
+      }
+
+      // NOTIFICAÇÕES
+      if (
+        showNotifications &&
+        notificationRef.current &&
+        !notificationRef.current.contains(
+          target
+        )
+      ) {
+        setShowNotifications(false);
+      }
+
+      // ADMINISTRAÇÃO DESKTOP
+      if (
+        showDesktopAdminMenu &&
+        desktopAdminMenuRef.current &&
+        !desktopAdminMenuRef.current.contains(
+          target
+        )
+      ) {
+        setShowDesktopAdminMenu(false);
+      }
     }
-  }
 
-  document.addEventListener(
-    "mousedown",
-    handleClickOutside
-  );
-
-  return () => {
-    document.removeEventListener(
+    document.addEventListener(
       "mousedown",
       handleClickOutside
     );
-  };
 
-}, [
-  showMenu,
-  showNotifications,
-]);
-
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
+    };
+  }, [
+    showMenu,
+    showNotifications,
+    showDesktopAdminMenu,
+  ]);
 
   // ============================================================
   // MODAL DE NOTIFICAÇÃO
@@ -221,12 +296,11 @@ useEffect(() => {
         data
       );
 
-setTheme(
-  data.theme ===
-    "dark"
-    ? "dark"
-    : "light"
-);
+      setTheme(
+        data.theme === "dark"
+          ? "dark"
+          : "light"
+      );
 
       setProfile(data);
       setLoading(false);
@@ -240,214 +314,204 @@ setTheme(
     }
   }
 
+  // ============================================================
+  // CONTADOR DE TOURS LANÇADOS NO MÊS EXIBIDO
+  // SOMENTE ADMIN
+  // ============================================================
 
-// ============================================================
-// CONTADOR DE TOURS LANÇADOS NO MÊS EXIBIDO
-// SOMENTE ADMIN
-// Conta cada dia de tour que pertence ao mês atual
-// ============================================================
-
-useEffect(() => {
-  if (!profile || profile.role !== "admin") {
-    return;
-  }
-
-  let channel:
-    | ReturnType<typeof supabase.channel>
-    | null = null;
-
-  let cancelled = false;
-
-  async function loadTourCount() {
-    const year =
-      displayedMonth.getFullYear();
-
-    const month =
-      displayedMonth.getMonth();
-
-    const firstDay =
-      new Date(
-        year,
-        month,
-        1
-      );
-
-    const lastDay =
-      new Date(
-        year,
-        month + 1,
-        0
-      );
-
-    const firstDayString =
-      `${year}-${String(
-        month + 1
-      ).padStart(2, "0")}-01`;
-
-    const lastDayString =
-      `${year}-${String(
-        month + 1
-      ).padStart(2, "0")}-${String(
-        lastDay.getDate()
-      ).padStart(2, "0")}`;
-
-    const {
-      data,
-      error,
-    } = await supabase
-      .from("tour_events")
-      .select(
-        "id, date, end_date"
-      )
-      .eq(
-        "status",
-        "scheduled"
-      )
-      // Tour precisa ter pelo menos
-      // um dia dentro do mês exibido.
-      .lte(
-        "date",
-        lastDayString
-      )
-      .gte(
-        "end_date",
-        firstDayString
-      );
-
-    if (error) {
-      console.error(
-        "❌ ERRO AO CONTAR TOURS DO MÊS:",
-        error
-      );
-
-      return;
-    }
-
-    if (cancelled) {
-      return;
-    }
-
-    const monthStartMs =
-      Date.UTC(
-        year,
-        month,
-        1
-      );
-
-    const monthEndMs =
-      Date.UTC(
-        year,
-        month,
-        lastDay.getDate()
-      );
-
-    let totalDays = 0;
-
-    for (
-      const tour of data || []
+  useEffect(() => {
+    if (
+      !profile ||
+      profile.role !== "admin"
     ) {
-      const startMs =
-        Date.parse(
-          `${tour.date}T00:00:00Z`
-        );
-
-      const endDate =
-        tour.end_date ||
-        tour.date;
-
-      const endMs =
-        Date.parse(
-          `${endDate}T00:00:00Z`
-        );
-
-      if (
-        Number.isNaN(startMs) ||
-        Number.isNaN(endMs)
-      ) {
-        continue;
-      }
-
-      const visibleStartMs =
-        Math.max(
-          startMs,
-          monthStartMs
-        );
-
-      const visibleEndMs =
-        Math.min(
-          endMs,
-          monthEndMs
-        );
-
-      if (
-        visibleStartMs >
-        visibleEndMs
-      ) {
-        continue;
-      }
-
-      const days =
-        Math.floor(
-          (
-            visibleEndMs -
-            visibleStartMs
-          ) /
-            (
-              1000 *
-              60 *
-              60 *
-              24
-            )
-        ) + 1;
-
-      totalDays += days;
+      return;
     }
 
-    setTourCount(
-      totalDays
-    );
-  }
+    let channel:
+      | ReturnType<typeof supabase.channel>
+      | null = null;
 
-  loadTourCount();
+    let cancelled = false;
 
-  channel =
-    supabase
-      .channel(
-        "dashboard-tour-count"
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tour_events",
-        },
-        () => {
-          loadTourCount();
+    async function loadTourCount() {
+      const year =
+        displayedMonth.getFullYear();
+
+      const month =
+        displayedMonth.getMonth();
+
+      const lastDay =
+        new Date(
+          year,
+          month + 1,
+          0
+        );
+
+      const firstDayString =
+        `${year}-${String(
+          month + 1
+        ).padStart(2, "0")}-01`;
+
+      const lastDayString =
+        `${year}-${String(
+          month + 1
+        ).padStart(2, "0")}-${String(
+          lastDay.getDate()
+        ).padStart(2, "0")}`;
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("tour_events")
+        .select(
+          "id, date, end_date"
+        )
+        .eq(
+          "status",
+          "scheduled"
+        )
+        .lte(
+          "date",
+          lastDayString
+        )
+        .gte(
+          "end_date",
+          firstDayString
+        );
+
+      if (error) {
+        console.error(
+          "❌ ERRO AO CONTAR TOURS DO MÊS:",
+          error
+        );
+
+        return;
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      const monthStartMs =
+        Date.UTC(
+          year,
+          month,
+          1
+        );
+
+      const monthEndMs =
+        Date.UTC(
+          year,
+          month,
+          lastDay.getDate()
+        );
+
+      let totalDays = 0;
+
+      for (
+        const tour of data || []
+      ) {
+        const startMs =
+          Date.parse(
+            `${tour.date}T00:00:00Z`
+          );
+
+        const endDate =
+          tour.end_date ||
+          tour.date;
+
+        const endMs =
+          Date.parse(
+            `${endDate}T00:00:00Z`
+          );
+
+        if (
+          Number.isNaN(startMs) ||
+          Number.isNaN(endMs)
+        ) {
+          continue;
         }
-      )
-      .subscribe();
 
-  return () => {
-    cancelled = true;
+        const visibleStartMs =
+          Math.max(
+            startMs,
+            monthStartMs
+          );
 
-    if (channel) {
-      supabase.removeChannel(
-        channel
+        const visibleEndMs =
+          Math.min(
+            endMs,
+            monthEndMs
+          );
+
+        if (
+          visibleStartMs >
+          visibleEndMs
+        ) {
+          continue;
+        }
+
+        const days =
+          Math.floor(
+            (
+              visibleEndMs -
+              visibleStartMs
+            ) /
+              (
+                1000 *
+                60 *
+                60 *
+                24
+              )
+          ) + 1;
+
+        totalDays += days;
+      }
+
+      setTourCount(
+        totalDays
       );
-
-      channel = null;
     }
-  };
-}, [
-  profile,
-  displayedMonth,
-]);
 
+    loadTourCount();
+
+    channel =
+      supabase
+        .channel(
+          "dashboard-tour-count"
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "tour_events",
+          },
+          () => {
+            loadTourCount();
+          }
+        )
+        .subscribe();
+
+    return () => {
+      cancelled = true;
+
+      if (channel) {
+        supabase.removeChannel(
+          channel
+        );
+
+        channel = null;
+      }
+    };
+  }, [
+    profile,
+    displayedMonth,
+  ]);
 
   // ============================================================
   // GOOGLE CALENDAR
-  // SOMENTE ADMIN
   // ============================================================
 
   async function checkGoogleConnection() {
@@ -568,7 +632,9 @@ useEffect(() => {
       return;
     }
 
-    if (profile.role !== "admin") {
+    if (
+      profile.role !== "admin"
+    ) {
       console.log(
         "ℹ️ Usuário não administrador. Google Calendar não será carregado."
       );
@@ -586,9 +652,12 @@ useEffect(() => {
   // NAVEGAÇÃO
   // ============================================================
 
-  function navigateTo(path: string) {
+  function navigateTo(
+    path: string
+  ) {
     setShowMenu(false);
     setShowNotifications(false);
+    setShowDesktopAdminMenu(false);
 
     window.location.href = path;
   }
@@ -615,15 +684,23 @@ useEffect(() => {
 
   async function closeNotificationModal() {
     if (!activeNotification) {
-      setShowNotificationModal(false);
+      setShowNotificationModal(
+        false
+      );
+
       return;
     }
 
     const notification =
       activeNotification;
 
-    setShowNotificationModal(false);
-    setActiveNotification(null);
+    setShowNotificationModal(
+      false
+    );
+
+    setActiveNotification(
+      null
+    );
 
     if (notification.read) {
       return;
@@ -682,7 +759,9 @@ useEffect(() => {
       return;
     }
 
-    if (profile.role !== "guide") {
+    if (
+      profile.role !== "guide"
+    ) {
       console.log(
         "ℹ️ Usuário administrador. Notificações não serão carregadas."
       );
@@ -743,10 +822,6 @@ useEffect(() => {
         return;
       }
 
-      // ========================================================
-      // CARREGAR NOTIFICAÇÕES EXISTENTES
-      // ========================================================
-
       console.log(
         "📥 CARREGANDO NOTIFICAÇÕES..."
       );
@@ -796,10 +871,6 @@ useEffect(() => {
         loadedNotifications
       );
 
-      // ========================================================
-      // ABRIR MODAL SE EXISTIR NÃO LIDA
-      // ========================================================
-
       const firstUnread =
         loadedNotifications.find(
           (notification) =>
@@ -824,190 +895,187 @@ useEffect(() => {
         );
       }
 
-      // ========================================================
-      // REALTIME
-      // ========================================================
-
       console.log(
         "📡 CONFIGURANDO REALTIME..."
       );
 
-      channel = supabase
-        .channel(
-          `notifications-${user.id}`
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "notifications",
-            filter: `user_id=eq.${user.id}`,
-          },
-          (payload) => {
-            console.log(
-              "🆕 NOVA NOTIFICAÇÃO:",
-              payload
-            );
+      channel =
+        supabase
+          .channel(
+            `notifications-${user.id}`
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "INSERT",
+              schema: "public",
+              table: "notifications",
+              filter: `user_id=eq.${user.id}`,
+            },
+            (payload) => {
+              console.log(
+                "🆕 NOVA NOTIFICAÇÃO:",
+                payload
+              );
 
-            const newNotification =
-              payload.new as Notification;
+              const newNotification =
+                payload.new as Notification;
 
-            setNotifications(
-              (current) => {
-                const alreadyExists =
-                  current.some(
-                    (notification) =>
-                      notification.id ===
-                      newNotification.id
-                  );
+              setNotifications(
+                (current) => {
+                  const alreadyExists =
+                    current.some(
+                      (notification) =>
+                        notification.id ===
+                        newNotification.id
+                    );
 
-                if (
-                  alreadyExists
-                ) {
-                  return current;
+                  if (
+                    alreadyExists
+                  ) {
+                    return current;
+                  }
+
+                  return [
+                    newNotification,
+                    ...current,
+                  ];
                 }
+              );
 
-                return [
-                  newNotification,
-                  ...current,
-                ];
+              if (
+                !newNotification.read
+              ) {
+                setActiveNotification(
+                  newNotification
+                );
+
+                setShowNotificationModal(
+                  true
+                );
               }
+            }
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "UPDATE",
+              schema: "public",
+              table: "notifications",
+              filter: `user_id=eq.${user.id}`,
+            },
+            (payload) => {
+              console.log(
+                "✏️ NOTIFICAÇÃO ATUALIZADA:",
+                payload
+              );
+
+              const updatedNotification =
+                payload.new as Notification;
+
+              setNotifications(
+                (current) =>
+                  current.map(
+                    (
+                      notification
+                    ) =>
+                      notification.id ===
+                      updatedNotification.id
+                        ? updatedNotification
+                        : notification
+                  )
+              );
+
+              setActiveNotification(
+                (current) =>
+                  current &&
+                  current.id ===
+                    updatedNotification.id
+                    ? updatedNotification
+                    : current
+              );
+            }
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "DELETE",
+              schema: "public",
+              table: "notifications",
+              filter: `user_id=eq.${user.id}`,
+            },
+            (payload) => {
+              console.log(
+                "🗑️ NOTIFICAÇÃO EXCLUÍDA:",
+                payload
+              );
+
+              const deletedNotification =
+                payload.old as Notification;
+
+              setNotifications(
+                (current) =>
+                  current.filter(
+                    (
+                      notification
+                    ) =>
+                      notification.id !==
+                      deletedNotification.id
+                  )
+              );
+
+              setActiveNotification(
+                (current) =>
+                  current &&
+                  current.id ===
+                    deletedNotification.id
+                    ? null
+                    : current
+              );
+            }
+          )
+          .subscribe((status) => {
+            console.log(
+              "📡 STATUS REALTIME:",
+              status
             );
 
             if (
-              !newNotification.read
+              status ===
+              "SUBSCRIBED"
             ) {
-              setActiveNotification(
-                newNotification
-              );
-
-              setShowNotificationModal(
-                true
+              console.log(
+                "✅ REALTIME DE NOTIFICAÇÕES CONECTADO!"
               );
             }
-          }
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "notifications",
-            filter: `user_id=eq.${user.id}`,
-          },
-          (payload) => {
-            console.log(
-              "✏️ NOTIFICAÇÃO ATUALIZADA:",
-              payload
-            );
 
-            const updatedNotification =
-              payload.new as Notification;
+            if (
+              status ===
+              "CHANNEL_ERROR"
+            ) {
+              console.error(
+                "❌ ERRO NO CANAL REALTIME"
+              );
+            }
 
-            setNotifications(
-              (current) =>
-                current.map(
-                  (
-                    notification
-                  ) =>
-                    notification.id ===
-                    updatedNotification.id
-                      ? updatedNotification
-                      : notification
-                )
-            );
+            if (
+              status ===
+              "TIMED_OUT"
+            ) {
+              console.error(
+                "⏱️ REALTIME EXPIROU"
+              );
+            }
 
-            setActiveNotification(
-              (current) =>
-                current &&
-                current.id ===
-                  updatedNotification.id
-                  ? updatedNotification
-                  : current
-            );
-          }
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "DELETE",
-            schema: "public",
-            table: "notifications",
-            filter: `user_id=eq.${user.id}`,
-          },
-          (payload) => {
-            console.log(
-              "🗑️ NOTIFICAÇÃO EXCLUÍDA:",
-              payload
-            );
-
-            const deletedNotification =
-              payload.old as Notification;
-
-            setNotifications(
-              (current) =>
-                current.filter(
-                  (
-                    notification
-                  ) =>
-                    notification.id !==
-                    deletedNotification.id
-                )
-            );
-
-            setActiveNotification(
-              (current) =>
-                current &&
-                current.id ===
-                  deletedNotification.id
-                  ? null
-                  : current
-            );
-          }
-        )
-        .subscribe((status) => {
-          console.log(
-            "📡 STATUS REALTIME:",
-            status
-          );
-
-          if (
-            status ===
-            "SUBSCRIBED"
-          ) {
-            console.log(
-              "✅ REALTIME DE NOTIFICAÇÕES CONECTADO!"
-            );
-          }
-
-          if (
-            status ===
-            "CHANNEL_ERROR"
-          ) {
-            console.error(
-              "❌ ERRO NO CANAL REALTIME"
-            );
-          }
-
-          if (
-            status ===
-            "TIMED_OUT"
-          ) {
-            console.error(
-              "⏱️ REALTIME EXPIROU"
-            );
-          }
-
-          if (
-            status ===
-            "CLOSED"
-          ) {
-            console.warn(
-              "⚠️ CANAL REALTIME FECHADO"
-            );
-          }
-        });
+            if (
+              status ===
+              "CLOSED"
+            ) {
+              console.warn(
+                "⚠️ CANAL REALTIME FECHADO"
+              );
+            }
+          });
     }
 
     setupNotifications();
@@ -1207,7 +1275,6 @@ useEffect(() => {
 
   // ============================================================
   // CONECTAR GOOGLE CALENDAR
-  // SOMENTE ADMIN
   // ============================================================
 
   async function connectGoogleCalendar() {
@@ -1351,7 +1418,9 @@ useEffect(() => {
       return;
     }
 
-    if (profile.role !== "admin") {
+    if (
+      profile.role !== "admin"
+    ) {
       return;
     }
 
@@ -1383,85 +1452,85 @@ useEffect(() => {
     }
   }, [profile]);
 
+  // ============================================================
+  // TEMA
+  // ============================================================
 
-// ============================================================
-// TEMA
-// ============================================================
-
-async function toggleTheme() {
-  const nextTheme =
-    theme ===
-    "light"
-      ? "dark"
-      : "light";
-
-  setTheme(
-    nextTheme
-  );
-
-  const {
-    data: {
-      user,
-    },
-  } =
-    await supabase.auth.getUser();
-
-  if (!user) {
-    return;
-  }
-
-  const {
-    data: updatedProfile,
-    error,
-  } =
-    await supabase
-      .from("profiles")
-      .update({
-        theme:
-          nextTheme,
-      })
-      .eq(
-        "id",
-        user.id
-      )
-      .select(
-        "id, theme"
-      )
-      .single();
-
-  if (error) {
-    console.error(
-      "❌ ERRO AO SALVAR TEMA:",
-      JSON.stringify(
-        error,
-        null,
-        2
-      ),
-      "MESSAGE:",
-      error.message,
-      "DETAILS:",
-      error.details,
-      "HINT:",
-      error.hint,
-      "CODE:",
-      error.code
-    );
+  async function toggleTheme() {
+    const nextTheme =
+      theme ===
+      "light"
+        ? "dark"
+        : "light";
 
     setTheme(
-      theme
+      nextTheme
     );
 
-    return;
+    const {
+      data: {
+        user,
+      },
+    } =
+      await supabase.auth.getUser();
+
+    if (!user) {
+      return;
+    }
+
+    const {
+      data: updatedProfile,
+      error,
+    } =
+      await supabase
+        .from("profiles")
+        .update({
+          theme:
+            nextTheme,
+        })
+        .eq(
+          "id",
+          user.id
+        )
+        .select(
+          "id, theme"
+        )
+        .single();
+
+    if (error) {
+      console.error(
+        "❌ ERRO AO SALVAR TEMA:",
+        JSON.stringify(
+          error,
+          null,
+          2
+        ),
+        "MESSAGE:",
+        error.message,
+        "DETAILS:",
+        error.details,
+        "HINT:",
+        error.hint,
+        "CODE:",
+        error.code
+      );
+
+      setTheme(
+        theme
+      );
+
+      return;
+    }
+
+    if (
+      updatedProfile?.theme
+    ) {
+      setTheme(
+        updatedProfile.theme
+      );
+    }
   }
 
-  if (
-    updatedProfile?.theme
-  ) {
-    setTheme(
-      updatedProfile.theme
-    );
-  }
-}
   // ============================================================
   // LOGOUT
   // ============================================================
@@ -1472,6 +1541,8 @@ async function toggleTheme() {
     );
 
     setShowMenu(false);
+    setShowNotifications(false);
+    setShowDesktopAdminMenu(false);
 
     await supabase.auth.signOut();
 
@@ -1485,6 +1556,7 @@ async function toggleTheme() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f7f7fb] dark:bg-black">
+
         <div className="text-center">
 
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-[#e91e8c]" />
@@ -1494,6 +1566,7 @@ async function toggleTheme() {
           </p>
 
         </div>
+
       </main>
     );
   }
@@ -1532,9 +1605,7 @@ async function toggleTheme() {
   return (
     <main className="min-h-screen bg-[#f7f7fb] dark:bg-black">
 
-      {/* ====================================================== */}
-      {/* DECORAÇÃO DE FUNDO */}
-      {/* ====================================================== */}
+      {/* DECORAÇÃO */}
 
       <div className="pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full bg-[#e91e8c] opacity-[0.08] blur-3xl" />
 
@@ -1549,12 +1620,12 @@ async function toggleTheme() {
       <header className="relative z-50 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-black">
 
         <div
-  className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6"
-  style={{
-    paddingTop:
-      "calc(1rem + env(safe-area-inset-top))",
-  }}
->
+          className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-6"
+          style={{
+            paddingTop:
+              "calc(1rem + env(safe-area-inset-top))",
+          }}
+        >
 
           {/* MARCA */}
 
@@ -1590,9 +1661,36 @@ async function toggleTheme() {
 
           <div className="flex items-center gap-2 sm:gap-3">
 
+            {/* ================================================== */}
+            {/* ASSINATURA DESKTOP */}
+            {/* SOMENTE DESKTOP */}
+            {/* CENTRALIZADA */}
+            {/* ================================================== */}
+
+            {isDesktop && (
+              <div className="hidden text-center leading-tight lg:block">
+
+                <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
+                  © 2026 Way To Know Rio
+                </p>
+
+                <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                  Desenvolvido por{" "}
+                  <span className="font-semibold text-[#e91e8c]">
+                    RMS Labs
+                  </span>
+                </p>
+
+              </div>
+            )}
+
+            {/* ================================================== */}
             {/* MENU DESKTOP */}
+            {/* ================================================== */}
 
             <nav className="hidden items-center gap-1 lg:flex">
+
+              {/* AGENDA */}
 
               <button
                 type="button"
@@ -1601,7 +1699,7 @@ async function toggleTheme() {
                     "/dashboard"
                   )
                 }
-                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-blue-50 hover:text-[#1687d9]"
+                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-white"
               >
                 📅{" "}
                 {isAdmin
@@ -1609,19 +1707,7 @@ async function toggleTheme() {
                   : "Minha Agenda"}
               </button>
 
-              {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigateTo(
-                      "/guias"
-                    )
-                  }
-                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-blue-50 hover:text-[#1687d9]"
-                >
-                  👥 Gerenciar Guias
-                </button>
-              )}
+              {/* RANKING */}
 
               {isAdmin && (
                 <button
@@ -1631,26 +1717,115 @@ async function toggleTheme() {
                       "/admin/ranking"
                     )
                   }
-                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200
-transition hover:bg-yellow-50 hover:text-yellow-600"
+                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-white"
                 >
                   🏆 Ranking
                 </button>
               )}
 
+              {/* ADMINISTRAÇÃO */}
+
               {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigateTo(
-                      "/admin/logins"
-                    )
+                <div
+                  ref={
+                    desktopAdminMenuRef
                   }
-                  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-blue-50 hover:text-[#1687d9]"
+                  className="relative"
                 >
-                  🔐 Logins
-                </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowDesktopAdminMenu(
+                        (current) =>
+                          !current
+                      )
+                    }
+                    className={[
+                      "rounded-xl px-3 py-2 text-sm font-semibold transition",
+                      showDesktopAdminMenu
+                        ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-white",
+                    ].join(
+                      " "
+                    )}
+                    aria-haspopup="menu"
+                    aria-expanded={
+                      showDesktopAdminMenu
+                    }
+                  >
+                    ⚙ Administração
+
+                    <span className="ml-1 text-[10px]">
+                      {showDesktopAdminMenu
+                        ? "▲"
+                        : "▼"}
+                    </span>
+                  </button>
+
+                  {showDesktopAdminMenu && (
+                    <div
+                      className="absolute right-0 top-full z-[300] mt-2 w-60 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+                      role="menu"
+                    >
+
+                      {/* GERENCIAMENTO DE GUIAS */}
+
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setShowDesktopAdminMenu(
+                            false
+                          );
+
+                          navigateTo(
+                            "/guias"
+                          );
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-white"
+                      >
+                        <span className="text-base">
+                          👥
+                        </span>
+
+                        <span>
+                          Gerenciamento de Guias
+                        </span>
+                      </button>
+
+                      {/* LOGINS */}
+
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setShowDesktopAdminMenu(
+                            false
+                          );
+
+                          navigateTo(
+                            "/admin/logins"
+                          );
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-white"
+                      >
+                        <span className="text-base">
+                          🔐
+                        </span>
+
+                        <span>
+                          Logins
+                        </span>
+                      </button>
+
+                    </div>
+                  )}
+
+                </div>
               )}
+
+              {/* MEU PERFIL */}
 
               <button
                 type="button"
@@ -1659,27 +1834,29 @@ transition hover:bg-yellow-50 hover:text-yellow-600"
                     "/perfil"
                   )
                 }
-                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-pink-50 hover:text-[#e91e8c]"
+                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-white"
               >
                 👤 Meu Perfil
               </button>
 
-<button
-  type="button"
-  onClick={
-    toggleTheme
-  }
-  className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-gray-100 dark:hover:bg-gray-800"
->
-  {theme ===
-  "light"
-    ? "🌙"
-    : "☀️"}{" "}
-  {theme ===
-  "light"
-    ? "Escuro"
-    : "Claro"}
-</button>
+              {/* TEMA */}
+
+              <button
+                type="button"
+                onClick={
+                  toggleTheme
+                }
+                className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-white"
+              >
+                {theme ===
+                "light"
+                  ? "🌙"
+                  : "☀️"}{" "}
+                {theme ===
+                "light"
+                  ? "Escuro"
+                  : "Claro"}
+              </button>
 
             </nav>
 
@@ -1702,11 +1879,13 @@ transition hover:bg-yellow-50 hover:text-yellow-600"
             {/* SINO - SOMENTE GUIA */}
 
             {!isAdmin && (
-             
- <div
-  ref={notificationRef}
-  className="relative z-[100]"
->
+
+              <div
+                ref={
+                  notificationRef
+                }
+                className="relative z-[100]"
+              >
 
                 <button
                   type="button"
@@ -1716,12 +1895,9 @@ transition hover:bg-yellow-50 hover:text-yellow-600"
                         !current
                     )
                   }
-                  className="relative flex h-10 w-10 items-center justify-center
-rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-xl text-gray-600 dark:text-gray-200 shadow-sm transition hover:border-[#1687d9]
-hover:bg-blue-50 hover:text-[#1687d9]"
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-xl text-gray-600 dark:text-gray-200 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
                   aria-label="Notificações"
                 >
-
                   🔔
 
                   {unreadCount > 0 && (
@@ -1734,11 +1910,6 @@ hover:bg-blue-50 hover:text-[#1687d9]"
                   )}
 
                 </button>
-
-                {/* =================================================
-                   DROPDOWN DE NOTIFICAÇÕES
-                   CORRIGIDO PARA CELULAR
-                   ================================================= */}
 
                 {showNotifications && (
                   <div
@@ -1879,8 +2050,8 @@ hover:bg-blue-50 hover:text-[#1687d9]"
                                     className={[
                                       "min-w-0 break-words text-sm",
                                       notification.read
-? "font-bold text-gray-800 dark:text-gray-200"
-: "font-extrabold text-gray-900 dark:text-white",
+                                        ? "font-bold text-gray-800 dark:text-gray-200"
+                                        : "font-extrabold text-gray-900 dark:text-white",
                                     ].join(
                                       " "
                                     )}
@@ -1923,60 +2094,76 @@ hover:bg-blue-50 hover:text-[#1687d9]"
               </div>
             )}
 
-{/* GOOGLE MOBILE — SOMENTE ADMIN */}
+            {/* GOOGLE MOBILE */}
 
-{isAdmin && (
-  <div
-    ref={googleMobileRef}
-    className="relative lg:hidden"
-  >
+            {isAdmin && (
+              <div
+                ref={
+                  googleMobileRef
+                }
+                className="relative lg:hidden"
+              >
 
-    <button
-      type="button"
-     onClick={() => {
-  if (googleToggleLockRef.current) {
-    return;
-  }
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (
+                      googleToggleLockRef.current
+                    ) {
+                      return;
+                    }
 
-  googleToggleLockRef.current = true;
+                    googleToggleLockRef.current =
+                      true;
 
-  if (!googleConnected) {
-    setShowGoogleMobile(true);
-  } else {
-    setShowGoogleMobile(
-      (current) => !current
-    );
-  }
+                    if (
+                      !googleConnected
+                    ) {
+                      setShowGoogleMobile(
+                        true
+                      );
+                    } else {
+                      setShowGoogleMobile(
+                        (current) =>
+                          !current
+                      );
+                    }
 
-  window.setTimeout(() => {
-    googleToggleLockRef.current = false;
-  }, 250);
-}}
-      className={[
-        "flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-black shadow-sm transition dark:bg-black",
-        googleConnected
-          ? "border-2 border-green-500"
-          : "border-2 border-red-500",
-      ].join(" ")}
-      aria-label="Google Calendar"
-      aria-expanded={showGoogleMobile}
-    >
-      <span className="bg-[linear-gradient(135deg,#4285F4_0%,#4285F4_25%,#34A853_25%,#34A853_50%,#FBBC05_50%,#FBBC05_75%,#EA4335_75%,#EA4335_100%)] bg-clip-text text-transparent">
-        G
-      </span>
-    </button>
+                    window.setTimeout(
+                      () => {
+                        googleToggleLockRef.current =
+                          false;
+                      },
+                      250
+                    );
+                  }}
+                  className={[
+                    "flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-black shadow-sm transition dark:bg-black",
+                    googleConnected
+                      ? "border-2 border-green-500"
+                      : "border-2 border-red-500",
+                  ].join(
+                    " "
+                  )}
+                  aria-label="Google Calendar"
+                  aria-expanded={
+                    showGoogleMobile
+                  }
+                >
+                  <span className="bg-[linear-gradient(135deg,#4285F4_0%,#4285F4_25%,#34A853_25%,#34A853_50%,#FBBC05_50%,#FBBC05_75%,#EA4335_75%,#EA4335_100%)] bg-clip-text text-transparent">
+                    G
+                  </span>
+                </button>
 
-  </div>
-)}
-
-
+              </div>
+            )}
 
             {/* MENU MOBILE */}
 
             <div
-  ref={menuRef}
-  className="relative lg:hidden"
->
+              ref={menuRef}
+              className="relative lg:hidden"
+            >
 
               <button
                 type="button"
@@ -1986,9 +2173,7 @@ hover:bg-blue-50 hover:text-[#1687d9]"
                       !current
                   )
                 }
-className="flex h-10 w-10 items-center justify-center rounded-xl border
-border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-xl text-gray-700 dark:text-gray-200 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50
-hover:text-[#1687d9]"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-xl text-gray-700 dark:text-gray-200 shadow-sm transition hover:border-[#1687d9] hover:bg-blue-50 hover:text-[#1687d9]"
                 aria-label="Abrir menu"
                 aria-expanded={
                   showMenu
@@ -1999,10 +2184,10 @@ hover:text-[#1687d9]"
                   : "☰"}
               </button>
 
-             {showMenu && (
-  <div
-    className="absolute right-0 top-12 z-[300] w-[290px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-black shadow-2xl"
-  >
+              {showMenu && (
+                <div
+                  className="absolute right-0 top-12 z-[300] w-[290px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-black shadow-2xl"
+                >
 
                   <div className="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900 px-5 py-4">
 
@@ -2100,7 +2285,7 @@ hover:text-[#1687d9]"
                       </button>
                     )}
 
-                    {/* GOOGLE CALENDAR - SOMENTE ADMIN */}
+                    {/* GOOGLE CALENDAR */}
 
                     {isAdmin &&
                       !checkingGoogle &&
@@ -2142,6 +2327,8 @@ hover:text-[#1687d9]"
                         </div>
                       )}
 
+                    {/* MEU PERFIL */}
+
                     <button
                       type="button"
                       onClick={() =>
@@ -2160,27 +2347,29 @@ hover:text-[#1687d9]"
                       </span>
                     </button>
 
-<button
-  type="button"
-  onClick={
-    toggleTheme
-  }
-  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-gray-50 dark:hover:bg-gray-900"
->
-  <span className="text-lg">
-    {theme ===
-    "light"
-      ? "🌙"
-      : "☀️"}
-  </span>
+                    {/* TEMA */}
 
-  <span>
-    {theme ===
-    "light"
-      ? "Tema escuro"
-      : "Tema claro"}
-  </span>
-</button>
+                    <button
+                      type="button"
+                      onClick={
+                        toggleTheme
+                      }
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-gray-50 dark:hover:bg-gray-900"
+                    >
+                      <span className="text-lg">
+                        {theme ===
+                        "light"
+                          ? "🌙"
+                          : "☀️"}
+                      </span>
+
+                      <span>
+                        {theme ===
+                        "light"
+                          ? "Tema escuro"
+                          : "Tema claro"}
+                      </span>
+                    </button>
 
                   </div>
 
@@ -2217,8 +2406,7 @@ hover:text-[#1687d9]"
               onClick={
                 handleLogout
               }
-              className="hidden rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm
-font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 sm:px-4 lg:block"
+              className="hidden rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 sm:px-4 lg:block"
             >
               Sair
             </button>
@@ -2237,387 +2425,419 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
 
         </div>
 
-</header>
+      </header>
 
-{/* GOOGLE MOBILE — PAINEL */}
+      {/* ====================================================== */}
+      {/* GOOGLE MOBILE — PAINEL */}
+      {/* ====================================================== */}
 
-{isAdmin &&
-  !checkingGoogle &&
-  (!googleConnected ||
-    showGoogleMobile) && (
+      {isAdmin &&
+        !checkingGoogle &&
+        (!googleConnected ||
+          showGoogleMobile) && (
 
-  <div className="mt-4 lg:hidden">
+        <div className="mt-4 lg:hidden">
 
-    <div className="mb-1 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-black">
+          <div className="mb-1 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-black">
 
-      <div className="flex h-1">
+            <div className="flex h-1">
 
-        <div className="flex-1 bg-[#4285F4]" />
-        <div className="flex-1 bg-[#34A853]" />
-        <div className="flex-1 bg-[#FBBC05]" />
-        <div className="flex-1 bg-[#EA4335]" />
+              <div className="flex-1 bg-[#4285F4]" />
+              <div className="flex-1 bg-[#34A853]" />
+              <div className="flex-1 bg-[#FBBC05]" />
+              <div className="flex-1 bg-[#EA4335]" />
 
-      </div>
+            </div>
 
-      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
 
-        <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4">
 
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-2xl">
-            📅
-          </div>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-2xl">
+                  📅
+                </div>
 
-          <div>
+                <div>
 
-            <h2 className="text-base font-extrabold text-gray-900 dark:text-white sm:text-lg">
-              Google Calendar
-            </h2>
+                  <h2 className="text-base font-extrabold text-gray-900 dark:text-white sm:text-lg">
+                    Google Calendar
+                  </h2>
 
-            <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-300 sm:text-sm">
-              {checkingGoogle
-                ? "Verificando conexão..."
-                : googleConnected
-                ? "Sua conta está conectada e pronta para sincronizar sua agenda."
-                : "Conecte sua conta para sincronizar sua agenda."}
-            </p>
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-300 sm:text-sm">
+                    {checkingGoogle
+                      ? "Verificando conexão..."
+                      : googleConnected
+                      ? "Sua conta está conectada e pronta para sincronizar sua agenda."
+                      : "Conecte sua conta para sincronizar sua agenda."}
+                  </p>
+
+                </div>
+
+              </div>
+
+              {!checkingGoogle &&
+                !googleConnected && (
+                <button
+                  type="button"
+                  disabled={connectingGoogle}
+                  onClick={
+                    connectGoogleCalendar
+                  }
+                  className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                >
+                  {connectingGoogle
+                    ? "⏳ Conectando..."
+                    : "📅 Conectar Google"}
+                </button>
+              )}
+
+              {!checkingGoogle &&
+                googleConnected && (
+                <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-extrabold text-green-700 sm:w-auto">
+
+                  <span>✓</span>
+
+                  <span>
+                    Google conectado
+                  </span>
+
+                </div>
+              )}
+
+            </div>
 
           </div>
 
         </div>
+      )}
 
-        {!checkingGoogle &&
-          !googleConnected && (
-            <button
-              type="button"
-              disabled={connectingGoogle}
-              onClick={connectGoogleCalendar}
-              className="w-full rounded-xl bg-green-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-            >
-              {connectingGoogle
-                ? "⏳ Conectando..."
-                : "📅 Conectar Google"}
-            </button>
-          )}
-
-        {!checkingGoogle &&
-          googleConnected && (
-            <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-extrabold text-green-700 sm:w-auto">
-
-              <span>✓</span>
-
-              <span>
-                Google conectado
-              </span>
-
-            </div>
-          )}
-
-      </div>
-
-    </div>
-
-  </div>
-)}
-
-
-{/* ====================================================== */}
-{/* CONTEÚDO */}
+      {/* ====================================================== */}
+      {/* CONTEÚDO */}
       {/* ====================================================== */}
 
-   <section className="relative z-10 w-full px-3 py-4 sm:px-4 sm:py-6 lg:px-2 lg:py-2">
+      <section className="relative z-10 w-full px-3 py-4 sm:px-4 sm:py-6 lg:px-2 lg:py-2">
 
-  {isAdmin ? (
+        {isAdmin ? (
 
-    <div className="lg:grid lg:h-[calc(100dvh-115px)] lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-3">
+          <div className="lg:grid lg:h-[calc(100dvh-115px)] lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-3">
 
-      {/* ==================================================== */}
-      {/* SIDEBAR DESKTOP */}
-      {/* ==================================================== */}
+            {/* SIDEBAR DESKTOP */}
 
-      <aside className="hidden min-h-0 flex-col gap-3 lg:flex">
+            <aside className="hidden min-h-0 flex-col gap-3 lg:flex">
 
-        {/* GOOGLE CALENDAR */}
+              {/* GOOGLE CALENDAR */}
 
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-black">
+              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-black">
 
-          <div className="flex h-1">
-            <div className="flex-1 bg-[#4285F4]" />
-            <div className="flex-1 bg-[#34A853]" />
-            <div className="flex-1 bg-[#FBBC05]" />
-            <div className="flex-1 bg-[#EA4335]" />
-          </div>
+                <div className="flex h-1">
 
-          <div className="p-4">
+                  <div className="flex-1 bg-[#4285F4]" />
+                  <div className="flex-1 bg-[#34A853]" />
+                  <div className="flex-1 bg-[#FBBC05]" />
+                  <div className="flex-1 bg-[#EA4335]" />
 
-            <div className="flex items-center gap-3">
+                </div>
 
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-xl">
-                📅
+                <div className="p-4">
+
+                  <div className="flex items-center gap-3">
+
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-xl">
+                      📅
+                    </div>
+
+                    <div className="min-w-0">
+
+                      <h2 className="text-sm font-extrabold text-gray-900 dark:text-white">
+                        Google Calendar
+                      </h2>
+
+                      <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-300">
+                        {checkingGoogle
+                          ? "Verificando conexão..."
+                          : googleConnected
+                          ? "Sua conta está conectada e pronta para sincronizar sua agenda."
+                          : "Conecte sua conta para sincronizar sua agenda."}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  {!checkingGoogle &&
+                    !googleConnected && (
+                    <button
+                      type="button"
+                      disabled={
+                        connectingGoogle
+                      }
+                      onClick={
+                        connectGoogleCalendar
+                      }
+                      className="mt-4 w-full rounded-xl bg-green-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {connectingGoogle
+                        ? "⏳ Conectando..."
+                        : "📅 Conectar Google"}
+                    </button>
+                  )}
+
+                  {!checkingGoogle &&
+                    googleConnected && (
+                    <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-2.5 text-xs font-extrabold text-green-700">
+
+                      <span>✓</span>
+
+                      <span>
+                        Google conectado
+                      </span>
+
+                    </div>
+                  )}
+
+                </div>
+
               </div>
 
-              <div className="min-w-0">
+              {/* BUSCA */}
 
-                <h2 className="text-sm font-extrabold text-gray-900 dark:text-white">
-                  Google Calendar
-                </h2>
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
 
-                <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-300">
-                  {checkingGoogle
-                    ? "Verificando conexão..."
-                    : googleConnected
-                    ? "Sua conta está conectada e pronta para sincronizar sua agenda."
-                    : "Conecte sua conta para sincronizar sua agenda."}
+                <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                  Buscar tour
+                </p>
+
+                <div className="relative">
+
+                  <input
+                    type="text"
+                    value={adminSearch}
+                    onChange={(event) =>
+                      setAdminSearch(
+                        event.target.value
+                      )
+                    }
+                    onKeyDown={(event) => {
+                      if (
+                        event.key ===
+                        "Escape"
+                      ) {
+                        setAdminSearch("");
+                        event.currentTarget.blur();
+                      }
+                    }}
+                    placeholder="Título, e-mail ou endereço..."
+                    className="w-full rounded-xl border-2 border-gray-300 bg-white px-3 py-2.5 pr-9 text-xs font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-100 dark:border-gray-700 dark:bg-black dark:text-gray-100"
+                  />
+
+                  {adminSearch && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAdminSearch("")
+                      }
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                    >
+                      ✕
+                    </button>
+                  )}
+
+                </div>
+
+              </div>
+
+              {/* TOURS LANÇADOS */}
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
+
+                <div>
+
+                  <p className="text-xs font-extrabold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                    Tours lançados neste mês
+                  </p>
+
+                  <p className="mt-2 text-center text-3xl font-black leading-none text-gray-900 dark:text-white">
+                    {tourCount}
+                  </p>
+
+                </div>
+
+                <div className="mt-4 border-t border-gray-100 pt-3 dark:border-gray-800">
+
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                    Tours ativos na agenda
+                  </p>
+
+                </div>
+
+              </div>
+
+              {/* LEGENDA */}
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
+
+                <p className="text-xs font-extrabold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                  Legenda
+                </p>
+
+                <div className="mt-3 space-y-2.5">
+
+                  <div className="flex items-center gap-2.5">
+
+                    <span className="h-3 w-3 shrink-0 rounded-md bg-[#dc2127] ring-1 ring-black dark:ring-white" />
+
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                      Tour sem guia/motorista
+                    </span>
+
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+
+                    <span className="h-3 w-3 shrink-0 rounded-md bg-[#fbd75b] ring-1 ring-black dark:ring-white" />
+
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                      Tour com guia e motorista
+                    </span>
+
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+
+                    <span className="h-3 w-3 shrink-0 rounded-md bg-[#5484ed] ring-1 ring-black dark:ring-white" />
+
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                      Tour Ilha Grande
+                    </span>
+
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+
+                    <span className="h-3 w-3 shrink-0 rounded-md bg-[#ff887c] ring-1 ring-black dark:ring-white" />
+
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                      Tour Website
+                    </span>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* RODAPÉ */}
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
+
+                <div className="mb-3 flex justify-center gap-2">
+
+                  <span className="h-2 w-8 rounded-full bg-[#e91e8c]" />
+
+                  <span className="h-2 w-8 rounded-full bg-[#1687d9]" />
+
+                  <span className="h-2 w-8 rounded-full bg-[#ffd21c]" />
+
+                </div>
+
+                <p className="text-center text-[11px] text-gray-400 dark:text-gray-500">
+                  © 2026 Way To Know Rio
+                </p>
+
+                <p className="mt-1 text-center text-[11px] text-gray-400 dark:text-gray-500">
+                  Desenvolvido por{" "}
+                  <span className="font-semibold text-[#e91e8c]">
+                    RMS Labs
+                  </span>
                 </p>
 
               </div>
 
-            </div>
+            </aside>
 
-            {!checkingGoogle && !googleConnected && (
-              <button
-                type="button"
-                disabled={connectingGoogle}
-                onClick={connectGoogleCalendar}
-                className="mt-4 w-full rounded-xl bg-green-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {connectingGoogle
-                  ? "⏳ Conectando..."
-                  : "📅 Conectar Google"}
-              </button>
-            )}
+            {/* CALENDÁRIO ADMIN */}
 
-            {!checkingGoogle && googleConnected && (
-              <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-2.5 text-xs font-extrabold text-green-700">
+            <div className="min-h-0 min-w-0 overflow-visible rounded-2xl bg-white shadow-sm dark:bg-black">
 
-                <span>✓</span>
+              <div className="min-h-0 min-w-0 overflow-visible lg:h-full">
 
-                <span>
-                  Google conectado
-                </span>
+                <div className="min-h-0 min-w-0 lg:h-full">
+
+                  <AdminCalendar
+                    searchValue={
+                      adminSearch
+                    }
+                    onSearchChange={
+                      setAdminSearch
+                    }
+                    onMonthChange={
+                      setDisplayedMonth
+                    }
+                  />
+
+                </div>
 
               </div>
-            )}
 
-          </div>
-
-        </div>
-
-        {/* BUSCA */}
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
-
-          <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-            Buscar tour
-          </p>
-
-          <div className="relative">
-
-            <input
-              type="text"
-              value={adminSearch}
-              onChange={(event) =>
-                setAdminSearch(
-                  event.target.value
-                )
-              }
-
-  onKeyDown={(event) => {
-    if (event.key === "Escape") {
-      setAdminSearch("");
-      event.currentTarget.blur();
-    }
-  }}
-              placeholder="Título, e-mail ou endereço..."
-              className="w-full rounded-xl border-2 border-gray-300 bg-white px-3 py-2.5 pr-9 text-xs font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[#1687d9] focus:ring-4 focus:ring-blue-100 dark:border-gray-700 dark:bg-black dark:text-gray-100"
-            />
-
-            {adminSearch && (
-              <button
-                type="button"
-                onClick={() =>
-                  setAdminSearch("")
-                }
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              >
-                ✕
-              </button>
-            )}
-
-          </div>
-
-        </div>
-
-{/* TOURS LANÇADOS */}
-<div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
-  <div>
-    <p className="text-xs font-extrabold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-      Tours lançados neste Mês
-    </p>
-
-    <p className="mt-2 text-3xl font-black leading-none text-gray-900 dark:text-white">
-      {tourCount}
-    </p>
-  </div>
-
-  <div className="mt-4 border-t border-gray-100 pt-3 dark:border-gray-800">
-    <p className="text-[11px] text-gray-400 dark:text-gray-500">
-      Tours ativos na agenda
-    </p>
-  </div>
-</div>
-
-
-        {/* LEGENDA */}
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
-
-          <p className="text-xs font-extrabold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-            Legenda
-          </p>
-
-          <div className="mt-3 space-y-2.5">
-
-            <div className="flex items-center gap-2.5">
-              <span className="h-3 w-3 shrink-0 rounded-md bg-[#dc2127] ring-1 ring-black dark:ring-white" />
-
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                Tour sem guia/motorista
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <span className="h-3 w-3 shrink-0 rounded-md bg-[#fbd75b] ring-1 ring-black dark:ring-white" />
-
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                Tour com guia e motorista
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <span className="h-3 w-3 shrink-0 rounded-md bg-[#5484ed] ring-1 ring-black dark:ring-white" />
-
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                Tour Ilha Grande
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <span className="h-3 w-3 shrink-0 rounded-md bg-[#ff887c] ring-1 ring-black dark:ring-white" />
-
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                Tour Website
-              </span>
             </div>
 
           </div>
 
-        </div>
-{/* RODAPÉ DESKTOP */}
+        ) : (
 
-<div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-black">
+          /* ======================================================
+             GUIA
+             MOBILE:
+             PushNotifications continua aqui.
 
-  <div className="mb-3 flex justify-center gap-2">
+             DESKTOP:
+             PushNotifications não aparece mais.
+          ====================================================== */
 
-    <span className="h-2 w-8 rounded-full bg-[#e91e8c]" />
+          <div className="overflow-hidden rounded-3xl bg-white shadow-sm dark:bg-black">
 
-    <span className="h-2 w-8 rounded-full bg-[#1687d9]" />
+            {/* FAIXA:
+                MOBILE = APARECE
+                DESKTOP = ESCONDIDA */}
 
-    <span className="h-2 w-8 rounded-full bg-[#ffd21c]" />
+            <div className="flex h-1 lg:hidden">
 
-  </div>
+              <div className="flex-1 bg-[#e91e8c]" />
+              <div className="flex-1 bg-[#ffd21c]" />
+              <div className="flex-1 bg-[#1687d9]" />
 
-  <p className="text-center text-[11px] text-gray-400 dark:text-gray-500">
-    © 2026 Way To Know Rio
-  </p>
+            </div>
 
-  <p className="mt-1 text-center text-[11px] text-gray-400 dark:text-gray-500">
-    Desenvolvido por{" "}
-    <span className="font-semibold text-[#e91e8c]">
-      RMS Labs
-    </span>
-  </p>
+            <div className="p-2 sm:p-4">
 
-</div>
+              {/* NOTIFICAÇÕES MOBILE */}
 
-      </aside>
+              {!isDesktop && (
+                <div className="mb-3 sm:mb-4">
+                  <PushNotifications />
+                </div>
+              )}
 
+              {/* CALENDÁRIO */}
 
+              <Calendar />
 
-      {/* ==================================================== */}
-      {/* CALENDÁRIO */}
-      {/* ==================================================== */}
+            </div>
 
-      <div className="min-h-0 min-w-0 overflow-visible rounded-2xl bg-white shadow-sm dark:bg-black lg:h-full">
+          </div>
 
-        
-
-        <div className="min-h-0 min-w-0 overflow-visible lg:h-full">
-
-        
-
-       <div className="min-h-0 min-w-0 lg:h-full">
-
-<AdminCalendar
-  searchValue={
-    adminSearch
-  }
-  onSearchChange={
-    setAdminSearch
-  }
-  onMonthChange={
-    setDisplayedMonth
-  }
-/>
-
-</div>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  ) : (
-
-    <div className="overflow-hidden rounded-3xl bg-white shadow-sm dark:bg-black">
-
-      <div className="flex h-1">
-
-        <div className="flex-1 bg-[#e91e8c]" />
-        <div className="flex-1 bg-[#ffd21c]" />
-        <div className="flex-1 bg-[#1687d9]" />
-
-      </div>
-
-      <div className="p-2 sm:p-4">
-
-        <PushNotifications />
-
-        <Calendar />
-
-      </div>
-
-    </div>
-
-  )}
-
-
-
-
-
-
-  
+        )}
 
       </section>
 
       {/* ====================================================== */}
       {/* MODAL CENTRAL DE NOTIFICAÇÃO */}
-      {/* SOMENTE GUIA */}
       {/* ====================================================== */}
 
       {!isAdmin &&
         showNotificationModal &&
         activeNotification && (
+
           <div
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 px-4 py-4 backdrop-blur-[3px]"
             role="dialog"
@@ -2635,13 +2855,17 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
                   id="notification-modal-title"
                   className="break-words text-center text-xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-3xl"
                 >
-                  {activeNotification.title}
+                  {
+                    activeNotification.title
+                  }
                 </h2>
 
                 <div className="mt-5 min-w-0 text-center sm:mt-6">
 
                   <p className="whitespace-pre-line break-words [overflow-wrap:anywhere] text-sm leading-6 text-gray-600 dark:text-gray-300 sm:text-lg sm:leading-8">
-                    {activeNotification.message}
+                    {
+                      activeNotification.message
+                    }
                   </p>
 
                 </div>
@@ -2672,3 +2896,4 @@ font-semibold text-gray-600 dark:text-gray-300 transition hover:border-red-200 h
     </main>
   );
 }
+

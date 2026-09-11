@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -79,6 +78,69 @@ export default function Calendar() {
 
   const firstLoadRef =
     useRef(true);
+
+  /* ============================================================
+  SCROLL DESKTOP
+  ============================================================ */
+
+  const wheelLockRef =
+    useRef(false);
+
+  function handleCalendarWheel(
+    event: React.WheelEvent<HTMLDivElement>
+  ) {
+    // Não interfere no mobile/tablet
+    if (
+      window.innerWidth < 1024
+    ) {
+      return;
+    }
+
+    if (
+      wheelLockRef.current
+    ) {
+      return;
+    }
+
+    const deltaY =
+      event.deltaY;
+
+    if (
+      Math.abs(deltaY) < 20
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    wheelLockRef.current =
+      true;
+
+    if (deltaY > 0) {
+      // Scroll para baixo = próximo mês
+      setCurrentMonth(
+        (current) =>
+          addMonths(
+            current,
+            1
+          )
+      );
+    } else {
+      // Scroll para cima = mês anterior
+      setCurrentMonth(
+        (current) =>
+          subMonths(
+            current,
+            1
+          )
+      );
+    }
+
+    setTimeout(() => {
+      wheelLockRef.current =
+        false;
+    }, 350);
+  }
 
   const [
     availability,
@@ -869,9 +931,7 @@ export default function Calendar() {
               }
             >
 
-              {/* ==================================================
-                 CABEÇALHO
-              ================================================== */}
+              {/* CABEÇALHO */}
 
               <div className="shrink-0 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-black px-5 py-5 sm:px-6 sm:py-6">
 
@@ -906,15 +966,11 @@ export default function Calendar() {
 
               </div>
 
-              {/* ==================================================
-                 CONTEÚDO
-              ================================================== */}
+              {/* CONTEÚDO */}
 
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 sm:py-6">
 
                 <div className="space-y-4">
-
-                  {/* DATA / HORÁRIO */}
 
                   <div className="rounded-2xl bg-blue-50 p-4">
 
@@ -953,8 +1009,6 @@ export default function Calendar() {
 
                   </div>
 
-                  {/* DESCRIÇÃO */}
-
                   <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
 
                     <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
@@ -979,8 +1033,6 @@ export default function Calendar() {
 
                   </div>
 
-                  {/* ENDEREÇO */}
-
                   <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
 
                     <p className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
@@ -995,8 +1047,6 @@ export default function Calendar() {
                     </p>
 
                   </div>
-
-                  {/* EMAIL */}
 
                   {
                     selectedTour.additional_email && (
@@ -1016,8 +1066,6 @@ export default function Calendar() {
                     )
                   }
 
-                  {/* STATUS */}
-
                   <div className="rounded-2xl bg-yellow-50 p-4">
 
                     <p className="text-xs font-bold uppercase tracking-wide text-yellow-600">
@@ -1029,8 +1077,6 @@ export default function Calendar() {
                     </p>
 
                   </div>
-
-                  {/* FECHAR */}
 
                   <button
                     type="button"
@@ -1058,13 +1104,59 @@ export default function Calendar() {
 
   return (
     <>
-      <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-black sm:mt-6 sm:rounded-3xl sm:p-6">
+      <div
+        onWheel={
+          handleCalendarWheel
+        }
+        className="
+          mt-4
+          rounded-2xl
+          border
+          border-gray-200
+          bg-white
+          p-3
+          shadow-sm
+          dark:border-gray-700
+          dark:bg-black
+
+          sm:mt-6
+          sm:rounded-3xl
+          sm:p-6
+
+          lg:mt-0
+          lg:flex
+          lg:h-[calc(100dvh-140px)]
+          lg:min-h-0
+          lg:flex-col
+          lg:rounded-2xl
+          lg:p-4
+        "
+      >
 
         {/* ====================================================== */}
         {/* CABEÇALHO */}
         {/* ====================================================== */}
 
-        <div className="mb-4 flex items-center justify-between rounded-xl bg-gray-50 p-2 dark:bg-gray-900 sm:mb-6 sm:rounded-2xl sm:p-3">
+        <div
+          className="
+            mb-4
+            flex
+            items-center
+            justify-between
+            rounded-xl
+            bg-gray-50
+            p-2
+
+            dark:bg-gray-900
+
+            sm:mb-6
+            sm:rounded-2xl
+            sm:p-3
+
+            lg:mb-3
+            lg:shrink-0
+          "
+        >
 
           <button
             type="button"
@@ -1082,7 +1174,7 @@ export default function Calendar() {
             ←
           </button>
 
-          <h4 className="text-base font-extrabold capitalize text-gray-900 dark:text-white sm:text-xl md:text-2xl">
+          <h4 className="text-base font-extrabold capitalize text-gray-900 dark:text-white sm:text-xl md:text-2xl lg:text-xl">
             {
               monthName
             }
@@ -1110,7 +1202,32 @@ export default function Calendar() {
         {/* DIAS DA SEMANA */}
         {/* ====================================================== */}
 
-        <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-gray-700 dark:text-gray-200 sm:mb-3 sm:gap-2 sm:text-xs md:text-sm">
+        <div
+          className="
+            mb-2
+            grid
+            grid-cols-7
+            gap-1
+            text-center
+            text-[10px]
+            font-extrabold
+            uppercase
+            tracking-wide
+            text-gray-700
+            dark:text-gray-200
+
+            sm:mb-3
+            sm:gap-2
+            sm:text-xs
+
+            md:text-sm
+
+            lg:mb-2
+            lg:shrink-0
+            lg:gap-2
+            lg:text-xs
+          "
+        >
 
           <div>
             Seg
@@ -1148,7 +1265,7 @@ export default function Calendar() {
 
         {
           loading ? (
-            <div className="py-10 text-center sm:py-12">
+            <div className="py-10 text-center sm:py-12 lg:flex-1 lg:min-h-0 lg:flex lg:flex-col lg:items-center lg:justify-center">
 
               <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-[#e91e8c] sm:h-9 sm:w-9" />
 
@@ -1166,10 +1283,29 @@ export default function Calendar() {
                 onTouchEnd={
                   handleCalendarTouchEnd
                 }
-                className="touch-pan-y"
+                className="
+                  touch-pan-y
+
+                  lg:min-h-0
+                  lg:flex-1
+                  lg:overflow-hidden
+                "
               >
 
-                <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                <div
+                  className="
+                    grid
+                    grid-cols-7
+                    gap-1
+
+                    sm:gap-2
+
+                    lg:h-full
+                    lg:min-h-0
+                    lg:gap-2
+                    lg:auto-rows-fr
+                  "
+                >
 
                   {
                     days.map(
@@ -1282,6 +1418,16 @@ export default function Calendar() {
                             className={[
                               "aspect-square rounded-lg border text-xs font-extrabold transition sm:rounded-xl sm:text-sm md:text-base",
 
+                              /*
+                               * MOBILE/TABLET:
+                               * continua exatamente como antes.
+                               *
+                               * DESKTOP:
+                               * deixa de forçar quadrado e
+                               * ocupa a altura disponível.
+                               */
+                              "lg:aspect-auto lg:h-full lg:min-h-0 lg:rounded-lg lg:text-sm",
+
                               dayClass,
 
                               isEscalated &&
@@ -1312,7 +1458,34 @@ export default function Calendar() {
               {/* LEGENDA */}
               {/* ==================================================== */}
 
-              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 dark:border-gray-800 pt-4 text-xs font-semibold text-gray-700 dark:text-gray-200 sm:mt-6 sm:gap-5 sm:pt-5 sm:text-sm">
+              <div
+                className="
+                  mt-4
+                  flex
+                  flex-wrap
+                  items-center
+                  gap-x-4
+                  gap-y-2
+                  border-t
+                  border-gray-100
+                  pt-4
+                  text-xs
+                  font-semibold
+                  text-gray-700
+                  dark:border-gray-800
+                  dark:text-gray-200
+
+                  sm:mt-6
+                  sm:gap-5
+                  sm:pt-5
+                  sm:text-sm
+
+                  lg:mt-3
+                  lg:shrink-0
+                  lg:pt-3
+                  lg:text-xs
+                "
+              >
 
                 <div className="flex items-center gap-1.5 sm:gap-2">
 
@@ -1366,7 +1539,29 @@ export default function Calendar() {
                     item.status ===
                     "escalated"
                 ) && (
-                  <div className="mt-4 rounded-xl border border-[#d6c36a] bg-[#fff9d9] px-4 py-3 text-xs font-semibold text-[#806600] sm:mt-5 sm:rounded-2xl sm:text-sm">
+                  <div
+                    className="
+                      mt-4
+                      rounded-xl
+                      border
+                      border-[#d6c36a]
+                      bg-[#fff9d9]
+                      px-4
+                      py-3
+                      text-xs
+                      font-semibold
+                      text-[#806600]
+
+                      sm:mt-5
+                      sm:rounded-2xl
+                      sm:text-sm
+
+                      lg:mt-3
+                      lg:shrink-0
+                      lg:py-2.5
+                      lg:text-xs
+                    "
+                  >
 
                     🟡 Os dias em mostarda foram escalados pelo
                     administrador. Clique em um dia escalado para
@@ -1389,4 +1584,3 @@ export default function Calendar() {
     </>
   );
 }
-
