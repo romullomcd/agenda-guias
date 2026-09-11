@@ -39,6 +39,7 @@ type Availability = {
 type TourEvent = {
   id: number;
   date: string;
+  end_date: string;
   title: string;
   description: string | null;
   address: string | null;
@@ -372,7 +373,7 @@ export default function Calendar() {
             "tour_events"
           )
           .select(
-            "id, date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
+            "id, date, end_date, title, description, address, all_day, start_time, end_time, guide_id, guide_email, additional_email, calendar_event_id, status, created_at, updated_at"
           )
           .eq(
             "guide_id",
@@ -382,13 +383,15 @@ export default function Calendar() {
             "status",
             "scheduled"
           )
-          .gte(
-            "date",
-            firstDay
-          )
+          // O tour pode começar antes do mês e terminar dentro/depois dele
           .lte(
             "date",
             lastDay
+          )
+          // O tour pode terminar depois do mês e ter começado antes/dentro dele
+          .gte(
+            "end_date",
+            firstDay
           )
           .order(
             "date"
@@ -616,9 +619,25 @@ export default function Calendar() {
           date
       );
 
+    /*
+     * Se o dia estiver dentro de um tour escalado,
+     * não permite alterar a disponibilidade manualmente.
+     */
+    const escalatedTour =
+      tourEvents.find(
+        (event) =>
+          event.status ===
+            "scheduled" &&
+          event.date <=
+            date &&
+          event.end_date >=
+            date
+      );
+
     if (
       existing?.status ===
-      "escalated"
+        "escalated" ||
+      escalatedTour
     ) {
       return;
     }
@@ -814,10 +833,12 @@ export default function Calendar() {
     const tour =
       tourEvents.find(
         (event) =>
-          event.date ===
-            date &&
           event.status ===
-            "scheduled"
+            "scheduled" &&
+          event.date <=
+            date &&
+          event.end_date >=
+            date
       );
 
     if (!tour) {
@@ -980,16 +1001,37 @@ export default function Calendar() {
 
                     <p className="mt-1 text-sm font-extrabold capitalize text-blue-900">
                       {
-                        format(
-                          new Date(
-                            `${selectedTour.date}T12:00:00`
-                          ),
-                          "dd 'de' MMMM 'de' yyyy",
-                          {
-                            locale:
-                              ptBR,
-                          }
-                        )
+                        selectedTour.date ===
+                          selectedTour.end_date
+                          ? format(
+                              new Date(
+                                `${selectedTour.date}T12:00:00`
+                              ),
+                              "dd 'de' MMMM 'de' yyyy",
+                              {
+                                locale:
+                                  ptBR,
+                              }
+                            )
+                          : `${format(
+                              new Date(
+                                `${selectedTour.date}T12:00:00`
+                              ),
+                              "dd 'de' MMMM 'de' yyyy",
+                              {
+                                locale:
+                                  ptBR,
+                              }
+                            )} até ${format(
+                              new Date(
+                                `${selectedTour.end_date}T12:00:00`
+                              ),
+                              "dd 'de' MMMM 'de' yyyy",
+                              {
+                                locale:
+                                  ptBR,
+                              }
+                            )}`
                       }
                     </p>
 
@@ -1330,9 +1372,27 @@ export default function Calendar() {
                             currentMonth
                           );
 
+                        /*
+                         * Verifica se o dia está dentro
+                         * de algum tour escalado.
+                         */
+                        const escalatedTour =
+                          tourEvents.find(
+                            (event) =>
+                              event.status ===
+                                "scheduled" &&
+                              event.date <=
+                                date &&
+                              event.end_date >=
+                                date
+                          );
+
                         const isEscalated =
+                          Boolean(
+                            escalatedTour
+                          ) ||
                           existing?.status ===
-                          "escalated";
+                            "escalated";
 
                         let dayClass =
                           sameMonth
@@ -1346,7 +1406,8 @@ export default function Calendar() {
                         if (
                           sameMonth &&
                           existing?.status ===
-                            "available"
+                            "available" &&
+                          !escalatedTour
                         ) {
                           dayClass =
                             "border-green-500 bg-green-500 text-white hover:bg-green-600";
@@ -1359,7 +1420,8 @@ export default function Calendar() {
                         if (
                           sameMonth &&
                           existing?.status ===
-                            "unavailable"
+                            "unavailable" &&
+                          !escalatedTour
                         ) {
                           dayClass =
                             "border-red-500 bg-red-500 text-white hover:bg-red-600";
@@ -1392,7 +1454,9 @@ export default function Calendar() {
                               }
 
                               if (
-                                isEscalated
+                                escalatedTour ||
+                                existing?.status ===
+                                  "escalated"
                               ) {
                                 openEscalatedTour(
                                   date
@@ -1534,11 +1598,8 @@ export default function Calendar() {
               {/* ==================================================== */}
 
               {
-                availability.some(
-                  (item) =>
-                    item.status ===
-                    "escalated"
-                ) && (
+                tourEvents.length >
+                  0 && (
                   <div
                     className="
                       mt-4
@@ -1584,3 +1645,4 @@ export default function Calendar() {
     </>
   );
 }
+
